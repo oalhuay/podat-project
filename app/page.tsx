@@ -1,4 +1,10 @@
+"use client";
+
+import { useAuth } from "@/app/hooks/useAuth";
+
 export default function Home() {
+  const { signInWithGoogle } = useAuth();
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
       
@@ -18,12 +24,18 @@ export default function Home() {
 
         {/* Botones de Selección */}
         <div className="space-y-4">
-          <button className="w-full flex items-center justify-center gap-3 border-2 border-[#5D9AD4] text-[#5D9AD4] hover:bg-[#5D9AD4] hover:text-white font-bold py-4 px-4 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md">
+          <button
+            onClick={() => void signInWithGoogle("docente")}
+            className="w-full flex items-center justify-center gap-3 border-2 border-[#5D9AD4] text-[#5D9AD4] hover:bg-[#5D9AD4] hover:text-white font-bold py-4 px-4 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md"
+          >
             <span className="text-xl">📊</span>
             Soy Docente
           </button>
           
-          <button className="w-full flex items-center justify-center gap-3 border-2 border-[#FBC558] text-[#FBC558] hover:bg-[#FBC558] hover:text-white font-bold py-4 px-4 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md">
+          <button
+            onClick={() => void signInWithGoogle("admin")}
+            className="w-full flex items-center justify-center gap-3 border-2 border-[#FBC558] text-[#FBC558] hover:bg-[#FBC558] hover:text-white font-bold py-4 px-4 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md"
+          >
             <span className="text-xl">⚙️</span>
             Soy Administrador
           </button>
