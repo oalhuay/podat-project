@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { AuthChangeEvent, Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
+import type { Rol } from "@/types/database";
 
 export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -28,11 +29,11 @@ export const useAuth = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signInWithGoogle = async () => {
+  const signInWithGoogle = async (rol: Exclude<Rol, null>) => {
     await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: window.location.origin,
+        redirectTo: `${window.location.origin}/auth/callback?rol=${rol}`,
       },
     });
   };

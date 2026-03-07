@@ -1,27 +1,44 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
-import { NextResponse } from 'next/server'
-import { db } from '@/lib/database'
-import { Rol } from '@/types/database'
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
+import { db } from "@/lib/database";
+import type { Rol } from "@/types/database";
 
 export async function GET(request: Request) {
-  // 1. Capturamos la URL y los datos que vienen de Google
-  const { searchParams, origin } = new URL(request.url)
-  const code = searchParams.get('code') // El código de Google
-  const rolSeleccionado = searchParams.get('rol') as Rol // El rol que elegimos en el botón
+  const { searchParams, origin } = new URL(request.url);
+  const code = searchParams.get("code");
+  const rolSeleccionado = searchParams.get("rol") as Rol;
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    return NextResponse.redirect(origin);
+  }
 
   if (code) {
-    const supabase = createRouteHandlerClient({ cookies })
-    
-    // 2. Intercambiamos el código por una sesión real
-    const { data: { session } } = await supabase.auth.exchangeCodeForSession(code)
+    const cookieStore = await cookies();
+    const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            cookieStore.set(name, value, options);
+          });
+        },
+      },
+    });
 
-    // 3. Si tenemos sesión y un rol, guardamos en la base de datos de forma MODULAR
+    const {
+      data: { session },
+    } = await supabase.auth.exchangeCodeForSession(code);
+
     if (session?.user && rolSeleccionado) {
-      await db.asignarRol(session.user.id, rolSeleccionado)
+      await db.asignarRol(session.user.id, rolSeleccionado);
     }
   }
 
-  // 4. Lo mandamos de vuelta al inicio, ya logueado y con su rol guardado
-  return NextResponse.redirect(`${origin}`)
+  return NextResponse.redirect(origin);
 }
