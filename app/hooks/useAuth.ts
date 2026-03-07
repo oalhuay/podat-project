@@ -30,10 +30,16 @@ export const useAuth = () => {
   }, []);
 
   const signInWithGoogle = async (rol: Exclude<Rol, null>) => {
+    document.cookie = `podat_rol=${rol}; path=/; max-age=600; samesite=lax`;
+
     await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
         redirectTo: `${window.location.origin}/auth/callback?rol=${rol}`,
+        queryParams: {
+          access_type: "offline",
+          prompt: "select_account",
+        },
       },
     });
   };
