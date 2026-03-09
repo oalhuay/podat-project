@@ -3,10 +3,23 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import StatusBanner from "@/components/admin/StatusBanner";
+import {
+  EvaluacionNombre,
+  TipoEvaluacion,
+  formatNota,
+  getHabilitacionRecuperatorio,
+  isNotaEnRango,
+} from "@/lib/notas/rules";
 
 type Materia = {
   id: number;
   nombre: string;
+};
+
+type NotaRow = {
+  alumno_id: number;
+  nota: number | null;
+  ausente: boolean;
 };
 
 type AlumnoFila = {
@@ -15,6 +28,9 @@ type AlumnoFila = {
   apellido: string;
   nombre: string;
   nota: string;
+  ausente: boolean;
+  habilitado: boolean;
+  motivoBloqueo: string | null;
 };
 
 type StatusMessage = {
@@ -22,8 +38,8 @@ type StatusMessage = {
   text: string;
 };
 
-const EVALUACIONES = ["Parcial1", "Parcial2", "Integrador"] as const;
-const TIPOS = ["Parcial", "Recuperatorio"] as const;
+const EVALUACIONES: EvaluacionNombre[] = ["Parcial1", "Parcial2", "Integrador"];
+const TIPOS: TipoEvaluacion[] = ["Parcial", "Recuperatorio"];
 const COMISIONES = ["A", "B", "C"] as const;
 const MATERIAS_EJEMPLO: Materia[] = [
   { id: 101, nombre: "Programacion I (Ejemplo)" },
@@ -37,8 +53,8 @@ export default function CargarNotasPage() {
   const [materiaId, setMateriaId] = useState("");
   const [anio, setAnio] = useState("2026");
   const [comision, setComision] = useState("");
-  const [evaluacionNombre, setEvaluacionNombre] = useState("");
-  const [tipo, setTipo] = useState("");
+  const [evaluacionNombre, setEvaluacionNombre] = useState<EvaluacionNombre | "">("");
+  const [tipo, setTipo] = useState<TipoEvaluacion>("Parcial");
   const [comisionId, setComisionId] = useState<number | null>(null);
   const [alumnos, setAlumnos] = useState<AlumnoFila[]>([]);
   const [statusMessage, setStatusMessage] = useState<StatusMessage | null>(null);
@@ -46,9 +62,10 @@ export default function CargarNotasPage() {
   const [step, setStep] = useState<"seleccion" | "carga">("seleccion");
 
   const puedeContinuar = useMemo(
-    () => Boolean(materiaId && anio && comision && evaluacionNombre),
-    [materiaId, anio, comision, evaluacionNombre]
+    () => Boolean(materiaId && anio && comision && evaluacionNombre && tipo),
+    [materiaId, anio, comision, evaluacionNombre, tipo]
   );
+
   const materiasMostradas = materias.length > 0 ? materias : MATERIAS_EJEMPLO;
 
   useEffect(() => {
@@ -82,16 +99,42 @@ export default function CargarNotasPage() {
     setStep("seleccion");
     setComisionId(null);
     setAlumnos([]);
-    if (message) {
-      setStatusMessage(message);
-    }
+    if (message) setStatusMessage(message);
+  };
+
+  const onChangeNota = (alumnoId: number, nota: string) => {
+    setAlumnos((prev) =>
+      prev.map((a) =>
+        a.alumnoId === alumnoId
+          ? {
+              ...a,
+              nota,
+              ausente: nota.trim() === "" ? a.ausente : false,
+            }
+          : a
+      )
+    );
+  };
+
+  const onChangeAusente = (alumnoId: number, checked: boolean) => {
+    setAlumnos((prev) =>
+      prev.map((a) =>
+        a.alumnoId === alumnoId
+          ? {
+              ...a,
+              ausente: checked,
+              nota: checked ? "" : a.nota,
+            }
+          : a
+      )
+    );
   };
 
   const continuar = async () => {
-    if (!puedeContinuar) {
+    if (!puedeContinuar || !evaluacionNombre) {
       setStatusMessage({
         type: "error",
-        text: "Completa Materia, Año, Comisión y Nombre de evaluación.",
+        text: "Completa Materia, Año, Comisión, Nombre de evaluación y Tipo.",
       });
       return;
     }
@@ -117,16 +160,17 @@ export default function CargarNotasPage() {
         return;
       }
 
-      setComisionId(comisionData.id as number);
+      const comisionIdValue = Number(comisionData.id);
+      setComisionId(comisionIdValue);
 
       const { data: alumnosData, error: alumnosError } = await supabase
         .from("alumno_comision")
         .select("alumno_id, alumnos(id, legajo, nombre, apellido)")
-        .eq("comision_id", comisionData.id);
+        .eq("comision_id", comisionIdValue);
 
       if (alumnosError) throw alumnosError;
 
-      const filas = (alumnosData ?? [])
+      const alumnosBase = (alumnosData ?? [])
         .map((row) => {
           const alumnoRaw = Array.isArray(row.alumnos) ? row.alumnos[0] : row.alumnos;
           if (!alumnoRaw) return null;
@@ -136,13 +180,15 @@ export default function CargarNotasPage() {
             legajo: String(alumnoRaw.legajo),
             apellido: String(alumnoRaw.apellido),
             nombre: String(alumnoRaw.nombre),
-            nota: "",
-          } as AlumnoFila;
+          };
         })
-        .filter((row): row is AlumnoFila => row !== null)
+        .filter(
+          (row): row is { alumnoId: number; legajo: string; apellido: string; nombre: string } =>
+            row !== null
+        )
         .sort((a, b) => a.apellido.localeCompare(b.apellido));
 
-      if (filas.length === 0) {
+      if (alumnosBase.length === 0) {
         setStatusMessage({
           type: "info",
           text: "No hay alumnos vinculados a esa comisión.",
@@ -150,12 +196,103 @@ export default function CargarNotasPage() {
         return;
       }
 
+      const { data: evaluacionActualData, error: evalActualError } = await supabase
+        .from("evaluaciones")
+        .select("id")
+        .eq("comision_id", comisionIdValue)
+        .eq("nombre", evaluacionNombre)
+        .eq("tipo", tipo)
+        .maybeSingle();
+
+      if (evalActualError) throw evalActualError;
+
+      const notasActualMap = new Map<number, NotaRow>();
+      if (evaluacionActualData?.id) {
+        const { data: notasActuales, error: notasActualesError } = await supabase
+          .from("notas")
+          .select("alumno_id, nota, ausente")
+          .eq("evaluacion_id", Number(evaluacionActualData.id));
+
+        if (notasActualesError) throw notasActualesError;
+        (notasActuales ?? []).forEach((n) => {
+          notasActualMap.set(Number(n.alumno_id), {
+            alumno_id: Number(n.alumno_id),
+            nota: n.nota === null ? null : Number(n.nota),
+            ausente: Boolean(n.ausente),
+          });
+        });
+      }
+
+      const notasParcialBaseMap = new Map<number, NotaRow>();
+      if (tipo === "Recuperatorio") {
+        const { data: evalParcialData, error: evalParcialError } = await supabase
+          .from("evaluaciones")
+          .select("id")
+          .eq("comision_id", comisionIdValue)
+          .eq("nombre", evaluacionNombre)
+          .eq("tipo", "Parcial")
+          .maybeSingle();
+
+        if (evalParcialError) throw evalParcialError;
+
+        if (evalParcialData?.id) {
+          const { data: notasParcialData, error: notasParcialError } = await supabase
+            .from("notas")
+            .select("alumno_id, nota, ausente")
+            .eq("evaluacion_id", Number(evalParcialData.id));
+
+          if (notasParcialError) throw notasParcialError;
+          (notasParcialData ?? []).forEach((n) => {
+            notasParcialBaseMap.set(Number(n.alumno_id), {
+              alumno_id: Number(n.alumno_id),
+              nota: n.nota === null ? null : Number(n.nota),
+              ausente: Boolean(n.ausente),
+            });
+          });
+        }
+      }
+
+      const filas: AlumnoFila[] = alumnosBase.map((alumno) => {
+        const notaActual = notasActualMap.get(alumno.alumnoId);
+
+        let habilitado = true;
+        let motivoBloqueo: string | null = null;
+
+        if (tipo === "Recuperatorio") {
+          const notaParcial = notasParcialBaseMap.get(alumno.alumnoId);
+          const result = getHabilitacionRecuperatorio(
+            notaParcial?.nota ?? null,
+            notaParcial?.ausente ?? false,
+            evaluacionNombre
+          );
+          habilitado = result.habilitado;
+          motivoBloqueo = result.motivoBloqueo;
+        }
+
+        return {
+          ...alumno,
+          nota: formatNota(notaActual?.nota ?? null),
+          ausente: notaActual?.ausente ?? false,
+          habilitado,
+          motivoBloqueo,
+        };
+      });
+
       setAlumnos(filas);
       setStep("carga");
-      setStatusMessage({
-        type: "info",
-        text: `Lista cargada. Completa una nota (0 a 10) por alumno y guarda.`,
-      });
+
+      const habilitados = filas.filter((f) => f.habilitado).length;
+      if (tipo === "Recuperatorio") {
+        setStatusMessage({
+          type: "info",
+          text: `Lista cargada. Habilitados para recuperatorio: ${habilitados}/${filas.length}. Solo se permiten alumnos con nota < 4, ausente o sin nota en el parcial base.`,
+        });
+      } else {
+        setStatusMessage({
+          type: "info",
+          text: "Lista cargada. Completa una nota entre 1 y 10 o marca Ausente por alumno.",
+        });
+      }
     } catch (err: unknown) {
       const message =
         typeof err === "object" && err !== null && "message" in err
@@ -170,57 +307,55 @@ export default function CargarNotasPage() {
     }
   };
 
-  const onChangeNota = (alumnoId: number, nota: string) => {
-    setAlumnos((prev) =>
-      prev.map((a) => (a.alumnoId === alumnoId ? { ...a, nota } : a))
-    );
-  };
-
   const guardarNotas = async () => {
-    if (!comisionId) {
+    if (!comisionId || !evaluacionNombre) {
       setStatusMessage({
         type: "error",
-        text: "No hay comisión seleccionada para guardar notas.",
+        text: "No hay comisión/evaluación seleccionada para guardar notas.",
       });
       return;
     }
 
-    for (const alumno of alumnos) {
-      if (alumno.nota.trim() === "") {
+    const alumnosHabilitados = alumnos.filter((a) => a.habilitado);
+    if (alumnosHabilitados.length === 0) {
+      setStatusMessage({
+        type: "error",
+        text: "No hay alumnos habilitados para guardar en esta evaluación.",
+      });
+      return;
+    }
+
+    for (const alumno of alumnosHabilitados) {
+      if (!alumno.ausente && alumno.nota.trim() === "") {
         setStatusMessage({
           type: "error",
-          text: "Todas las notas son obligatorias.",
+          text: "En alumnos habilitados debes cargar nota (1 a 10) o marcar Ausente.",
         });
         return;
       }
 
-      const notaNum = Number(alumno.nota);
-      if (Number.isNaN(notaNum) || notaNum < 0 || notaNum > 10) {
-        setStatusMessage({
-          type: "error",
-          text: "Cada nota debe estar entre 0 y 10.",
-        });
-        return;
+      if (!alumno.ausente) {
+        const notaNum = Number(alumno.nota);
+        if (!isNotaEnRango(notaNum)) {
+          setStatusMessage({
+            type: "error",
+            text: "Cada nota debe estar entre 1 y 10.",
+          });
+          return;
+        }
       }
     }
 
     setIsLoading(true);
     try {
-      const tipoValue = tipo || null;
-
-      let query = supabase
+      const { data: evaluacionExistente, error: evalSelectError } = await supabase
         .from("evaluaciones")
         .select("id")
         .eq("comision_id", comisionId)
-        .eq("nombre", evaluacionNombre);
+        .eq("nombre", evaluacionNombre)
+        .eq("tipo", tipo)
+        .maybeSingle();
 
-      if (tipoValue === null) {
-        query = query.is("tipo", null);
-      } else {
-        query = query.eq("tipo", tipoValue);
-      }
-
-      const { data: evaluacionExistente, error: evalSelectError } = await query.maybeSingle();
       if (evalSelectError) throw evalSelectError;
 
       let evaluacionId: number;
@@ -232,7 +367,7 @@ export default function CargarNotasPage() {
           .insert({
             comision_id: comisionId,
             nombre: evaluacionNombre,
-            tipo: tipoValue,
+            tipo,
           })
           .select("id")
           .single();
@@ -241,10 +376,11 @@ export default function CargarNotasPage() {
         evaluacionId = Number(evaluacionNueva.id);
       }
 
-      const payload = alumnos.map((alumno) => ({
+      const payload = alumnosHabilitados.map((alumno) => ({
         evaluacion_id: evaluacionId,
         alumno_id: alumno.alumnoId,
-        nota: Number(alumno.nota),
+        nota: alumno.ausente ? null : Number(alumno.nota),
+        ausente: alumno.ausente,
       }));
 
       const { error: notasError } = await supabase
@@ -255,7 +391,7 @@ export default function CargarNotasPage() {
 
       resetToStart({
         type: "success",
-        text: `Notas guardadas correctamente para ${alumnos.length} alumnos.`,
+        text: `Notas guardadas correctamente para ${alumnosHabilitados.length} alumnos habilitados.`,
       });
     } catch (err: unknown) {
       const message =
@@ -276,7 +412,7 @@ export default function CargarNotasPage() {
       <header className="mb-10">
         <h1 className="text-4xl font-black text-slate-900 tracking-tight">Carga de Notas</h1>
         <p className="text-slate-500 mt-2 font-medium">
-          Selecciona evaluación y registra una nota (0 a 10) por alumno.
+          Selecciona evaluacion y registra una nota (1 a 10) o ausente por alumno.
         </p>
       </header>
 
@@ -340,7 +476,7 @@ export default function CargarNotasPage() {
               <select
                 className="w-full p-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-slate-900 focus:border-[#5D9AD4] outline-none transition-all"
                 value={evaluacionNombre}
-                onChange={(e) => setEvaluacionNombre(e.target.value)}
+                onChange={(e) => setEvaluacionNombre(e.target.value as EvaluacionNombre)}
               >
                 <option value="">Elegir...</option>
                 {EVALUACIONES.map((e) => (
@@ -353,14 +489,13 @@ export default function CargarNotasPage() {
 
             <div className="space-y-2 md:col-span-2">
               <label className="text-xs uppercase tracking-widest font-bold text-slate-400">
-                Tipo (opcional)
+                Tipo
               </label>
               <select
                 className="w-full p-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-slate-900 focus:border-[#5D9AD4] outline-none transition-all"
                 value={tipo}
-                onChange={(e) => setTipo(e.target.value)}
+                onChange={(e) => setTipo(e.target.value as TipoEvaluacion)}
               >
-                <option value="">Sin tipo</option>
                 {TIPOS.map((t) => (
                   <option key={t} value={t}>
                     {t}
@@ -404,25 +539,49 @@ export default function CargarNotasPage() {
                     <th className="text-left p-3">Legajo</th>
                     <th className="text-left p-3">Apellido</th>
                     <th className="text-left p-3">Nombre</th>
-                    <th className="text-left p-3">Nota (0 a 10)</th>
+                    <th className="text-left p-3">Nota (1 a 10)</th>
+                    <th className="text-left p-3">Ausente</th>
                   </tr>
                 </thead>
                 <tbody className="text-slate-800">
                   {alumnos.map((alumno) => (
-                    <tr key={alumno.alumnoId} className="border-t border-slate-100">
+                    <tr
+                      key={alumno.alumnoId}
+                      className={`border-t border-slate-100 ${alumno.habilitado ? "" : "bg-slate-50"}`}
+                    >
                       <td className="p-3 font-mono">{alumno.legajo}</td>
                       <td className="p-3">{alumno.apellido}</td>
-                      <td className="p-3">{alumno.nombre}</td>
+                      <td className="p-3">
+                        <div className="font-medium">{alumno.nombre}</div>
+                        {!alumno.habilitado && alumno.motivoBloqueo && (
+                          <div className="text-xs text-slate-500 mt-1">{alumno.motivoBloqueo}</div>
+                        )}
+                      </td>
                       <td className="p-3">
                         <input
                           type="number"
-                          min={0}
+                          min={1}
                           max={10}
                           step={0.1}
                           value={alumno.nota}
+                          disabled={!alumno.habilitado || alumno.ausente || isLoading}
                           onChange={(e) => onChangeNota(alumno.alumnoId, e.target.value)}
-                          className="w-32 p-2 rounded-xl border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:border-[#5D9AD4] outline-none"
+                          className="w-32 p-2 rounded-xl border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:border-[#5D9AD4] outline-none disabled:bg-slate-100 disabled:text-slate-400"
                         />
+                      </td>
+                      <td className="p-3">
+                        <label className="inline-flex items-center gap-2 text-sm">
+                          <input
+                            type="checkbox"
+                            checked={alumno.ausente}
+                            disabled={!alumno.habilitado || isLoading}
+                            onChange={(e) => onChangeAusente(alumno.alumnoId, e.target.checked)}
+                            className="h-4 w-4"
+                          />
+                          <span className={alumno.habilitado ? "text-slate-700" : "text-slate-400"}>
+                            Ausente
+                          </span>
+                        </label>
                       </td>
                     </tr>
                   ))}
