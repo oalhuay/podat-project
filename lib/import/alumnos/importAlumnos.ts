@@ -1,0 +1,164 @@
+import {
+  ImportResult,
+  ImportRowResult,
+  ParsedAlumnoRow,
+} from "./types";
+
+type AlumnoRecord = {
+  legajo: string;
+  nombre: string;
+  apellido: string;
+};
+
+type SelectInResponse = Promise<{
+  data: Array<{ legajo: string; nombre: string; apellido: string }> | null;
+  error: unknown;
+}>;
+
+type MutationResponse = Promise<{ error: unknown }>;
+
+export type ImportAlumnosDbClient = {
+  from: (table: "alumnos") => {
+    select: (columns: string) => {
+      in: (column: "legajo", values: string[]) => SelectInResponse;
+    };
+    insert: (rows: AlumnoRecord[]) => MutationResponse;
+    upsert: (
+      rows: AlumnoRecord[],
+      options: { onConflict: "legajo" }
+    ) => MutationResponse;
+  };
+};
+
+const normalize = (value: string) => value.trim();
+
+const buildSummary = (rows: ImportRowResult[]): ImportResult["summary"] => ({
+  total: rows.length,
+  nuevos: rows.filter((r) => r.status === "nuevo").length,
+  duplicados: rows.filter((r) => r.status === "duplicado").length,
+  actualizados: rows.filter((r) => r.status === "actualizado").length,
+  invalidos: rows.filter((r) => r.status === "invalido").length,
+});
+
+export const importAlumnos = async (
+  parsedRows: ParsedAlumnoRow[],
+  dbClient: ImportAlumnosDbClient
+): Promise<ImportResult> => {
+  const preRows = parsedRows.map((row) => ({
+    legajo: normalize(row.Legajo),
+    nombre: normalize(row.Nombre),
+    apellido: normalize(row.Apellido),
+  }));
+
+  const resultRows: ImportRowResult[] = [];
+  const uniqueByLegajo = new Map<string, AlumnoRecord>();
+
+  for (const row of preRows) {
+    if (!row.legajo || !row.nombre || !row.apellido) {
+      resultRows.push({
+        ...row,
+        status: "invalido",
+        mensaje: "Fila incompleta. Requiere Legajo, Nombre y Apellido.",
+      });
+      continue;
+    }
+
+    if (uniqueByLegajo.has(row.legajo)) {
+      resultRows.push({
+        ...row,
+        status: "duplicado",
+        mensaje: "Legajo repetido dentro del archivo.",
+      });
+      continue;
+    }
+
+    uniqueByLegajo.set(row.legajo, row);
+    resultRows.push({
+      ...row,
+      status: "invalido",
+      mensaje: "Pendiente de procesar.",
+    });
+  }
+
+  const uniqueRows = Array.from(uniqueByLegajo.values());
+  if (uniqueRows.length === 0) {
+    return {
+      summary: buildSummary(resultRows),
+      rows: resultRows,
+    };
+  }
+
+  const legajos = uniqueRows.map((r) => r.legajo);
+  const { data: existentes, error: existingError } = await dbClient
+    .from("alumnos")
+    .select("legajo, nombre, apellido")
+    .in("legajo", legajos);
+
+  if (existingError) {
+    throw existingError;
+  }
+
+  const existentesMap = new Map(
+    (existentes ?? []).map((alumno) => [String(alumno.legajo), alumno])
+  );
+
+  const nuevos: AlumnoRecord[] = [];
+  const actualizados: AlumnoRecord[] = [];
+
+  for (const row of uniqueRows) {
+    const existing = existentesMap.get(row.legajo);
+    if (!existing) {
+      nuevos.push(row);
+      continue;
+    }
+
+    const sameNombre = normalize(String(existing.nombre ?? "")) === row.nombre;
+    const sameApellido = normalize(String(existing.apellido ?? "")) === row.apellido;
+    if (!sameNombre || !sameApellido) {
+      actualizados.push(row);
+    }
+  }
+
+  if (nuevos.length > 0) {
+    const { error } = await dbClient.from("alumnos").insert(nuevos);
+    if (error) throw error;
+  }
+
+  if (actualizados.length > 0) {
+    const { error } = await dbClient
+      .from("alumnos")
+      .upsert(actualizados, { onConflict: "legajo" });
+    if (error) throw error;
+  }
+
+  const finalRows = resultRows.map((row) => {
+    if (row.status === "duplicado" || row.status === "invalido") {
+      if (row.mensaje !== "Pendiente de procesar.") return row;
+    }
+
+    const wasInserted = nuevos.some((n) => n.legajo === row.legajo);
+    if (wasInserted) {
+      return { ...row, status: "nuevo", mensaje: "Alumno creado." as string };
+    }
+
+    const wasUpdated = actualizados.some((n) => n.legajo === row.legajo);
+    if (wasUpdated) {
+      return {
+        ...row,
+        status: "actualizado",
+        mensaje: "Alumno existente actualizado.",
+      };
+    }
+
+    return {
+      ...row,
+      status: "duplicado",
+      mensaje: "Alumno ya existente sin cambios.",
+    };
+  });
+
+  return {
+    summary: buildSummary(finalRows),
+    rows: finalRows,
+  };
+};
