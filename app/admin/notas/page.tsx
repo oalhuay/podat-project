@@ -25,6 +25,12 @@ type StatusMessage = {
 const EVALUACIONES = ["Parcial1", "Parcial2", "Integrador"] as const;
 const TIPOS = ["Parcial", "Recuperatorio"] as const;
 const COMISIONES = ["A", "B", "C"] as const;
+const MATERIAS_EJEMPLO: Materia[] = [
+  { id: 101, nombre: "Programacion I (Ejemplo)" },
+  { id: 102, nombre: "Sistemas Operativos (Ejemplo)" },
+  { id: 103, nombre: "Base de Datos (Ejemplo)" },
+  { id: 104, nombre: "Matematica Discreta (Ejemplo)" },
+];
 
 export default function CargarNotasPage() {
   const [materias, setMaterias] = useState<Materia[]>([]);
@@ -43,6 +49,7 @@ export default function CargarNotasPage() {
     () => Boolean(materiaId && anio && comision && evaluacionNombre),
     [materiaId, anio, comision, evaluacionNombre]
   );
+  const materiasMostradas = materias.length > 0 ? materias : MATERIAS_EJEMPLO;
 
   useEffect(() => {
     const loadMaterias = async () => {
@@ -60,6 +67,12 @@ export default function CargarNotasPage() {
       }
 
       setMaterias((data ?? []) as Materia[]);
+      if ((data ?? []).length === 0) {
+        setStatusMessage({
+          type: "info",
+          text: "No hay materias cargadas en base de datos. Se muestran opciones de ejemplo.",
+        });
+      }
     };
 
     void loadMaterias();
@@ -282,7 +295,7 @@ export default function CargarNotasPage() {
                 onChange={(e) => setMateriaId(e.target.value)}
               >
                 <option value="">Elegir Materia...</option>
-                {materias.map((m) => (
+                {materiasMostradas.map((m) => (
                   <option key={m.id} value={m.id}>
                     {m.nombre}
                   </option>
@@ -385,7 +398,7 @@ export default function CargarNotasPage() {
         <section className="mt-8 space-y-6">
           <div className="rounded-3xl border border-slate-200 overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full text-sm text-slate-900">
                 <thead className="bg-slate-50 text-slate-500 uppercase text-xs">
                   <tr>
                     <th className="text-left p-3">Legajo</th>
@@ -394,7 +407,7 @@ export default function CargarNotasPage() {
                     <th className="text-left p-3">Nota (0 a 10)</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="text-slate-800">
                   {alumnos.map((alumno) => (
                     <tr key={alumno.alumnoId} className="border-t border-slate-100">
                       <td className="p-3 font-mono">{alumno.legajo}</td>
@@ -408,7 +421,7 @@ export default function CargarNotasPage() {
                           step={0.1}
                           value={alumno.nota}
                           onChange={(e) => onChangeNota(alumno.alumnoId, e.target.value)}
-                          className="w-32 p-2 rounded-xl border border-slate-200 bg-white focus:border-[#5D9AD4] outline-none"
+                          className="w-32 p-2 rounded-xl border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:border-[#5D9AD4] outline-none"
                         />
                       </td>
                     </tr>
@@ -444,4 +457,3 @@ export default function CargarNotasPage() {
     </div>
   );
 }
-

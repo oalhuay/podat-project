@@ -10,18 +10,20 @@ type AlumnoRecord = {
   apellido: string;
 };
 
+type Awaitable<T> = PromiseLike<T> | Promise<T>;
+
 export type ImportPlan = {
   result: ImportResult;
   nuevos: AlumnoRecord[];
   actualizados: AlumnoRecord[];
 };
 
-type SelectInResponse = Promise<{
+type SelectInResponse = Awaitable<{
   data: Array<{ legajo: string; nombre: string; apellido: string }> | null;
   error: unknown;
 }>;
 
-type MutationResponse = Promise<{ error: unknown }>;
+type MutationResponse = Awaitable<{ error: unknown }>;
 
 export type ImportAlumnosDbClient = {
   from: (table: "alumnos") => {
@@ -35,6 +37,41 @@ export type ImportAlumnosDbClient = {
     ) => MutationResponse;
   };
 };
+
+export const toImportAlumnosDbClient = (
+  client: { from: (table: "alumnos") => unknown }
+): ImportAlumnosDbClient => ({
+  from: (table) => {
+    const raw = client.from(table) as {
+      select: (columns: string) => { in: (column: "legajo", values: string[]) => Awaitable<unknown> };
+      insert: (rows: AlumnoRecord[]) => Awaitable<unknown>;
+      upsert: (
+        rows: AlumnoRecord[],
+        options: { onConflict: "legajo" }
+      ) => Awaitable<unknown>;
+    };
+
+    return {
+      select: (columns) => ({
+        in: async (column, values) => {
+          const result = (await raw.select(columns).in(column, values)) as {
+            data: Array<{ legajo: string; nombre: string; apellido: string }> | null;
+            error: unknown;
+          };
+          return { data: result.data, error: result.error };
+        },
+      }),
+      insert: async (rows) => {
+        const result = (await raw.insert(rows)) as { error: unknown };
+        return { error: result.error };
+      },
+      upsert: async (rows, options) => {
+        const result = (await raw.upsert(rows, options)) as { error: unknown };
+        return { error: result.error };
+      },
+    };
+  },
+});
 
 const normalize = (value: string) => value.trim();
 
@@ -138,14 +175,14 @@ export const prepararImportAlumnos = async (
     }
   }
 
-  const finalRows = resultRows.map((row) => {
+  const finalRows: ImportRowResult[] = resultRows.map((row): ImportRowResult => {
     if (row.status === "duplicado" || row.status === "invalido") {
       if (row.mensaje !== "Pendiente de procesar.") return row;
     }
 
     const wasInserted = nuevos.some((n) => n.legajo === row.legajo);
     if (wasInserted) {
-      return { ...row, status: "nuevo", mensaje: "Alumno creado." as string };
+      return { ...row, status: "nuevo", mensaje: "Alumno creado." };
     }
 
     const wasUpdated = actualizados.some((n) => n.legajo === row.legajo);

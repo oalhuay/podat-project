@@ -12,6 +12,7 @@ import {
   ImportPlan,
   ejecutarImportPlan,
   prepararImportAlumnos,
+  toImportAlumnosDbClient,
 } from "@/lib/import/alumnos/importAlumnos";
 import ImportResults from "@/components/admin/ImportResults";
 import FileDropzone from "@/components/admin/FileDropzone";
@@ -33,6 +34,7 @@ export default function ImportarAlumnos() {
   const [isImporting, setIsImporting] = useState(false);
   const [statusMessage, setStatusMessage] = useState<StatusMessage | null>(null);
   const [statusFilter, setStatusFilter] = useState<"todos" | ImportStatus>("todos");
+  const importDbClient = toImportAlumnosDbClient(supabase);
 
   const puedeSubir = materia && anio && comision && archivo;
 
@@ -85,7 +87,7 @@ export default function ImportarAlumnos() {
     setIsImporting(true);
 
     try {
-      const plan = await prepararImportAlumnos(datosPrevia, supabase);
+      const plan = await prepararImportAlumnos(datosPrevia, importDbClient);
       setImportPlan(plan);
       setImportResult(plan.result);
       setStatusMessage({
@@ -113,7 +115,7 @@ export default function ImportarAlumnos() {
 
     setIsImporting(true);
     try {
-      await ejecutarImportPlan(importPlan, supabase);
+      await ejecutarImportPlan(importPlan, importDbClient);
       setStatusMessage({
         type: "success",
         text: `Importacion confirmada. Nuevos: ${importPlan.result.summary.nuevos}, Actualizados: ${importPlan.result.summary.actualizados}, Duplicados: ${importPlan.result.summary.duplicados}, Invalidos: ${importPlan.result.summary.invalidos}.`,
@@ -169,6 +171,9 @@ export default function ImportarAlumnos() {
             <option value="">Elegir Materia...</option>
             <option value="1">Programacion I</option>
             <option value="2">Sistemas Operativos</option>
+            <option value="3">Base de Datos</option>
+            <option value="4">Matematica Discreta</option>
+            <option value="5">Arquitectura de Computadoras</option>
           </select>
         </div>
 
