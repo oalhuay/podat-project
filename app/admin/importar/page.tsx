@@ -8,7 +8,11 @@ import {
   ImportResult,
   ParsedAlumnoRow,
 } from "@/lib/import/alumnos/types";
-import { importAlumnos } from "@/lib/import/alumnos/importAlumnos";
+import {
+  ImportPlan,
+  ejecutarImportPlan,
+  prepararImportAlumnos,
+} from "@/lib/import/alumnos/importAlumnos";
 import ImportResults from "@/components/admin/ImportResults";
 import FileDropzone from "@/components/admin/FileDropzone";
 import StatusBanner from "@/components/admin/StatusBanner";
@@ -25,6 +29,7 @@ export default function ImportarAlumnos() {
   const [archivo, setArchivo] = useState<File | null>(null);
   const [datosPrevia, setDatosPrevia] = useState<ParsedAlumnoRow[]>([]);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
+  const [importPlan, setImportPlan] = useState<ImportPlan | null>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [statusMessage, setStatusMessage] = useState<StatusMessage | null>(null);
   const [statusFilter, setStatusFilter] = useState<"todos" | ImportStatus>("todos");
@@ -52,11 +57,13 @@ export default function ImportarAlumnos() {
       console.log("Datos leidos:", data);
       setDatosPrevia(data);
       setImportResult(null);
+      setImportPlan(null);
       setStatusFilter("todos");
     } catch (err) {
       console.error("Error al procesar el archivo:", err);
       setDatosPrevia([]);
       setImportResult(null);
+      setImportPlan(null);
       setStatusFilter("todos");
       setStatusMessage({
         type: "error",
@@ -65,7 +72,7 @@ export default function ImportarAlumnos() {
     }
   };
 
-  const confirmarCarga = async () => {
+  const previsualizarCarga = async () => {
     if (datosPrevia.length === 0) {
       setStatusMessage({
         type: "error",
@@ -74,15 +81,16 @@ export default function ImportarAlumnos() {
       return;
     }
 
-    console.log("Iniciando carga masiva a Supabase...");
+    console.log("Iniciando analisis previo de importacion...");
     setIsImporting(true);
 
     try {
-      const result = await importAlumnos(datosPrevia, supabase);
-      setImportResult(result);
+      const plan = await prepararImportAlumnos(datosPrevia, supabase);
+      setImportPlan(plan);
+      setImportResult(plan.result);
       setStatusMessage({
-        type: "success",
-        text: `Importacion finalizada. Nuevos: ${result.summary.nuevos}, Actualizados: ${result.summary.actualizados}, Duplicados: ${result.summary.duplicados}, Invalidos: ${result.summary.invalidos}.`,
+        type: "info",
+        text: `Analisis listo. Revisa el detalle y elige Aceptar o Cancelar. Nuevos: ${plan.result.summary.nuevos}, Actualizados: ${plan.result.summary.actualizados}, Duplicados: ${plan.result.summary.duplicados}, Invalidos: ${plan.result.summary.invalidos}.`,
       });
     } catch (err: unknown) {
       const fallbackMessage = "Error desconocido";
@@ -98,6 +106,43 @@ export default function ImportarAlumnos() {
     } finally {
       setIsImporting(false);
     }
+  };
+
+  const aceptarImportacion = async () => {
+    if (!importPlan) return;
+
+    setIsImporting(true);
+    try {
+      await ejecutarImportPlan(importPlan, supabase);
+      setStatusMessage({
+        type: "success",
+        text: `Importacion confirmada. Nuevos: ${importPlan.result.summary.nuevos}, Actualizados: ${importPlan.result.summary.actualizados}, Duplicados: ${importPlan.result.summary.duplicados}, Invalidos: ${importPlan.result.summary.invalidos}.`,
+      });
+      setImportPlan(null);
+    } catch (err: unknown) {
+      const fallbackMessage = "Error desconocido";
+      const errorMessage =
+        typeof err === "object" && err !== null && "message" in err
+          ? String((err as { message: unknown }).message)
+          : fallbackMessage;
+      console.error("Error confirmando importacion:", err);
+      setStatusMessage({
+        type: "error",
+        text: `Error al confirmar la importacion: ${errorMessage}`,
+      });
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
+  const cancelarImportacion = () => {
+    setImportPlan(null);
+    setImportResult(null);
+    setStatusFilter("todos");
+    setStatusMessage({
+      type: "info",
+      text: "Importacion cancelada. No se aplicaron cambios en la base de datos.",
+    });
   };
 
   return (
@@ -161,13 +206,36 @@ export default function ImportarAlumnos() {
       {statusMessage && <StatusBanner message={statusMessage} />}
 
       {puedeSubir && (
-        <button
-          onClick={confirmarCarga}
-          disabled={isImporting}
-          className="w-full mt-10 p-5 bg-[#5D9AD4] text-white font-black text-xl rounded-3xl shadow-xl shadow-blue-100 hover:scale-[1.02] active:scale-[0.98] transition-all"
-        >
-          {isImporting ? "IMPORTANDO..." : "CONFIRMAR IMPORTACION"}
-        </button>
+        <div className="mt-10 space-y-3">
+          {!importPlan && (
+            <button
+              onClick={previsualizarCarga}
+              disabled={isImporting}
+              className="w-full p-5 bg-[#5D9AD4] text-white font-black text-xl rounded-3xl shadow-xl shadow-blue-100 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-70"
+            >
+              {isImporting ? "ANALIZANDO..." : "CONFIRMAR IMPORTACION"}
+            </button>
+          )}
+
+          {importPlan && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <button
+                onClick={aceptarImportacion}
+                disabled={isImporting}
+                className="w-full p-4 bg-green-600 text-white font-black text-lg rounded-2xl hover:bg-green-700 transition-colors disabled:opacity-70"
+              >
+                {isImporting ? "APLICANDO..." : "ACEPTAR IMPORTACION"}
+              </button>
+              <button
+                onClick={cancelarImportacion}
+                disabled={isImporting}
+                className="w-full p-4 bg-slate-200 text-slate-800 font-black text-lg rounded-2xl hover:bg-slate-300 transition-colors disabled:opacity-70"
+              >
+                CANCELAR IMPORTACION
+              </button>
+            </div>
+          )}
+        </div>
       )}
 
       {importResult && (

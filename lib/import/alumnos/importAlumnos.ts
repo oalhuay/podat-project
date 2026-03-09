@@ -10,6 +10,12 @@ type AlumnoRecord = {
   apellido: string;
 };
 
+export type ImportPlan = {
+  result: ImportResult;
+  nuevos: AlumnoRecord[];
+  actualizados: AlumnoRecord[];
+};
+
 type SelectInResponse = Promise<{
   data: Array<{ legajo: string; nombre: string; apellido: string }> | null;
   error: unknown;
@@ -44,6 +50,15 @@ export const importAlumnos = async (
   parsedRows: ParsedAlumnoRow[],
   dbClient: ImportAlumnosDbClient
 ): Promise<ImportResult> => {
+  const plan = await prepararImportAlumnos(parsedRows, dbClient);
+  await ejecutarImportPlan(plan, dbClient);
+  return plan.result;
+};
+
+export const prepararImportAlumnos = async (
+  parsedRows: ParsedAlumnoRow[],
+  dbClient: ImportAlumnosDbClient
+): Promise<ImportPlan> => {
   const preRows = parsedRows.map((row) => ({
     legajo: normalize(row.Legajo),
     nombre: normalize(row.Nombre),
@@ -83,8 +98,12 @@ export const importAlumnos = async (
   const uniqueRows = Array.from(uniqueByLegajo.values());
   if (uniqueRows.length === 0) {
     return {
-      summary: buildSummary(resultRows),
-      rows: resultRows,
+      result: {
+        summary: buildSummary(resultRows),
+        rows: resultRows,
+      },
+      nuevos: [],
+      actualizados: [],
     };
   }
 
@@ -119,18 +138,6 @@ export const importAlumnos = async (
     }
   }
 
-  if (nuevos.length > 0) {
-    const { error } = await dbClient.from("alumnos").insert(nuevos);
-    if (error) throw error;
-  }
-
-  if (actualizados.length > 0) {
-    const { error } = await dbClient
-      .from("alumnos")
-      .upsert(actualizados, { onConflict: "legajo" });
-    if (error) throw error;
-  }
-
   const finalRows = resultRows.map((row) => {
     if (row.status === "duplicado" || row.status === "invalido") {
       if (row.mensaje !== "Pendiente de procesar.") return row;
@@ -158,7 +165,28 @@ export const importAlumnos = async (
   });
 
   return {
-    summary: buildSummary(finalRows),
-    rows: finalRows,
+    result: {
+      summary: buildSummary(finalRows),
+      rows: finalRows,
+    },
+    nuevos,
+    actualizados,
   };
+};
+
+export const ejecutarImportPlan = async (
+  plan: ImportPlan,
+  dbClient: ImportAlumnosDbClient
+): Promise<void> => {
+  if (plan.nuevos.length > 0) {
+    const { error } = await dbClient.from("alumnos").insert(plan.nuevos);
+    if (error) throw error;
+  }
+
+  if (plan.actualizados.length > 0) {
+    const { error } = await dbClient
+      .from("alumnos")
+      .upsert(plan.actualizados, { onConflict: "legajo" });
+    if (error) throw error;
+  }
 };
