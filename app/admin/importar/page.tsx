@@ -48,7 +48,7 @@ export default function ImportarAlumnos() {
       if (data.length === 0) {
         setStatusMessage({
           type: "info",
-          text: "No se encontraron encabezados validos o filas con datos.",
+          text: "No se encontraron encabezados válidos o filas con datos.",
         });
       } else {
         setStatusMessage({
@@ -69,7 +69,7 @@ export default function ImportarAlumnos() {
       setStatusFilter("todos");
       setStatusMessage({
         type: "error",
-        text: "No se pudo leer el archivo. Verifica que sea un Excel valido.",
+        text: "No se pudo leer el archivo. Verifica que sea un Excel válido.",
       });
     }
   };
@@ -83,7 +83,7 @@ export default function ImportarAlumnos() {
       return;
     }
 
-    console.log("Iniciando analisis previo de importacion...");
+    console.log("Iniciando análisis previo de importación...");
     setIsImporting(true);
 
     try {
@@ -92,7 +92,7 @@ export default function ImportarAlumnos() {
       setImportResult(plan.result);
       setStatusMessage({
         type: "info",
-        text: `Analisis listo. Revisa el detalle y elige Aceptar o Cancelar. Nuevos: ${plan.result.summary.nuevos}, Actualizados: ${plan.result.summary.actualizados}, Duplicados: ${plan.result.summary.duplicados}, Invalidos: ${plan.result.summary.invalidos}.`,
+        text: `Análisis listo. Revisa el detalle y elige Aceptar o Cancelar. Nuevos: ${plan.result.summary.nuevos}, Actualizados: ${plan.result.summary.actualizados}, Duplicados: ${plan.result.summary.duplicados}, Inválidos: ${plan.result.summary.invalidos}.`,
       });
     } catch (err: unknown) {
       const fallbackMessage = "Error desconocido";
@@ -118,7 +118,7 @@ export default function ImportarAlumnos() {
       await ejecutarImportPlan(importPlan, importDbClient);
       setStatusMessage({
         type: "success",
-        text: `Importacion confirmada. Nuevos: ${importPlan.result.summary.nuevos}, Actualizados: ${importPlan.result.summary.actualizados}, Duplicados: ${importPlan.result.summary.duplicados}, Invalidos: ${importPlan.result.summary.invalidos}.`,
+        text: `Importación confirmada. Nuevos: ${importPlan.result.summary.nuevos}, Actualizados: ${importPlan.result.summary.actualizados}, Duplicados: ${importPlan.result.summary.duplicados}, Inválidos: ${importPlan.result.summary.invalidos}.`,
       });
       setImportPlan(null);
     } catch (err: unknown) {
@@ -130,7 +130,7 @@ export default function ImportarAlumnos() {
       console.error("Error confirmando importacion:", err);
       setStatusMessage({
         type: "error",
-        text: `Error al confirmar la importacion: ${errorMessage}`,
+        text: `Error al confirmar la importación: ${errorMessage}`,
       });
     } finally {
       setIsImporting(false);
@@ -143,7 +143,7 @@ export default function ImportarAlumnos() {
     setStatusFilter("todos");
     setStatusMessage({
       type: "info",
-      text: "Importacion cancelada. No se aplicaron cambios en la base de datos.",
+      text: "Importación cancelada. No se aplicaron cambios en la base de datos.",
     });
   };
 
@@ -179,7 +179,7 @@ export default function ImportarAlumnos() {
 
         <div className="space-y-2">
           <label className="text-xs uppercase tracking-widest font-bold text-slate-400">
-            Anio
+            Año
           </label>
           <input
             type="number"
@@ -191,7 +191,7 @@ export default function ImportarAlumnos() {
 
         <div className="space-y-2">
           <label className="text-xs uppercase tracking-widest font-bold text-slate-400">
-            Comision
+            Comisión
           </label>
           <select
             className="w-full p-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-slate-900 focus:border-[#5D9AD4] outline-none transition-all appearance-none cursor-pointer"
@@ -199,9 +199,9 @@ export default function ImportarAlumnos() {
             onChange={(e) => setComision(e.target.value)}
           >
             <option value="">Elegir...</option>
-            <option value="A">Comision A</option>
-            <option value="B">Comision B</option>
-            <option value="C">Comision C</option>
+            <option value="A">Comisión A</option>
+            <option value="B">Comisión B</option>
+            <option value="C">Comisión C</option>
           </select>
         </div>
       </section>
@@ -218,26 +218,72 @@ export default function ImportarAlumnos() {
               disabled={isImporting}
               className="w-full p-5 bg-[#5D9AD4] text-white font-black text-xl rounded-3xl shadow-xl shadow-blue-100 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-70"
             >
-              {isImporting ? "ANALIZANDO..." : "CONFIRMAR IMPORTACION"}
+              {isImporting ? "ANALIZANDO..." : "PREVISUALIZAR IMPORTACIÓN"}
             </button>
           )}
 
           {importPlan && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <button
-                onClick={aceptarImportacion}
-                disabled={isImporting}
-                className="w-full p-4 bg-green-600 text-white font-black text-lg rounded-2xl hover:bg-green-700 transition-colors disabled:opacity-70"
-              >
-                {isImporting ? "APLICANDO..." : "ACEPTAR IMPORTACION"}
-              </button>
-              <button
-                onClick={cancelarImportacion}
-                disabled={isImporting}
-                className="w-full p-4 bg-slate-200 text-slate-800 font-black text-lg rounded-2xl hover:bg-slate-300 transition-colors disabled:opacity-70"
-              >
-                CANCELAR IMPORTACION
-              </button>
+            <div className="space-y-4">
+              <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                <p className="text-xs uppercase tracking-widest font-bold text-slate-400">
+                  Previsualización
+                </p>
+                <p className="text-slate-700 mt-2 font-medium">
+                  Esta vista es solo informativa. Nada se guarda hasta que presiones{" "}
+                  <span className="font-bold text-slate-900">Aceptar</span>.
+                </p>
+                <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
+                  <div className="rounded-2xl bg-white p-3 border border-slate-100">
+                    <p className="text-xs uppercase tracking-widest text-slate-400 font-bold">
+                      Nuevos
+                    </p>
+                    <p className="text-2xl font-black text-slate-900">
+                      {importPlan.result.summary.nuevos}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl bg-white p-3 border border-slate-100">
+                    <p className="text-xs uppercase tracking-widest text-slate-400 font-bold">
+                      Actualizados
+                    </p>
+                    <p className="text-2xl font-black text-slate-900">
+                      {importPlan.result.summary.actualizados}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl bg-white p-3 border border-slate-100">
+                    <p className="text-xs uppercase tracking-widest text-slate-400 font-bold">
+                      Duplicados
+                    </p>
+                    <p className="text-2xl font-black text-slate-900">
+                      {importPlan.result.summary.duplicados}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl bg-white p-3 border border-slate-100">
+                    <p className="text-xs uppercase tracking-widest text-slate-400 font-bold">
+                      Inválidos
+                    </p>
+                    <p className="text-2xl font-black text-slate-900">
+                      {importPlan.result.summary.invalidos}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <button
+                  onClick={aceptarImportacion}
+                  disabled={isImporting}
+                  className="w-full p-4 bg-green-600 text-white font-black text-lg rounded-2xl hover:bg-green-700 transition-colors disabled:opacity-70"
+                >
+                  {isImporting ? "APLICANDO..." : "ACEPTAR IMPORTACIÓN"}
+                </button>
+                <button
+                  onClick={cancelarImportacion}
+                  disabled={isImporting}
+                  className="w-full p-4 bg-slate-200 text-slate-800 font-black text-lg rounded-2xl hover:bg-slate-300 transition-colors disabled:opacity-70"
+                >
+                  CANCELAR IMPORTACIÓN
+                </button>
+              </div>
             </div>
           )}
         </div>
