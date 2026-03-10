@@ -41,12 +41,6 @@ type StatusMessage = {
 const EVALUACIONES: EvaluacionNombre[] = ["Parcial1", "Parcial2", "Integrador"];
 const TIPOS: TipoEvaluacion[] = ["Parcial", "Recuperatorio"];
 const COMISIONES = ["A", "B", "C"] as const;
-const MATERIAS_EJEMPLO: Materia[] = [
-  { id: 101, nombre: "Programacion I (Ejemplo)" },
-  { id: 102, nombre: "Sistemas Operativos (Ejemplo)" },
-  { id: 103, nombre: "Base de Datos (Ejemplo)" },
-  { id: 104, nombre: "Matematica Discreta (Ejemplo)" },
-];
 
 export default function CargarNotasPage() {
   const [materias, setMaterias] = useState<Materia[]>([]);
@@ -66,7 +60,7 @@ export default function CargarNotasPage() {
     [materiaId, anio, comision, evaluacionNombre, tipo]
   );
 
-  const materiasMostradas = materias.length > 0 ? materias : MATERIAS_EJEMPLO;
+  const materiasMostradas = materias;
 
   useEffect(() => {
     const loadMaterias = async () => {
@@ -87,7 +81,7 @@ export default function CargarNotasPage() {
       if ((data ?? []).length === 0) {
         setStatusMessage({
           type: "info",
-          text: "No hay materias cargadas en base de datos. Se muestran opciones de ejemplo.",
+          text: "No hay materias cargadas en base de datos.",
         });
       }
     };
