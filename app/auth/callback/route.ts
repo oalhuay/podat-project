@@ -57,35 +57,60 @@ export async function GET(request: Request) {
         },
       });
 
+      const basePayload = {
+        id: session.user.id,
+        rol: rolSeleccionado,
+      };
+
+      const payloadConExtras = {
+        ...basePayload,
+        correo: session.user.email ?? null,
+        last_login_at: new Date().toISOString(),
+      };
+
       let { error: dbError } = await supabaseAuthed
         .from("perfiles")
-        .upsert(
-          {
-            id: session.user.id,
-            rol: rolSeleccionado,
-            correo: session.user.email ?? null,
-          },
-          { onConflict: "id" }
-        );
+        .upsert(payloadConExtras, { onConflict: "id" });
 
-      // If `correo` column does not exist yet, retry saving only mandatory fields.
-      const isMissingCorreoColumn =
-        !!dbError &&
-        (dbError.code === "42703" ||
+      if (dbError) {
+        const msg = dbError.message.toLowerCase();
+        const missingCorreo =
+          dbError.code === "42703" ||
           dbError.code === "PGRST204" ||
-          dbError.message.toLowerCase().includes("correo"));
+          msg.includes("correo");
+        const missingLastLogin =
+          dbError.code === "42703" ||
+          dbError.code === "PGRST204" ||
+          msg.includes("last_login_at");
 
-      if (isMissingCorreoColumn) {
-        const retry = await supabaseAuthed
-          .from("perfiles")
-          .upsert(
-            {
-              id: session.user.id,
-              rol: rolSeleccionado,
-            },
-            { onConflict: "id" }
-          );
-        dbError = retry.error;
+        if (missingCorreo && missingLastLogin) {
+          const retry = await supabaseAuthed
+            .from("perfiles")
+            .upsert(basePayload, { onConflict: "id" });
+          dbError = retry.error;
+        } else if (missingLastLogin) {
+          const retry = await supabaseAuthed
+            .from("perfiles")
+            .upsert(
+              {
+                ...basePayload,
+                correo: session.user.email ?? null,
+              },
+              { onConflict: "id" }
+            );
+          dbError = retry.error;
+        } else if (missingCorreo) {
+          const retry = await supabaseAuthed
+            .from("perfiles")
+            .upsert(
+              {
+                ...basePayload,
+                last_login_at: new Date().toISOString(),
+              },
+              { onConflict: "id" }
+            );
+          dbError = retry.error;
+        }
       }
 
       if (dbError) {
