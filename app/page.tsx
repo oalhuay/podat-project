@@ -19,6 +19,9 @@ export default function Home() {
   );
   const [isLoadingRol, setIsLoadingRol] = useState(false);
   const [view, setView] = useState<"rol" | "accesos">("rol");
+  const [showSplash, setShowSplash] = useState(true);
+  const [splashExiting, setSplashExiting] = useState(false);
+  const [autoViewEnabled, setAutoViewEnabled] = useState(true);
 
   useEffect(() => {
     const loadRol = async () => {
@@ -46,9 +49,38 @@ export default function Home() {
     void loadRol();
   }, []);
 
+  useEffect(() => {
+    if (isLoadingRol) return;
+
+    const start = Date.now();
+    const minDurationMs = 700;
+
+    const startExit = () => {
+      setSplashExiting(true);
+      const exitTimer = setTimeout(() => {
+        setShowSplash(false);
+      }, 600);
+      return exitTimer;
+    };
+
+    const elapsed = Date.now() - start;
+    const remaining = Math.max(minDurationMs - elapsed, 0);
+    const exitTimer = setTimeout(startExit, remaining);
+
+    return () => clearTimeout(exitTimer);
+  }, [isLoadingRol]);
+
+  useEffect(() => {
+    if (!autoViewEnabled) return;
+    if (rolActual && view === "rol") {
+      setView("accesos");
+    }
+  }, [rolActual, view, autoViewEnabled]);
+
   const handleLogin = async (rol: Exclude<Rol, null>) => {
     await signOut();
     setRolActual(null);
+    setAutoViewEnabled(true);
     await signInWithGoogle(rol);
   };
 
@@ -89,7 +121,53 @@ export default function Home() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4 relative overflow-hidden">
+      {showSplash && (
+        <div
+          className={`fixed inset-0 z-50 flex items-center justify-center bg-[radial-gradient(circle_at_top,_#E7F0FB,_#FFFFFF_55%,_#FFF4DB_100%)] transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+            splashExiting ? "opacity-0 scale-95" : "opacity-100 scale-100"
+          }`}
+          aria-hidden="true"
+        >
+          <div className="absolute inset-0">
+            <div className="absolute -top-24 -left-16 h-64 w-64 rounded-full bg-[#5D9AD4]/15 blur-3xl" />
+            <div className="absolute bottom-0 right-0 h-80 w-80 rounded-full bg-[#FBC558]/20 blur-3xl" />
+            <div className="absolute left-1/2 top-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#5D9AD4]/20" />
+          </div>
+
+          <div
+            className={`relative flex w-full max-w-md flex-col items-center gap-6 px-6 text-center transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+              splashExiting ? "opacity-0 -translate-y-3" : "opacity-100 translate-y-0"
+            }`}
+          >
+            <div className="rounded-3xl bg-white/80 px-4 py-2 text-xs font-bold tracking-[0.35em] text-slate-500 shadow-sm">
+              SISTEMA PODAT
+            </div>
+
+            <div className="flex h-28 w-28 items-center justify-center rounded-[2rem] bg-white shadow-xl shadow-slate-200/60">
+              <Image src="/logo-podat.svg" alt="PODAT" width={104} height={104} />
+            </div>
+
+            <div>
+              <div className="text-4xl font-black text-[#5D9AD4] tracking-tight">
+                PODAT
+              </div>
+              <div className="mt-2 text-xs font-extrabold tracking-[0.35em] text-slate-400">
+                DATOS VIVOS, GESTIÓN INTELIGENTE
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 text-sm font-semibold text-slate-600">
+              <span>Preparando panel académico</span>
+              <span className="inline-flex gap-1">
+                <span className="h-2 w-2 rounded-full bg-[#5D9AD4] animate-pulse" />
+                <span className="h-2 w-2 rounded-full bg-[#FBC558] animate-pulse" />
+                <span className="h-2 w-2 rounded-full bg-slate-300 animate-pulse" />
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* Tarjeta Central */}
       <div className="max-w-3xl w-full bg-white rounded-2xl shadow-xl p-8 border border-slate-100">
@@ -100,7 +178,9 @@ export default function Home() {
             <Image src="/logo-podat.svg" alt="PODAT" width={80} height={80} />
           </div>
           <h1 className="text-5xl font-black text-[#5D9AD4] tracking-tight">PODAT</h1>
-          <p className="text-xs font-bold text-slate-400 mt-2 tracking-widest">DATOS CON VISIÓN DE FUTURO</p>
+          <p className="text-xs font-bold text-slate-400 mt-2 tracking-widest">
+            DATOS VIVOS, GESTIÓN INTELIGENTE
+          </p>
         </div>
 
         {/* Título de UX */}
@@ -122,9 +202,6 @@ export default function Home() {
 
         {view === "rol" && (
           <div className="space-y-4 mb-8">
-          <p className="text-sm text-slate-500 text-center">
-            ¿Entrar con otra cuenta o rol? Elegí una opción.
-          </p>
           <button
               onClick={() => void handleLogin("docente")}
               className="w-full flex items-center justify-center gap-3 border-2 border-[#5D9AD4] text-[#5D9AD4] hover:bg-[#5D9AD4] hover:text-white font-bold py-4 px-4 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md"
@@ -171,7 +248,10 @@ export default function Home() {
               </div>
             )}
             <button
-              onClick={() => setView("rol")}
+              onClick={() => {
+                setAutoViewEnabled(false);
+                setView("rol");
+              }}
               className="col-span-full w-full p-3 rounded-2xl border border-slate-200 text-slate-700 font-semibold hover:bg-slate-50 transition-colors"
             >
               Volver a selección de rol

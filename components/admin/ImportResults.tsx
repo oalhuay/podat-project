@@ -75,7 +75,7 @@ export default function ImportResults({
 
       <div className="rounded-3xl border border-slate-200 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm text-slate-900">
             <thead className="bg-slate-50 text-slate-500 uppercase text-xs">
               <tr>
                 <th className="text-left p-3">Legajo</th>
@@ -95,9 +95,9 @@ export default function ImportResults({
               )}
               {rowsFiltradas.map((row, index) => (
                 <tr key={`${row.legajo}-${index}`} className="border-t border-slate-100">
-                  <td className="p-3 font-mono">{row.legajo}</td>
-                  <td className="p-3">{row.apellido}</td>
-                  <td className="p-3">{row.nombre}</td>
+                  <td className="p-3 font-mono text-slate-900">{row.legajo}</td>
+                  <td className="p-3 text-slate-900">{row.apellido}</td>
+                  <td className="p-3 text-slate-900">{row.nombre}</td>
                   <td className="p-3">
                     <span
                       className={`inline-flex px-2.5 py-1 rounded-full text-xs font-bold ${badgeClasses[row.status]}`}
@@ -105,7 +105,7 @@ export default function ImportResults({
                       {row.status.toUpperCase()}
                     </span>
                   </td>
-                  <td className="p-3 text-slate-600">{row.mensaje ?? "-"}</td>
+                  <td className="p-3 text-slate-700">{row.mensaje ?? "-"}</td>
                 </tr>
               ))}
             </tbody>
@@ -115,4 +115,3 @@ export default function ImportResults({
     </section>
   );
 }
-

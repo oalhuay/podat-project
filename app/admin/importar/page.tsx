@@ -1,6 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import {
+  Chart as ChartJS,
+  ArcElement,
+  BarElement,
+  CategoryScale,
+  LinearScale,
+  LineElement,
+  PointElement,
+  Tooltip,
+  Legend,
+} from "chart.js";
+import { Bar, Line, Pie } from "react-chartjs-2";
 import { supabase } from "@/lib/supabase";
 import { parseAlumnosFromFile } from "@/lib/import/alumnos/parseExcel";
 import {
@@ -17,6 +29,17 @@ import {
 import ImportResults from "@/components/admin/ImportResults";
 import FileDropzone from "@/components/admin/FileDropzone";
 import StatusBanner from "@/components/admin/StatusBanner";
+
+ChartJS.register(
+  ArcElement,
+  BarElement,
+  CategoryScale,
+  LinearScale,
+  LineElement,
+  PointElement,
+  Tooltip,
+  Legend
+);
 
 type StatusMessage = {
   type: "success" | "error" | "info";
@@ -37,6 +60,136 @@ export default function ImportarAlumnos() {
   const importDbClient = toImportAlumnosDbClient(supabase);
 
   const puedeSubir = materia && anio && comision && archivo;
+
+  const chartSummary = useMemo(() => {
+    if (!importResult) return null;
+
+    const labels = ["Nuevos", "Actualizados", "Duplicados", "Inválidos"];
+    const values = [
+      importResult.summary.nuevos,
+      importResult.summary.actualizados,
+      importResult.summary.duplicados,
+      importResult.summary.invalidos,
+    ];
+
+    return { labels, values };
+  }, [importResult]);
+
+  const pieData = useMemo(() => {
+    if (!chartSummary) return null;
+    return {
+      labels: chartSummary.labels,
+      datasets: [
+        {
+          data: chartSummary.values,
+          backgroundColor: ["#22c55e", "#3b82f6", "#f59e0b", "#ef4444"],
+          borderColor: "#ffffff",
+          borderWidth: 2,
+        },
+      ],
+    };
+  }, [chartSummary]);
+
+  const barData = useMemo(() => {
+    if (!chartSummary) return null;
+    return {
+      labels: chartSummary.labels,
+      datasets: [
+        {
+          label: "Alumnos",
+          data: chartSummary.values,
+          backgroundColor: ["#22c55e", "#3b82f6", "#f59e0b", "#ef4444"],
+          borderRadius: 12,
+          borderSkipped: false,
+        },
+      ],
+    };
+  }, [chartSummary]);
+
+  const lineData = useMemo(() => {
+    if (!importResult) return null;
+
+    const labels = importResult.rows.map((_, index) => `#${index + 1}`);
+    const cumulative = {
+      nuevo: [] as number[],
+      actualizado: [] as number[],
+      duplicado: [] as number[],
+      invalido: [] as number[],
+    };
+    const running = {
+      nuevo: 0,
+      actualizado: 0,
+      duplicado: 0,
+      invalido: 0,
+    };
+
+    importResult.rows.forEach((row) => {
+      running[row.status] += 1;
+      cumulative.nuevo.push(running.nuevo);
+      cumulative.actualizado.push(running.actualizado);
+      cumulative.duplicado.push(running.duplicado);
+      cumulative.invalido.push(running.invalido);
+    });
+
+    return {
+      labels,
+      datasets: [
+        {
+          label: "Nuevos",
+          data: cumulative.nuevo,
+          borderColor: "#22c55e",
+          backgroundColor: "rgba(34, 197, 94, 0.15)",
+          pointRadius: 3,
+          pointHoverRadius: 5,
+          tension: 0.3,
+        },
+        {
+          label: "Actualizados",
+          data: cumulative.actualizado,
+          borderColor: "#3b82f6",
+          backgroundColor: "rgba(59, 130, 246, 0.15)",
+          pointRadius: 3,
+          pointHoverRadius: 5,
+          tension: 0.3,
+        },
+        {
+          label: "Duplicados",
+          data: cumulative.duplicado,
+          borderColor: "#f59e0b",
+          backgroundColor: "rgba(245, 158, 11, 0.15)",
+          pointRadius: 3,
+          pointHoverRadius: 5,
+          tension: 0.3,
+        },
+        {
+          label: "Inválidos",
+          data: cumulative.invalido,
+          borderColor: "#ef4444",
+          backgroundColor: "rgba(239, 68, 68, 0.15)",
+          pointRadius: 3,
+          pointHoverRadius: 5,
+          tension: 0.3,
+        },
+      ],
+    };
+  }, [importResult]);
+
+  const chartOptions = useMemo(
+    () => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: "bottom" as const,
+          labels: {
+            boxWidth: 12,
+            usePointStyle: true,
+          },
+        },
+      },
+    }),
+    []
+  );
 
   const handleLecturaArchivo = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -287,6 +440,37 @@ export default function ImportarAlumnos() {
             </div>
           )}
         </div>
+      )}
+
+      {importResult && (
+        <section className="mt-10 grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-xs uppercase tracking-widest font-bold text-slate-400 mb-4">
+              Distribución (Pie)
+            </p>
+            <div className="h-64">
+              {pieData && <Pie data={pieData} options={chartOptions} />}
+            </div>
+          </div>
+
+          <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-xs uppercase tracking-widest font-bold text-slate-400 mb-4">
+              Resumen (Barras)
+            </p>
+            <div className="h-64">
+              {barData && <Bar data={barData} options={chartOptions} />}
+            </div>
+          </div>
+
+          <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm lg:col-span-3">
+            <p className="text-xs uppercase tracking-widest font-bold text-slate-400 mb-4">
+              Evolución por fila (Líneas con puntos)
+            </p>
+            <div className="h-72">
+              {lineData && <Line data={lineData} options={chartOptions} />}
+            </div>
+          </div>
+        </section>
       )}
 
       {importResult && (
