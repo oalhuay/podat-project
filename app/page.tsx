@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/app/hooks/useAuth";
@@ -8,7 +8,7 @@ import { supabase } from "@/lib/supabase";
 import type { Rol } from "@/types/database";
 import { useSearchParams } from "next/navigation";
 
-export default function Home() {
+function HomeContent() {
   const { signInWithGoogle, signOut } = useAuth();
   const searchParams = useSearchParams();
   const authStatus = searchParams.get("auth_status");
@@ -70,12 +70,8 @@ export default function Home() {
     return () => clearTimeout(exitTimer);
   }, [isLoadingRol]);
 
-  useEffect(() => {
-    if (!autoViewEnabled) return;
-    if (rolActual && view === "rol") {
-      setView("accesos");
-    }
-  }, [rolActual, view, autoViewEnabled]);
+  const effectiveView =
+    autoViewEnabled && rolActual ? "accesos" : view;
 
   const handleLogin = async (rol: Exclude<Rol, null>) => {
     await signOut();
@@ -85,6 +81,11 @@ export default function Home() {
   };
 
   const cardsDocente = [
+    {
+      title: "Mis Materias",
+      description: "Consulta tus materias asignadas.",
+      href: "/admin/mis-materias",
+    },
     {
       title: "Cargar Notas",
       description: "Registra notas por evaluacion y ausentes.",
@@ -102,6 +103,21 @@ export default function Home() {
       title: "Gestion de Usuarios",
       description: "Administra roles y accesos.",
       href: "/admin/usuarios",
+    },
+    {
+      title: "Materias",
+      description: "Catalogo y asignaciones.",
+      href: "/admin/materias",
+    },
+    {
+      title: "Estadisticas",
+      description: "Importa y visualiza indicadores.",
+      href: "/admin/estadisticas",
+    },
+    {
+      title: "Dashboard Estadistico",
+      description: "Vista completa con todos los graficos.",
+      href: "/admin/estadisticas/dashboard",
     },
     {
       title: "Importar Alumnos",
@@ -141,7 +157,7 @@ export default function Home() {
             }`}
           >
             <div className="rounded-3xl bg-white/80 px-4 py-2 text-xs font-bold tracking-[0.35em] text-slate-500 shadow-sm">
-              SISTEMA PODAT
+              SISTEMA
             </div>
 
             <div className="flex h-28 w-28 items-center justify-center rounded-[2rem] bg-white shadow-xl shadow-slate-200/60">
@@ -185,7 +201,9 @@ export default function Home() {
 
         {/* Título de UX */}
         <h2 className="text-lg font-semibold text-slate-700 text-center mb-6">
-          {view === "accesos" && rolActual ? "Accesos disponibles" : "Seleccioná tu rol para ingresar"}
+          {effectiveView === "accesos" && rolActual
+            ? "Accesos disponibles"
+            : "Seleccione su rol"}
         </h2>
 
         {authStatus === "ok" && (
@@ -200,7 +218,7 @@ export default function Home() {
           </p>
         )}
 
-        {view === "rol" && (
+        {effectiveView === "rol" && (
           <div className="space-y-4 mb-8">
           <button
               onClick={() => void handleLogin("docente")}
@@ -228,7 +246,7 @@ export default function Home() {
         </div>
         )}
 
-        {rolActual && view === "accesos" && (
+        {rolActual && effectiveView === "accesos" && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {(rolActual === "admin" ? cardsAdmin : cardsDocente).map((card) => (
               <Link
@@ -261,5 +279,19 @@ export default function Home() {
 
       </div>
     </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-slate-50 flex items-center justify-center text-slate-500">
+          Cargando...
+        </div>
+      }
+    >
+      <HomeContent />
+    </Suspense>
   );
 }

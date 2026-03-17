@@ -10,10 +10,12 @@ import {
   getHabilitacionRecuperatorio,
   isNotaEnRango,
 } from "@/lib/notas/rules";
+import type { Rol } from "@/types/database";
 
 type Materia = {
   id: number;
   nombre: string;
+  codigo?: string | null;
 };
 
 type NotaRow = {
@@ -64,10 +66,38 @@ export default function CargarNotasPage() {
 
   useEffect(() => {
     const loadMaterias = async () => {
-      const { data, error } = await supabase
-        .from("materias")
-        .select("id, nombre")
-        .order("nombre", { ascending: true });
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData.user?.id ?? null;
+      let rol: Rol | null = null;
+
+      if (userId) {
+        const { data: perfilData } = await supabase
+          .from("perfiles")
+          .select("rol")
+          .eq("id", userId)
+          .maybeSingle();
+        rol = (perfilData?.rol as Rol) ?? null;
+      }
+
+      const query =
+        rol === "admin"
+          ? supabase.from("materias").select("id, nombre, codigo")
+          : userId
+          ? supabase
+              .from("materias_docentes")
+              .select("materias(id, nombre, codigo)")
+              .eq("user_id", userId)
+          : null;
+
+      if (!query) {
+        setStatusMessage({
+          type: "info",
+          text: "No se pudo identificar el usuario actual.",
+        });
+        return;
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         setStatusMessage({
@@ -77,8 +107,15 @@ export default function CargarNotasPage() {
         return;
       }
 
-      setMaterias((data ?? []) as Materia[]);
-      if ((data ?? []).length === 0) {
+      const materiasList =
+        rol === "admin"
+          ? ((data ?? []) as Materia[])
+          : ((data ?? [])
+              .map((row) => row.materias)
+              .filter(Boolean) as Materia[]);
+
+      setMaterias(materiasList);
+      if (materiasList.length === 0) {
         setStatusMessage({
           type: "info",
           text: "No hay materias cargadas en base de datos.",
