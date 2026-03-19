@@ -209,7 +209,7 @@ export default function ImportarAlumnos() {
           text: `Archivo listo. Filas detectadas: ${data.length}.`,
         });
       }
-      console.log("Datos leidos:", data);
+      console.log("Datos leídos:", data);
       setDatosPrevia(data);
       setImportResult(null);
       setImportPlan(null);
@@ -231,7 +231,7 @@ export default function ImportarAlumnos() {
     if (datosPrevia.length === 0) {
       setStatusMessage({
         type: "error",
-        text: "Primero carga un archivo valido con filas detectadas.",
+        text: "Primero carga un archivo válido con filas detectadas.",
       });
       return;
     }
@@ -280,7 +280,7 @@ export default function ImportarAlumnos() {
         typeof err === "object" && err !== null && "message" in err
           ? String((err as { message: unknown }).message)
           : fallbackMessage;
-      console.error("Error confirmando importacion:", err);
+      console.error("Error confirmando importación:", err);
       setStatusMessage({
         type: "error",
         text: `Error al confirmar la importación: ${errorMessage}`,
@@ -322,10 +322,10 @@ export default function ImportarAlumnos() {
             onChange={(e) => setMateria(e.target.value)}
           >
             <option value="">Elegir Materia...</option>
-            <option value="1">Programacion I</option>
+            <option value="1">Programación I</option>
             <option value="2">Sistemas Operativos</option>
             <option value="3">Base de Datos</option>
-            <option value="4">Matematica Discreta</option>
+            <option value="4">Matemática Discreta</option>
             <option value="5">Arquitectura de Computadoras</option>
           </select>
         </div>

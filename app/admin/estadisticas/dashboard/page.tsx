@@ -349,7 +349,7 @@ export default function EstadisticasDashboardPage() {
       <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
           <p className="text-xs uppercase tracking-widest font-bold text-slate-400 mb-2">
-            Alumnos Inscriptos (Línea)
+            Alumnos Inscriptos (línea)
           </p>
           <div className="h-56">
             {isLoadingStats ? (
@@ -389,7 +389,7 @@ export default function EstadisticasDashboardPage() {
 
         <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
           <p className="text-xs uppercase tracking-widest font-bold text-slate-400 mb-2">
-            Alumnos Inscriptos (Área)
+            Alumnos Inscriptos (área)
           </p>
           <div className="h-56">
             {isLoadingStats ? (

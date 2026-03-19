@@ -443,7 +443,7 @@ export default function CargarNotasPage() {
       <header className="mb-10">
         <h1 className="text-4xl font-black text-slate-900 tracking-tight">Carga de Notas</h1>
         <p className="text-slate-500 mt-2 font-medium">
-          Selecciona evaluacion y registra una nota (1 a 10) o ausente por alumno.
+          Selecciona evaluación y registra una nota (1 a 10) o ausente por alumno.
         </p>
       </header>
 
@@ -472,7 +472,7 @@ export default function CargarNotasPage() {
 
             <div className="space-y-2">
               <label className="text-xs uppercase tracking-widest font-bold text-slate-400">
-                Anio
+                Año
               </label>
               <input
                 type="number"
@@ -484,7 +484,7 @@ export default function CargarNotasPage() {
 
             <div className="space-y-2">
               <label className="text-xs uppercase tracking-widest font-bold text-slate-400">
-                Comision
+                Comisión
               </label>
               <select
                 className="w-full p-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-slate-900 focus:border-[#5D9AD4] outline-none transition-all"
@@ -494,7 +494,7 @@ export default function CargarNotasPage() {
                 <option value="">Elegir...</option>
                 {COMISIONES.map((c) => (
                   <option key={c} value={c}>
-                    Comision {c}
+                    Comisión {c}
                   </option>
                 ))}
               </select>
@@ -502,7 +502,7 @@ export default function CargarNotasPage() {
 
             <div className="space-y-2">
               <label className="text-xs uppercase tracking-widest font-bold text-slate-400">
-                Nombre de la evaluacion
+                Nombre de la evaluación
               </label>
               <select
                 className="w-full p-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-slate-900 focus:border-[#5D9AD4] outline-none transition-all"

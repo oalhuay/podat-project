@@ -45,7 +45,7 @@ export default function ImportResults({
           <p className="text-2xl font-black text-yellow-800">{result.summary.duplicados}</p>
         </div>
         <div className="rounded-2xl p-4 bg-red-50">
-          <p className="text-xs uppercase text-red-700 font-bold">Invalidos</p>
+          <p className="text-xs uppercase text-red-700 font-bold">Inválidos</p>
           <p className="text-2xl font-black text-red-800">{result.summary.invalidos}</p>
         </div>
       </div>
@@ -56,7 +56,7 @@ export default function ImportResults({
           { value: "nuevo", label: "Nuevos" },
           { value: "actualizado", label: "Actualizados" },
           { value: "duplicado", label: "Duplicados" },
-          { value: "invalido", label: "Invalidos" },
+          { value: "invalido", label: "Inválidos" },
         ].map((option) => (
           <button
             key={option.value}

@@ -404,7 +404,7 @@ export default function CargarAsistenciaPage() {
           Carga de Asistencia
         </h1>
         <p className="text-slate-500 mt-2 font-medium">
-          Selecciona materia y comision, luego marca Presente/Ausente/Justificado.
+          Selecciona materia y comisión, luego marca Presente/Ausente/Justificado.
         </p>
       </header>
 
@@ -433,7 +433,7 @@ export default function CargarAsistenciaPage() {
 
             <div className="space-y-2">
               <label className="text-xs uppercase tracking-widest font-bold text-slate-400">
-                Anio
+                Año
               </label>
               <input
                 type="number"
@@ -445,7 +445,7 @@ export default function CargarAsistenciaPage() {
 
             <div className="space-y-2">
               <label className="text-xs uppercase tracking-widest font-bold text-slate-400">
-                Comision
+                Comisión
               </label>
               <select
                 className="w-full p-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-slate-900 focus:border-[#5D9AD4] outline-none transition-all"
@@ -455,7 +455,7 @@ export default function CargarAsistenciaPage() {
                 <option value="">Elegir...</option>
                 {COMISIONES.map((c) => (
                   <option key={c} value={c}>
-                    Comision {c}
+                    Comisión {c}
                   </option>
                 ))}
               </select>
@@ -482,7 +482,7 @@ export default function CargarAsistenciaPage() {
                 className="w-full p-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-slate-900 focus:border-[#5D9AD4] outline-none transition-all"
                 value={tema}
                 onChange={(e) => setTema(e.target.value)}
-                placeholder="Unidad, tema o practica"
+                placeholder="Unidad, tema o práctica"
               />
             </div>
           </div>
@@ -522,7 +522,7 @@ export default function CargarAsistenciaPage() {
                     <th className="text-left p-3">Apellido</th>
                     <th className="text-left p-3">Nombre</th>
                     <th className="text-left p-3">Estado</th>
-                    <th className="text-left p-3">Condicion</th>
+                    <th className="text-left p-3">Condición</th>
                   </tr>
                 </thead>
                 <tbody className="text-slate-800">

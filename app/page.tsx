@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/app/hooks/useAuth";
@@ -9,11 +9,12 @@ import type { Rol } from "@/types/database";
 import { useSearchParams } from "next/navigation";
 
 function HomeContent() {
-  const { signInWithGoogle, signOut } = useAuth();
+  const { user, signInWithGoogle, signOut } = useAuth();
   const searchParams = useSearchParams();
   const authStatus = searchParams.get("auth_status");
   const authError = searchParams.get("auth_error");
   const rolParam = searchParams.get("rol");
+  const avatarMenuRef = useRef<HTMLDivElement | null>(null);
   const [rolActual, setRolActual] = useState<Rol>(
     rolParam === "admin" || rolParam === "docente" ? rolParam : null
   );
@@ -22,6 +23,27 @@ function HomeContent() {
   const [showSplash, setShowSplash] = useState(true);
   const [splashExiting, setSplashExiting] = useState(false);
   const [autoViewEnabled, setAutoViewEnabled] = useState(true);
+  const [isAvatarMenuOpen, setIsAvatarMenuOpen] = useState(false);
+
+  const profileName = useMemo(() => {
+    const metadata = user?.user_metadata;
+    return (
+      metadata?.full_name ??
+      metadata?.name ??
+      user?.email?.split("@")[0] ??
+      "Usuario"
+    );
+  }, [user]);
+
+  const profileEmail = user?.email ?? "Sin correo";
+  const profileAvatar =
+    user?.user_metadata?.avatar_url ?? user?.user_metadata?.picture ?? null;
+  const profileInitials = profileName
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((word) => word[0]?.toUpperCase() ?? "")
+    .join("");
 
   useEffect(() => {
     const loadRol = async () => {
@@ -70,6 +92,30 @@ function HomeContent() {
     return () => clearTimeout(exitTimer);
   }, [isLoadingRol]);
 
+  useEffect(() => {
+    if (!isAvatarMenuOpen) return;
+
+    const handlePointerDown = (event: MouseEvent) => {
+      if (!avatarMenuRef.current?.contains(event.target as Node)) {
+        setIsAvatarMenuOpen(false);
+      }
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsAvatarMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [isAvatarMenuOpen]);
+
   const effectiveView =
     autoViewEnabled && rolActual ? "accesos" : view;
 
@@ -80,6 +126,14 @@ function HomeContent() {
     await signInWithGoogle(rol);
   };
 
+  const handleSignOut = async () => {
+    setIsAvatarMenuOpen(false);
+    setRolActual(null);
+    setAutoViewEnabled(true);
+    setView("rol");
+    await signOut();
+  };
+
   const cardsDocente = [
     {
       title: "Mis Materias",
@@ -88,7 +142,7 @@ function HomeContent() {
     },
     {
       title: "Cargar Notas",
-      description: "Registra notas por evaluacion y ausentes.",
+      description: "Registra notas por evaluación y ausentes.",
       href: "/admin/notas",
     },
     {
@@ -100,23 +154,23 @@ function HomeContent() {
 
   const cardsAdmin = [
     {
-      title: "Gestion de Usuarios",
+      title: "Gestión de Usuarios",
       description: "Administra roles y accesos.",
       href: "/admin/usuarios",
     },
     {
       title: "Materias",
-      description: "Catalogo y asignaciones.",
+      description: "Catálogo y asignaciones.",
       href: "/admin/materias",
     },
     {
-      title: "Estadisticas",
+      title: "Estadísticas",
       description: "Importa y visualiza indicadores.",
       href: "/admin/estadisticas",
     },
     {
-      title: "Dashboard Estadistico",
-      description: "Vista completa con todos los graficos.",
+      title: "Dashboard Estadístico",
+      description: "Vista completa con todos los gráficos.",
       href: "/admin/estadisticas/dashboard",
     },
     {
@@ -126,7 +180,7 @@ function HomeContent() {
     },
     {
       title: "Cargar Notas",
-      description: "Registra notas por evaluacion y ausentes.",
+      description: "Registra notas por evaluación y ausentes.",
       href: "/admin/notas",
     },
     {
@@ -186,7 +240,89 @@ function HomeContent() {
       )}
       
       {/* Tarjeta Central */}
-      <div className="max-w-3xl w-full bg-white rounded-2xl shadow-xl p-8 border border-slate-100">
+      <div className="max-w-3xl w-full bg-white rounded-2xl shadow-xl p-8 border border-slate-100 relative">
+        {user && (
+          <div ref={avatarMenuRef} className="absolute right-4 top-4 z-20">
+            <button
+              type="button"
+              onClick={() => setIsAvatarMenuOpen((prev) => !prev)}
+              className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white/90 px-3 py-2 shadow-sm transition-all hover:border-slate-300 hover:shadow-md"
+              aria-haspopup="menu"
+              aria-expanded={isAvatarMenuOpen}
+              aria-label="Abrir menú de perfil"
+            >
+              {profileAvatar ? (
+                <img
+                  src={profileAvatar}
+                  alt={profileName}
+                  className="h-10 w-10 rounded-full border border-slate-200 object-cover"
+                />
+              ) : (
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#5D9AD4] text-sm font-black text-white">
+                  {profileInitials || "U"}
+                </div>
+              )}
+              <div className="hidden text-left sm:block">
+                <div className="max-w-32 truncate text-sm font-bold text-slate-900">
+                  {profileName}
+                </div>
+                <div className="text-xs font-medium uppercase tracking-wider text-slate-400">
+                  {rolActual ?? "sin rol"}
+                </div>
+              </div>
+            </button>
+
+            {isAvatarMenuOpen && (
+              <div
+                role="menu"
+                className="absolute right-0 mt-3 w-72 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl shadow-slate-200/60"
+              >
+                <div className="bg-[linear-gradient(135deg,_rgba(93,154,212,0.14),_rgba(251,197,88,0.18))] p-4">
+                  <div className="flex items-center gap-3">
+                    {profileAvatar ? (
+                      <img
+                        src={profileAvatar}
+                        alt={profileName}
+                        className="h-12 w-12 rounded-full border border-white/80 object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#5D9AD4] text-base font-black text-white">
+                        {profileInitials || "U"}
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-black text-slate-900">
+                        {profileName}
+                      </div>
+                      <div className="truncate text-xs text-slate-600">
+                        {profileEmail}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-3 p-4">
+                  <div className="rounded-2xl border border-slate-100 bg-slate-50 px-3 py-2">
+                    <div className="text-[11px] font-bold uppercase tracking-[0.24em] text-slate-400">
+                      Rol activo
+                    </div>
+                    <div className="mt-1 text-sm font-semibold capitalize text-slate-800">
+                      {rolActual ?? "Pendiente"}
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => void handleSignOut()}
+                    className="w-full rounded-2xl bg-slate-900 px-4 py-3 text-sm font-black text-white transition-colors hover:bg-slate-800"
+                  >
+                    Cerrar sesión
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
         
         {/* Logo y Lema */}
         <div className="text-center mb-8">

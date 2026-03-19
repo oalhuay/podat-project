@@ -197,7 +197,7 @@ export default function MateriasAdminPage() {
     <div className="p-8 max-w-6xl mx-auto min-h-screen bg-white space-y-10">
       <header>
         <h1 className="text-4xl font-black text-slate-900 tracking-tight">
-          Materias & Asignaciones
+          Materias y Asignaciones
         </h1>
         <p className="text-slate-500 mt-2 font-medium">
           Administra el catálogo de materias y vincula docentes.
