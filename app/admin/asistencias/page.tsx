@@ -16,6 +16,10 @@ type Materia = {
   codigo?: string | null;
 };
 
+type MateriaDocenteRow = {
+  materias: Materia | Materia[] | null;
+};
+
 type AlumnoFila = {
   alumnoId: number;
   legajo: string;
@@ -34,6 +38,7 @@ const COMISIONES = ["A", "B", "C"] as const;
 const UMBRAL_PORCENTAJE = 75;
 const MIN_CLASES_PARA_LIBRE = 3;
 const JUSTIFICADO_CUENTA_COMO_PRESENTE = true;
+const CURRENT_YEAR = new Date().getFullYear();
 
 const getToday = (): string => {
   const now = new Date();
@@ -44,11 +49,12 @@ const getToday = (): string => {
 };
 
 export default function CargarAsistenciaPage() {
+  const today = getToday();
   const [materias, setMaterias] = useState<Materia[]>([]);
   const [materiaId, setMateriaId] = useState("");
-  const [anio, setAnio] = useState("2026");
+  const [anio, setAnio] = useState(String(CURRENT_YEAR));
   const [comision, setComision] = useState("");
-  const [fecha, setFecha] = useState(getToday());
+  const [fecha, setFecha] = useState(today);
   const [tema, setTema] = useState("");
   const [comisionId, setComisionId] = useState<number | null>(null);
   const [claseId, setClaseId] = useState<string | null>(null);
@@ -112,9 +118,9 @@ export default function CargarAsistenciaPage() {
       const materiasList =
         rol === "admin"
           ? ((data ?? []) as Materia[])
-          : ((data ?? [])
-              .map((row) => row.materias)
-              .filter(Boolean) as Materia[]);
+          : ((data ?? []) as MateriaDocenteRow[]).flatMap(({ materias }) =>
+              Array.isArray(materias) ? materias : materias ? [materias] : []
+            );
 
       setMaterias(materiasList);
       if (materiasList.length === 0) {
@@ -437,6 +443,8 @@ export default function CargarAsistenciaPage() {
               </label>
               <input
                 type="number"
+                min={1900}
+                max={CURRENT_YEAR}
                 className="w-full p-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-slate-900 focus:border-[#5D9AD4] outline-none transition-all"
                 value={anio}
                 onChange={(e) => setAnio(e.target.value)}
@@ -467,6 +475,7 @@ export default function CargarAsistenciaPage() {
               </label>
               <input
                 type="date"
+                max={today}
                 className="w-full p-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-slate-900 focus:border-[#5D9AD4] outline-none transition-all"
                 value={fecha}
                 onChange={(e) => setFecha(e.target.value)}

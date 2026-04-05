@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -36,6 +36,10 @@ type Materia = {
   codigo?: string | null;
 };
 
+type MateriaDocenteRow = {
+  materias: Materia | Materia[] | null;
+};
+
 type StatusMessage = {
   type: "success" | "error" | "info";
   text: string;
@@ -53,6 +57,8 @@ type StatRow = {
   indicador: IndicatorCode;
   valor: number;
 };
+
+const CURRENT_YEAR = new Date().getFullYear();
 
 const normalizeText = (value: string): string =>
   value
@@ -168,7 +174,7 @@ export default function EstadisticasPage() {
   const [selectedMateriaId, setSelectedMateriaId] = useState<number | "">("");
   const [selectedIndicator, setSelectedIndicator] = useState<IndicatorCode>("VAR_INS");
   const [yearFrom, setYearFrom] = useState("2010");
-  const [yearTo, setYearTo] = useState("2020");
+  const [yearTo, setYearTo] = useState(String(CURRENT_YEAR));
   const [statsRows, setStatsRows] = useState<StatRow[]>([]);
   const [isLoadingStats, setIsLoadingStats] = useState(false);
 
@@ -220,9 +226,9 @@ export default function EstadisticasPage() {
       const materiasList =
         rol === "admin"
           ? ((data ?? []) as Materia[])
-          : ((data ?? [])
-              .map((row) => row.materias)
-              .filter(Boolean) as Materia[]);
+          : ((data ?? []) as MateriaDocenteRow[]).flatMap(({ materias }) =>
+              Array.isArray(materias) ? materias : materias ? [materias] : []
+            );
       setMaterias(materiasList);
       if (materiasList.length === 0) {
         setStatusMessage({
@@ -389,7 +395,7 @@ export default function EstadisticasPage() {
       setSummary(null);
       setStatusMessage({
         type: "error",
-        text: "No se pudo leer el archivo. Verifica que sea un Excel válido.",
+        text: "No se pudo leer el archivo. Verifica que sea un Excel .xlsx válido.",
       });
     } finally {
       setIsImporting(false);
@@ -511,7 +517,7 @@ export default function EstadisticasPage() {
     }
   };
 
-  const cargarEstadisticas = async () => {
+  const cargarEstadisticas = useCallback(async () => {
     if (!selectedMateriaId) return;
     setIsLoadingStats(true);
 
@@ -547,12 +553,12 @@ export default function EstadisticasPage() {
     } finally {
       setIsLoadingStats(false);
     }
-  };
+  }, [selectedMateriaId, yearFrom, yearTo]);
 
   useEffect(() => {
     if (!selectedMateriaId) return;
     void cargarEstadisticas();
-  }, [selectedMateriaId, yearFrom, yearTo]);
+  }, [selectedMateriaId, cargarEstadisticas]);
 
   const series = useMemo(
     () => buildSeries(statsRows, selectedIndicator),
@@ -617,7 +623,7 @@ export default function EstadisticasPage() {
         <div className="rounded-3xl border-2 border-dashed border-slate-200 p-10 bg-slate-50 text-center">
           <input
             type="file"
-            accept=".xlsx,.xls"
+            accept=".xlsx"
             onChange={handleFileChange}
             className="block w-full text-sm text-slate-500"
           />
@@ -868,6 +874,8 @@ export default function EstadisticasPage() {
             </label>
             <input
               type="number"
+              min={1900}
+              max={CURRENT_YEAR}
               className="w-full p-3 rounded-2xl border-2 border-slate-100 bg-slate-50 text-slate-900 focus:border-[#5D9AD4] outline-none"
               value={yearFrom}
               onChange={(e) => setYearFrom(e.target.value)}
@@ -880,6 +888,8 @@ export default function EstadisticasPage() {
             </label>
             <input
               type="number"
+              min={1900}
+              max={CURRENT_YEAR}
               className="w-full p-3 rounded-2xl border-2 border-slate-100 bg-slate-50 text-slate-900 focus:border-[#5D9AD4] outline-none"
               value={yearTo}
               onChange={(e) => setYearTo(e.target.value)}

@@ -1,23 +1,19 @@
+"use client";
+
 import type { ReactNode } from "react";
-import UserAvatarMenu from "@/components/UserAvatarMenu";
+import AdminSidebar from "@/components/admin/AdminSidebar";
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="sticky top-0 z-40 border-b border-slate-200 bg-white/80 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
-          <div>
-            <div className="text-xs font-black uppercase tracking-[0.35em] text-slate-400">
-              Panel
-            </div>
-            <div className="text-lg font-black text-slate-900">PODAT Admin</div>
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(93,154,212,0.12),_transparent_30%),linear-gradient(180deg,_#f8fafc_0%,_#eef4ff_100%)]">
+      <div className="mx-auto flex max-w-[1600px] flex-col gap-6 px-4 py-4 sm:px-6 lg:flex-row lg:px-8 lg:py-6">
+        <AdminSidebar />
+        <div className="min-w-0 flex-1">
+          <div className="rounded-[2rem] border border-white/70 bg-white/90 p-6 shadow-xl shadow-slate-200/40 backdrop-blur sm:p-8">
+            {children}
           </div>
-
-          <UserAvatarMenu />
         </div>
       </div>
-
-      <div>{children}</div>
     </div>
   );
 }

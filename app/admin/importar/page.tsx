@@ -46,9 +46,11 @@ type StatusMessage = {
   text: string;
 };
 
+const CURRENT_YEAR = new Date().getFullYear();
+
 export default function ImportarAlumnos() {
   const [materia, setMateria] = useState("");
-  const [anio, setAnio] = useState("2026");
+  const [anio, setAnio] = useState(String(CURRENT_YEAR));
   const [comision, setComision] = useState("");
   const [archivo, setArchivo] = useState<File | null>(null);
   const [datosPrevia, setDatosPrevia] = useState<ParsedAlumnoRow[]>([]);
@@ -222,7 +224,7 @@ export default function ImportarAlumnos() {
       setStatusFilter("todos");
       setStatusMessage({
         type: "error",
-        text: "No se pudo leer el archivo. Verifica que sea un Excel válido.",
+        text: "No se pudo leer el archivo. Verifica que sea un Excel .xlsx válido.",
       });
     }
   };
@@ -336,6 +338,8 @@ export default function ImportarAlumnos() {
           </label>
           <input
             type="number"
+            min={1900}
+            max={CURRENT_YEAR}
             className="w-full p-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-slate-900 focus:border-[#5D9AD4] outline-none transition-all"
             value={anio}
             onChange={(e) => setAnio(e.target.value)}

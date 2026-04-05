@@ -18,16 +18,17 @@ export default function UserAvatarMenu({ compact = false }: UserAvatarMenuProps)
   const [rolActual, setRolActual] = useState<Rol>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  const profileName = useMemo(() => {
+  const profileName = useMemo<string>(() => {
     const metadata = user?.user_metadata;
     return metadata?.full_name ?? metadata?.name ?? user?.email?.split("@")[0] ?? "Usuario";
   }, [user]);
 
-  const profileEmail = user?.email ?? "Sin correo";
-  const profileAvatar = user?.user_metadata?.avatar_url ?? user?.user_metadata?.picture ?? null;
+  const profileEmail: string = user?.email ?? "Sin correo";
+  const profileAvatar: string | null =
+    user?.user_metadata?.avatar_url ?? user?.user_metadata?.picture ?? null;
   const profileInitials = profileName
     .split(" ")
-    .filter(Boolean)
+    .filter((word): word is string => Boolean(word))
     .slice(0, 2)
     .map((word) => word[0]?.toUpperCase() ?? "")
     .join("");
@@ -98,6 +99,8 @@ export default function UserAvatarMenu({ compact = false }: UserAvatarMenuProps)
         aria-label="Abrir menú de perfil"
       >
         {profileAvatar ? (
+          // Google avatars are remote and not configured in next/image.
+          // eslint-disable-next-line @next/next/no-img-element
           <img
             src={profileAvatar}
             alt={profileName}
@@ -127,6 +130,8 @@ export default function UserAvatarMenu({ compact = false }: UserAvatarMenuProps)
           <div className="bg-[linear-gradient(135deg,_rgba(93,154,212,0.14),_rgba(251,197,88,0.18))] p-4">
             <div className="flex items-center gap-3">
               {profileAvatar ? (
+                // Google avatars are remote and not configured in next/image.
+                // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={profileAvatar}
                   alt={profileName}

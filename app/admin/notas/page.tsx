@@ -18,6 +18,10 @@ type Materia = {
   codigo?: string | null;
 };
 
+type MateriaDocenteRow = {
+  materias: Materia | Materia[] | null;
+};
+
 type NotaRow = {
   alumno_id: number;
   nota: number | null;
@@ -43,11 +47,12 @@ type StatusMessage = {
 const EVALUACIONES: EvaluacionNombre[] = ["Parcial1", "Parcial2", "Integrador"];
 const TIPOS: TipoEvaluacion[] = ["Parcial", "Recuperatorio"];
 const COMISIONES = ["A", "B", "C"] as const;
+const CURRENT_YEAR = new Date().getFullYear();
 
 export default function CargarNotasPage() {
   const [materias, setMaterias] = useState<Materia[]>([]);
   const [materiaId, setMateriaId] = useState("");
-  const [anio, setAnio] = useState("2026");
+  const [anio, setAnio] = useState(String(CURRENT_YEAR));
   const [comision, setComision] = useState("");
   const [evaluacionNombre, setEvaluacionNombre] = useState<EvaluacionNombre | "">("");
   const [tipo, setTipo] = useState<TipoEvaluacion>("Parcial");
@@ -110,9 +115,9 @@ export default function CargarNotasPage() {
       const materiasList =
         rol === "admin"
           ? ((data ?? []) as Materia[])
-          : ((data ?? [])
-              .map((row) => row.materias)
-              .filter(Boolean) as Materia[]);
+          : ((data ?? []) as MateriaDocenteRow[]).flatMap(({ materias }) =>
+              Array.isArray(materias) ? materias : materias ? [materias] : []
+            );
 
       setMaterias(materiasList);
       if (materiasList.length === 0) {
@@ -476,6 +481,8 @@ export default function CargarNotasPage() {
               </label>
               <input
                 type="number"
+                min={1900}
+                max={CURRENT_YEAR}
                 className="w-full p-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-slate-900 focus:border-[#5D9AD4] outline-none transition-all"
                 value={anio}
                 onChange={(e) => setAnio(e.target.value)}

@@ -19,7 +19,7 @@ export default function FileDropzone({
     >
       <input
         type="file"
-        accept=".xlsx, .xls"
+        accept=".xlsx"
         className="absolute inset-0 opacity-0 cursor-pointer"
         onChange={onFileChange}
       />
@@ -27,7 +27,7 @@ export default function FileDropzone({
       <div className="text-center">
         <span className="text-6xl mb-6 block">{archivo ? "OK" : "FILE"}</span>
         <p className="text-xl font-bold text-slate-700">
-          {archivo ? archivo.name : "Arrastra el Excel aqui"}
+          {archivo ? archivo.name : "Arrastra el Excel .xlsx aqui"}
         </p>
         <p className="text-slate-400 text-sm mt-2">
           Campos requeridos: Legajo, Apellido, Nombre, Email, Genero.
@@ -36,4 +36,3 @@ export default function FileDropzone({
     </div>
   );
 }
-

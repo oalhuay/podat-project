@@ -1,4 +1,4 @@
-import * as XLSX from "xlsx";
+import { readWorkbookMatrix } from "@/lib/import/excel/readWorkbookMatrix";
 
 export type ParsedEstadisticaRow = {
   materia: string;
@@ -32,35 +32,22 @@ const pickText = (value: unknown) => {
   return "";
 };
 
-const detectHeaderRow = (rows: unknown[][]) => {
-  const normalizedAliases = {
-    materia: new Set(HEADER_ALIASES.materia.map(normalizeHeader)),
-    indicador: new Set(HEADER_ALIASES.indicador.map(normalizeHeader)),
-  };
-
-  for (let rowIndex = 0; rowIndex < Math.min(rows.length, 40); rowIndex++) {
-    const row = rows[rowIndex] ?? [];
-    let materiaCol = -1;
-    let indicadorCol = -1;
-
-    for (let i = 0; i < row.length; i++) {
-      const cell = pickText(row[i]);
-      if (!cell) continue;
-      const normalized = normalizeHeader(cell);
-      if (materiaCol === -1 && normalizedAliases.materia.has(normalized)) {
-        materiaCol = i;
-      }
-      if (indicadorCol === -1 && normalizedAliases.indicador.has(normalized)) {
-        indicadorCol = i;
-      }
-    }
-
-    if (materiaCol !== -1 && indicadorCol !== -1) {
-      return { rowIndex, materiaCol, indicadorCol };
-    }
+const pickNumber = (value: unknown): number | null => {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string") {
+    const normalized = value.trim().replace(",", ".");
+    if (normalized === "") return null;
+    const parsed = Number(normalized);
+    return Number.isFinite(parsed) ? parsed : null;
   }
-
   return null;
+};
+
+const pickYear = (value: unknown): number | null => {
+  const year = pickNumber(value);
+  if (year === null) return null;
+  const truncated = Math.trunc(year);
+  return truncated >= 1900 && truncated <= 3000 ? truncated : null;
 };
 
 const detectAllHeaderRows = (rows: unknown[][]) => {
@@ -95,21 +82,6 @@ const detectAllHeaderRows = (rows: unknown[][]) => {
   return headers;
 };
 
-const readAsBinaryString = (file: File): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (evt) => {
-      const result = evt.target?.result;
-      if (!result || typeof result !== "string") {
-        reject(new Error("No se pudo leer el archivo."));
-        return;
-      }
-      resolve(result);
-    };
-    reader.onerror = () => reject(new Error("Error al leer el archivo."));
-    reader.readAsBinaryString(file);
-  });
-
 export const parseEstadisticasFromMatrix = (
   matrix: unknown[][]
 ): ParsedEstadisticaRow[] => {
@@ -124,10 +96,8 @@ export const parseEstadisticasFromMatrix = (
 
     const yearCols: Array<{ col: number; year: number }> = [];
     for (let i = indicadorCol + 1; i < headerRow.length; i++) {
-      const raw = headerRow[i];
-      if (typeof raw === "number" && raw >= 1900 && raw <= 3000) {
-        yearCols.push({ col: i, year: Math.trunc(raw) });
-      }
+      const year = pickYear(headerRow[i]);
+      if (year !== null) yearCols.push({ col: i, year });
     }
 
     if (yearCols.length === 0) continue;
@@ -144,8 +114,8 @@ export const parseEstadisticasFromMatrix = (
       if (!currentMateria || !indicadorCell) continue;
 
       for (const { col, year } of yearCols) {
-        const value = row[col];
-        if (typeof value !== "number") continue;
+        const value = pickNumber(row[col]);
+        if (value === null) continue;
         rows.push({
           materia: currentMateria,
           indicador: indicadorCell,
@@ -162,18 +132,8 @@ export const parseEstadisticasFromMatrix = (
 export const parseEstadisticasFromFile = async (
   file: File
 ): Promise<ParsedEstadisticaRow[]> => {
-  const binary = await readAsBinaryString(file);
-  const wb = XLSX.read(binary, { type: "binary" });
-  const preferred = wb.SheetNames.find((name) =>
-    name.toLowerCase().includes("estadistica")
-  );
-  const sheetName = preferred ?? wb.SheetNames[0];
-  const ws = wb.Sheets[sheetName];
-  const matrix = XLSX.utils.sheet_to_json<unknown[]>(ws, {
-    header: 1,
-    raw: true,
-    defval: "",
+  const matrix = await readWorkbookMatrix(file, {
+    preferredSheetNameIncludes: "estadistica",
   });
-
   return parseEstadisticasFromMatrix(matrix);
 };

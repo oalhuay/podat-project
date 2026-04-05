@@ -15,7 +15,7 @@ type MateriaDocente = {
   id: number;
   materia_id: number;
   comision: string | null;
-  materias?: Materia | null;
+  materias?: Materia | Materia[] | null;
 };
 
 type StatusMessage = {
@@ -64,11 +64,9 @@ export default function MisMateriasPage() {
           if (error) throw error;
           const asigns = (data ?? []) as MateriaDocente[];
           setAsignaciones(asigns);
-          setMaterias(
-            asigns
-              .map((row) => row.materias)
-              .filter(Boolean) as Materia[]
-          );
+          setMaterias(asigns.flatMap(({ materias }) =>
+            Array.isArray(materias) ? materias : materias ? [materias] : []
+          ));
         }
       } catch (error: unknown) {
         const message =

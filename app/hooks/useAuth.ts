@@ -36,10 +36,6 @@ export const useAuth = () => {
       provider: "google",
       options: {
         redirectTo: `${window.location.origin}/auth/callback?rol=${rol}`,
-        queryParams: {
-          access_type: "offline",
-          prompt: "select_account",
-        },
       },
     });
   };

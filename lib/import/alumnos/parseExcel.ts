@@ -1,5 +1,5 @@
-import * as XLSX from "xlsx";
 import { ParsedAlumnoRow } from "./types";
+import { readWorkbookMatrix } from "@/lib/import/excel/readWorkbookMatrix";
 
 const normalizeHeader = (value: string) =>
   value
@@ -60,21 +60,6 @@ const detectHeaderRow = (rows: unknown[][]) => {
   return null;
 };
 
-const readAsBinaryString = (file: File): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (evt) => {
-      const result = evt.target?.result;
-      if (!result || typeof result !== "string") {
-        reject(new Error("No se pudo leer el archivo."));
-        return;
-      }
-      resolve(result);
-    };
-    reader.onerror = () => reject(new Error("Error al leer el archivo."));
-    reader.readAsBinaryString(file);
-  });
-
 export const parseAlumnosFromMatrix = (
   matrix: unknown[][]
 ): ParsedAlumnoRow[] => {
@@ -97,15 +82,6 @@ export const parseAlumnosFromMatrix = (
 export const parseAlumnosFromFile = async (
   file: File
 ): Promise<ParsedAlumnoRow[]> => {
-  const binary = await readAsBinaryString(file);
-  const wb = XLSX.read(binary, { type: "binary" });
-  const wsname = wb.SheetNames[0];
-  const ws = wb.Sheets[wsname];
-  const matrix = XLSX.utils.sheet_to_json<unknown[]>(ws, {
-    header: 1,
-    raw: false,
-    defval: "",
-  });
-
+  const matrix = await readWorkbookMatrix(file);
   return parseAlumnosFromMatrix(matrix);
 };

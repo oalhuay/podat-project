@@ -3,12 +3,14 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
 import type { Rol } from "@/types/database";
 import { useSearchParams } from "next/navigation";
 
 function HomeContent() {
+  const router = useRouter();
   const { user, signInWithGoogle, signOut } = useAuth();
   const searchParams = useSearchParams();
   const authStatus = searchParams.get("auth_status");
@@ -25,7 +27,7 @@ function HomeContent() {
   const [autoViewEnabled, setAutoViewEnabled] = useState(true);
   const [isAvatarMenuOpen, setIsAvatarMenuOpen] = useState(false);
 
-  const profileName = useMemo(() => {
+  const profileName = useMemo<string>(() => {
     const metadata = user?.user_metadata;
     return (
       metadata?.full_name ??
@@ -35,47 +37,47 @@ function HomeContent() {
     );
   }, [user]);
 
-  const profileEmail = user?.email ?? "Sin correo";
-  const profileAvatar =
+  const profileEmail: string = user?.email ?? "Sin correo";
+  const profileAvatar: string | null =
     user?.user_metadata?.avatar_url ?? user?.user_metadata?.picture ?? null;
   const profileInitials = profileName
     .split(" ")
-    .filter(Boolean)
+    .filter((word): word is string => Boolean(word))
     .slice(0, 2)
     .map((word) => word[0]?.toUpperCase() ?? "")
     .join("");
 
   useEffect(() => {
     const loadRol = async () => {
-      setIsLoadingRol(true);
-      const { data: userData } = await supabase.auth.getUser();
-      const userId = userData.user?.id;
-      if (!userId) {
+      if (!user?.id) {
+        setRolActual(null);
         setIsLoadingRol(false);
         return;
       }
 
+      setIsLoadingRol(true);
+
       const { data, error } = await supabase
         .from("perfiles")
         .select("rol")
-        .eq("id", userId)
+        .eq("id", user.id)
         .maybeSingle();
 
-      if (!error && data?.rol) {
-        setRolActual(data.rol as Rol);
+      if (!error) {
+        setRolActual((data?.rol as Rol) ?? null);
       }
 
       setIsLoadingRol(false);
     };
 
     void loadRol();
-  }, []);
+  }, [user?.id]);
 
   useEffect(() => {
     if (isLoadingRol) return;
 
     const start = Date.now();
-    const minDurationMs = 700;
+    const minDurationMs = 250;
 
     const startExit = () => {
       setSplashExiting(true);
@@ -118,9 +120,65 @@ function HomeContent() {
 
   const effectiveView =
     autoViewEnabled && rolActual ? "accesos" : view;
+  const isRegisteredUser = Boolean(user && rolActual);
+  const shouldShowWelcome = !user;
+  const shouldShowRoleSelection = effectiveView === "rol";
+  const titleText = effectiveView === "accesos"
+    ? "Accesos disponibles"
+    : shouldShowWelcome
+    ? "Bienvenido a PODAT"
+    : "Selecciona tu rol";
+  const subtitleText = effectiveView === "accesos"
+    ? "Entra a tus módulos disponibles según tu perfil."
+    : shouldShowWelcome
+    ? "Ingresa como Docente o Administrador para comenzar a trabajar en la plataforma."
+    : "Completa tu ingreso eligiendo cómo deseas registrarte en la plataforma.";
+
+  useEffect(() => {
+    if (!isRegisteredUser || isLoadingRol) return;
+    if (effectiveView !== "accesos") return;
+
+    const targetRoute =
+      rolActual === "docente" ? "/admin/mis-materias" : "/admin/estadisticas/dashboard";
+
+    router.replace(targetRoute);
+  }, [effectiveView, isLoadingRol, isRegisteredUser, rolActual, router]);
+
+  if (isLoadingRol || (isRegisteredUser && effectiveView === "accesos")) {
+    return (
+      <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#E7F0FB,_#FFFFFF_55%,_#FFF4DB_100%)] flex items-center justify-center p-6">
+        <div className="flex w-full max-w-md flex-col items-center gap-6 text-center">
+          <div className="rounded-3xl bg-white/80 px-4 py-2 text-xs font-bold tracking-[0.35em] text-slate-500 shadow-sm">
+            SISTEMA
+          </div>
+
+          <div className="flex h-28 w-28 items-center justify-center rounded-[2rem] bg-white shadow-xl shadow-slate-200/60">
+            <Image src="/logo-podat.svg" alt="PODAT" width={104} height={104} />
+          </div>
+
+          <div>
+            <div className="text-4xl font-black tracking-tight text-[#5D9AD4]">
+              PODAT
+            </div>
+            <div className="mt-2 text-xs font-extrabold tracking-[0.35em] text-slate-400">
+              DATOS VIVOS, GESTION INTELIGENTE
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 text-sm font-semibold text-slate-600">
+            <span>Entrando al panel principal</span>
+            <span className="inline-flex gap-1">
+              <span className="h-2 w-2 rounded-full bg-[#5D9AD4] animate-pulse" />
+              <span className="h-2 w-2 rounded-full bg-[#FBC558] animate-pulse" />
+              <span className="h-2 w-2 rounded-full bg-slate-300 animate-pulse" />
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const handleLogin = async (rol: Exclude<Rol, null>) => {
-    await signOut();
     setRolActual(null);
     setAutoViewEnabled(true);
     await signInWithGoogle(rol);
@@ -252,6 +310,8 @@ function HomeContent() {
               aria-label="Abrir menú de perfil"
             >
               {profileAvatar ? (
+                // Google avatars are remote and not configured in next/image.
+                // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={profileAvatar}
                   alt={profileName}
@@ -280,6 +340,8 @@ function HomeContent() {
                 <div className="bg-[linear-gradient(135deg,_rgba(93,154,212,0.14),_rgba(251,197,88,0.18))] p-4">
                   <div className="flex items-center gap-3">
                     {profileAvatar ? (
+                      // Google avatars are remote and not configured in next/image.
+                      // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={profileAvatar}
                         alt={profileName}
@@ -336,11 +398,10 @@ function HomeContent() {
         </div>
 
         {/* Título de UX */}
-        <h2 className="text-lg font-semibold text-slate-700 text-center mb-6">
-          {effectiveView === "accesos" && rolActual
-            ? "Accesos disponibles"
-            : "Seleccione su rol"}
-        </h2>
+        <div className="mb-6 text-center">
+          <h2 className="text-lg font-semibold text-slate-700">{titleText}</h2>
+          <p className="mt-2 text-sm text-slate-500">{subtitleText}</p>
+        </div>
 
         {authStatus === "ok" && (
           <p className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
@@ -354,14 +415,27 @@ function HomeContent() {
           </p>
         )}
 
-        {effectiveView === "rol" && (
-          <div className="space-y-4 mb-8">
-          <button
+        {(shouldShowWelcome || shouldShowRoleSelection) && (
+          <div className="mb-8 space-y-4">
+            <div className="rounded-3xl border border-slate-200 bg-[linear-gradient(135deg,_rgba(93,154,212,0.08),_rgba(251,197,88,0.12))] p-5 text-left">
+              <p className="text-xs font-black uppercase tracking-[0.28em] text-slate-400">
+                Acceso guiado
+              </p>
+              <p className="mt-3 text-base font-semibold text-slate-800">
+                {shouldShowWelcome
+                  ? "Elige tu perfil para registrarte e ingresar con Google."
+                  : rolActual
+                  ? "Tu sesión ya está iniciada. Si quieres, puedes volver a ingresar con otro perfil."
+                  : "Tu sesión ya está iniciada. Solo falta definir el perfil con el que usarás PODAT."}
+              </p>
+            </div>
+
+            <button
               onClick={() => void handleLogin("docente")}
               className="w-full flex items-center justify-center gap-3 border-2 border-[#5D9AD4] text-[#5D9AD4] hover:bg-[#5D9AD4] hover:text-white font-bold py-4 px-4 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md"
             >
               <span className="text-xl">📊</span>
-              Soy Docente
+              Registrarme como Docente
             </button>
 
             <button
@@ -369,20 +443,12 @@ function HomeContent() {
               className="w-full flex items-center justify-center gap-3 border-2 border-[#FBC558] text-[#FBC558] hover:bg-[#FBC558] hover:text-white font-bold py-4 px-4 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md"
             >
               <span className="text-xl">⚙️</span>
-              Soy Administrador
+              Registrarme como Administrador
             </button>
-          {rolActual && (
-            <button
-              onClick={() => setView("accesos")}
-              className="w-full p-3 rounded-2xl border border-slate-200 text-slate-700 font-semibold hover:bg-slate-50 transition-colors"
-            >
-              Ver accesos disponibles
-            </button>
-          )}
-        </div>
+          </div>
         )}
 
-        {rolActual && effectiveView === "accesos" && (
+        {isRegisteredUser && effectiveView === "accesos" && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {(rolActual === "admin" ? cardsAdmin : cardsDocente).map((card) => (
               <Link
@@ -408,7 +474,7 @@ function HomeContent() {
               }}
               className="col-span-full w-full p-3 rounded-2xl border border-slate-200 text-slate-700 font-semibold hover:bg-slate-50 transition-colors"
             >
-              Volver a selección de rol
+              Cambiar rol de ingreso
             </button>
           </div>
         )}
