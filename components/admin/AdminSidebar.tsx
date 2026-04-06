@@ -49,6 +49,11 @@ const adminNavItems: NavItem[] = [
 
 const docenteNavItems: NavItem[] = [
   {
+    href: "/admin/estadisticas/dashboard",
+    label: "Dashboard",
+    description: "Vista principal de tus materias",
+  },
+  {
     href: "/admin/perfil",
     label: "Perfil",
     description: "Datos del usuario",

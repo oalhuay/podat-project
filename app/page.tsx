@@ -117,8 +117,7 @@ function HomeContent() {
     if (!isRegisteredUser || isLoadingRol) return;
     if (effectiveView !== "accesos") return;
 
-    const targetRoute =
-      rolActual === "docente" ? "/admin/mis-materias" : "/admin/estadisticas/dashboard";
+    const targetRoute = "/admin/estadisticas/dashboard";
 
     router.replace(targetRoute);
   }, [effectiveView, isLoadingRol, isRegisteredUser, rolActual, router]);

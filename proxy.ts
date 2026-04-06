@@ -4,6 +4,7 @@ import { createServerClient } from "@supabase/ssr";
 
 const adminOnlyPrefixes = ["/admin/usuarios", "/admin/importar", "/admin/materias"];
 const docenteAllowedPrefixes = [
+  "/admin/perfil",
   "/admin/notas",
   "/admin/asistencias",
   "/admin/estadisticas",
