@@ -13,6 +13,7 @@ import {
   Legend,
 } from "chart.js";
 import { Bar, Line, Pie } from "react-chartjs-2";
+import { useTheme } from "@/app/hooks/useTheme";
 import { supabase } from "@/lib/supabase";
 import { parseAlumnosFromFile } from "@/lib/import/alumnos/parseExcel";
 import {
@@ -29,6 +30,7 @@ import {
 import ImportResults from "@/components/admin/ImportResults";
 import FileDropzone from "@/components/admin/FileDropzone";
 import StatusBanner from "@/components/admin/StatusBanner";
+import { getChartPalette } from "@/lib/charts/theme";
 
 ChartJS.register(
   ArcElement,
@@ -49,6 +51,7 @@ type StatusMessage = {
 const CURRENT_YEAR = new Date().getFullYear();
 
 export default function ImportarAlumnos() {
+  const { resolvedTheme } = useTheme();
   const [materia, setMateria] = useState("");
   const [anio, setAnio] = useState(String(CURRENT_YEAR));
   const [comision, setComision] = useState("");
@@ -177,20 +180,42 @@ export default function ImportarAlumnos() {
   }, [importResult]);
 
   const chartOptions = useMemo(
-    () => ({
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          position: "bottom" as const,
-          labels: {
-            boxWidth: 12,
-            usePointStyle: true,
+    () => {
+      const palette = getChartPalette(resolvedTheme);
+      return {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: "bottom" as const,
+            labels: {
+              boxWidth: 12,
+              usePointStyle: true,
+              color: palette.text,
+            },
           },
         },
-      },
-    }),
-    []
+        scales: {
+          x: {
+            ticks: {
+              color: palette.mutedText,
+            },
+            grid: {
+              color: palette.grid,
+            },
+          },
+          y: {
+            ticks: {
+              color: palette.mutedText,
+            },
+            grid: {
+              color: palette.grid,
+            },
+          },
+        },
+      };
+    },
+    [resolvedTheme]
   );
 
   const handleLecturaArchivo = async (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -11,8 +11,10 @@ import {
   Legend,
 } from "chart.js";
 import { Line } from "react-chartjs-2";
+import { useTheme } from "@/app/hooks/useTheme";
 import { supabase } from "@/lib/supabase";
 import StatusBanner from "@/components/admin/StatusBanner";
+import { getChartPalette } from "@/lib/charts/theme";
 import { parseEstadisticasFromFile } from "@/lib/import/estadisticas/parseExcel";
 import type {
   EstadisticaImportSummary,
@@ -159,6 +161,7 @@ const buildSeries = (
 };
 
 export default function EstadisticasPage() {
+  const { resolvedTheme } = useTheme();
   const [materias, setMaterias] = useState<Materia[]>([]);
   const [archivo, setArchivo] = useState<File | null>(null);
   const [parsedRows, setParsedRows] = useState<ParsedEstadisticaRow[]>([]);
@@ -585,27 +588,45 @@ export default function EstadisticasPage() {
   }, [series, selectedIndicator]);
 
   const chartOptions = useMemo(
-    () => ({
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          position: "bottom" as const,
-        },
-      },
-      scales: {
-        y: {
-          ticks: {
-            callback: (value: string | number) => {
-              if (indicatorUnit === "percent") return `${value}%`;
-              if (indicatorUnit === "ratio") return Number(value).toFixed(2);
-              return value;
+    () => {
+      const palette = getChartPalette(resolvedTheme);
+      return {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: "bottom" as const,
+            labels: {
+              color: palette.text,
             },
           },
         },
-      },
-    }),
-    [indicatorUnit]
+        scales: {
+          x: {
+            ticks: {
+              color: palette.mutedText,
+            },
+            grid: {
+              color: palette.grid,
+            },
+          },
+          y: {
+            ticks: {
+              color: palette.mutedText,
+              callback: (value: string | number) => {
+                if (indicatorUnit === "percent") return `${value}%`;
+                if (indicatorUnit === "ratio") return Number(value).toFixed(2);
+                return value;
+              },
+            },
+            grid: {
+              color: palette.grid,
+            },
+          },
+        },
+      };
+    },
+    [indicatorUnit, resolvedTheme]
   );
 
   return (

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
+import ThemeToggle from "@/components/theme/ThemeToggle";
 import type { Rol } from "@/types/database";
 import { useSearchParams } from "next/navigation";
 
@@ -250,6 +251,10 @@ function HomeContent() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4 relative overflow-hidden">
+      <div className="absolute right-4 top-4 z-30 w-full max-w-[260px]">
+        <ThemeToggle />
+      </div>
+
       {showSplash && (
         <div
           className={`fixed inset-0 z-50 flex items-center justify-center bg-[radial-gradient(circle_at_top,_#E7F0FB,_#FFFFFF_55%,_#FFF4DB_100%)] transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] ${
@@ -364,14 +369,16 @@ function HomeContent() {
                 </div>
 
                 <div className="space-y-3 p-4">
-                  <div className="rounded-2xl border border-slate-100 bg-slate-50 px-3 py-2">
-                    <div className="text-[11px] font-bold uppercase tracking-[0.24em] text-slate-400">
-                      Rol activo
+                <div className="rounded-2xl border border-slate-100 bg-slate-50 px-3 py-2">
+                  <div className="text-[11px] font-bold uppercase tracking-[0.24em] text-slate-400">
+                    Rol activo
                     </div>
                     <div className="mt-1 text-sm font-semibold capitalize text-slate-800">
                       {rolActual ?? "Pendiente"}
                     </div>
                   </div>
+
+                  <ThemeToggle compact />
 
                   <button
                     type="button"

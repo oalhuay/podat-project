@@ -22,8 +22,28 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const themeInitScript = `
+    (function () {
+      var storageKey = "podat-theme-preference";
+      var root = document.documentElement;
+      var stored = localStorage.getItem(storageKey);
+      var preference = stored === "light" || stored === "dark" || stored === "system"
+        ? stored
+        : "system";
+      var resolved = preference === "system"
+        ? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
+        : preference;
+      root.dataset.themePreference = preference;
+      root.dataset.themeResolved = resolved;
+      root.style.colorScheme = resolved;
+    })();
+  `;
+
   return (
-    <html lang="en">
+    <html lang="es" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

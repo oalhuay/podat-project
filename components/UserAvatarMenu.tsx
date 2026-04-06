@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
+import ThemeToggle from "@/components/theme/ThemeToggle";
 import type { Rol } from "@/types/database";
 
 type UserAvatarMenuProps = {
@@ -159,6 +160,8 @@ export default function UserAvatarMenu({ compact = false }: UserAvatarMenuProps)
                 {rolActual ?? "Pendiente"}
               </div>
             </div>
+
+            <ThemeToggle compact />
 
             <Link
               href="/"

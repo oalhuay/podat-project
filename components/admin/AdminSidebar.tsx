@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/app/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
+import ThemeToggle from "@/components/theme/ThemeToggle";
 import type { Rol } from "@/types/database";
 
 type NavItem = {
@@ -189,6 +190,10 @@ export default function AdminSidebar() {
           );
         })}
       </nav>
+
+      <div className="mt-6">
+        <ThemeToggle />
+      </div>
 
       <div className="mt-6 grid grid-cols-2 gap-3">
         <button

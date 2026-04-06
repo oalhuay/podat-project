@@ -16,8 +16,10 @@ import {
   Filler,
 } from "chart.js";
 import { Bar, Chart, Doughnut, Line, Radar, Scatter } from "react-chartjs-2";
+import { useTheme } from "@/app/hooks/useTheme";
 import { supabase } from "@/lib/supabase";
 import StatusBanner from "@/components/admin/StatusBanner";
+import { getChartPalette } from "@/lib/charts/theme";
 import {
   INDICATOR_BY_CODE,
   type IndicatorCode,
@@ -185,6 +187,7 @@ function EmptyChartState({ text }: { text: string }) {
 }
 
 export default function EstadisticasDashboardPage() {
+  const { resolvedTheme } = useTheme();
   const [materias, setMaterias] = useState<Materia[]>([]);
   const [selectedYear, setSelectedYear] = useState(String(CURRENT_YEAR));
   const [chartSelections, setChartSelections] = useState<ChartSelections>(
@@ -394,6 +397,8 @@ export default function EstadisticasDashboardPage() {
     }));
   };
 
+  const chartPalette = useMemo(() => getChartPalette(resolvedTheme), [resolvedTheme]);
+
   const chartOptionsFor = (indicatorCode: IndicatorCode, showLegend = false) => {
     const unit = INDICATOR_BY_CODE[indicatorCode]?.unit ?? "count";
     return {
@@ -403,22 +408,153 @@ export default function EstadisticasDashboardPage() {
         legend: {
           display: showLegend,
           position: "bottom" as const,
+          labels: {
+            color: chartPalette.text,
+          },
         },
       },
       scales: {
+        x: {
+          ticks: {
+            color: chartPalette.mutedText,
+          },
+          grid: {
+            color: chartPalette.grid,
+          },
+        },
         y: {
           beginAtZero: true,
           ticks: {
+            color: chartPalette.mutedText,
             callback: (value: string | number) => {
               if (unit === "percent") return `${value}%`;
               if (unit === "ratio") return Number(value).toFixed(2);
               return value;
             },
           },
+          grid: {
+            color: chartPalette.grid,
+          },
         },
       },
     } as const;
   };
+
+  const barChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: "bottom" as const,
+        labels: {
+          color: chartPalette.text,
+        },
+      },
+    },
+    scales: {
+      x: {
+        ticks: {
+          color: chartPalette.mutedText,
+        },
+        grid: {
+          color: chartPalette.grid,
+        },
+      },
+      y: {
+        beginAtZero: true,
+        ticks: {
+          color: chartPalette.mutedText,
+        },
+        grid: {
+          color: chartPalette.grid,
+        },
+      },
+    },
+  } as const;
+
+  const radarOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: "bottom" as const,
+        labels: {
+          color: chartPalette.text,
+        },
+      },
+    },
+    scales: {
+      r: {
+        angleLines: {
+          color: chartPalette.grid,
+        },
+        grid: {
+          color: chartPalette.grid,
+        },
+        pointLabels: {
+          color: chartPalette.mutedText,
+        },
+        ticks: {
+          color: chartPalette.mutedText,
+          backdropColor: chartPalette.surface,
+        },
+      },
+    },
+  } as const;
+
+  const doughnutOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: "bottom" as const,
+        labels: {
+          color: chartPalette.text,
+        },
+      },
+    },
+  } as const;
+
+  const scatterOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: "bottom" as const,
+        labels: {
+          color: chartPalette.text,
+        },
+      },
+    },
+    scales: {
+      x: {
+        title: {
+          display: true,
+          text: "Regulares",
+          color: chartPalette.text,
+        },
+        ticks: {
+          color: chartPalette.mutedText,
+        },
+        grid: {
+          color: chartPalette.grid,
+        },
+      },
+      y: {
+        title: {
+          display: true,
+          text: "Recursantes",
+          color: chartPalette.text,
+        },
+        ticks: {
+          color: chartPalette.mutedText,
+        },
+        grid: {
+          color: chartPalette.grid,
+        },
+      },
+    },
+  } as const;
 
   const renderLoadingOrEmpty = (materiaId: number | "", years: number[]) => {
     if (isLoadingStats) {
@@ -605,7 +741,17 @@ export default function EstadisticasDashboardPage() {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: { legend: { display: false } },
-                scales: { y: { beginAtZero: true } },
+                scales: {
+                  x: {
+                    ticks: { color: chartPalette.mutedText },
+                    grid: { color: chartPalette.grid },
+                  },
+                  y: {
+                    beginAtZero: true,
+                    ticks: { color: chartPalette.mutedText },
+                    grid: { color: chartPalette.grid },
+                  },
+                },
               }}
             />
           )}
@@ -661,12 +807,7 @@ export default function EstadisticasDashboardPage() {
                   },
                 ],
               }}
-              options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { position: "bottom" as const } },
-                scales: { y: { beginAtZero: true } },
-              }}
+              options={barChartOptions}
             />
           )}
         </ChartCard>
@@ -694,11 +835,7 @@ export default function EstadisticasDashboardPage() {
                   },
                 ],
               }}
-              options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { position: "bottom" as const } },
-              }}
+              options={doughnutOptions}
             />
           )}
         </ChartCard>
@@ -735,11 +872,7 @@ export default function EstadisticasDashboardPage() {
                   },
                 ],
               }}
-              options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { position: "bottom" as const } },
-              }}
+              options={radarOptions}
             />
           )}
         </ChartCard>
@@ -765,15 +898,7 @@ export default function EstadisticasDashboardPage() {
                   },
                 ],
               }}
-              options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { position: "bottom" as const } },
-                scales: {
-                  x: { title: { display: true, text: "Regulares" } },
-                  y: { title: { display: true, text: "Recursantes" } },
-                },
-              }}
+              options={scatterOptions}
             />
           )}
         </ChartCard>
@@ -813,12 +938,7 @@ export default function EstadisticasDashboardPage() {
                   },
                 ],
               }}
-              options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { position: "bottom" as const } },
-                scales: { y: { beginAtZero: true } },
-              }}
+              options={barChartOptions}
             />
           )}
         </ChartCard>

@@ -1,8 +1,19 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f5f8fc;
+  --foreground: #0f172a;
+  --surface-0: #ffffff;
+  --surface-1: #f8fafc;
+  --surface-2: #e2e8f0;
+  --surface-3: #cbd5e1;
+  --text-strong: #0f172a;
+  --text-main: #334155;
+  --text-soft: #64748b;
+  --text-faint: #94a3b8;
+  --border-soft: #e2e8f0;
+  --border-strong: #cbd5e1;
+  --shadow-color: rgba(15, 23, 42, 0.08);
 }
 
 @theme inline {
@@ -12,17 +23,134 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+[data-theme-resolved="dark"] {
+  --background: #08111f;
+  --foreground: #e2e8f0;
+  --surface-0: #0f172a;
+  --surface-1: #111c32;
+  --surface-2: #1e293b;
+  --surface-3: #334155;
+  --text-strong: #f8fafc;
+  --text-main: #dbe4f2;
+  --text-soft: #93a4bc;
+  --text-faint: #64748b;
+  --border-soft: rgba(148, 163, 184, 0.22);
+  --border-strong: rgba(148, 163, 184, 0.34);
+  --shadow-color: rgba(2, 6, 23, 0.45);
+}
+
+html {
+  color-scheme: light;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  transition:
+    background-color 180ms ease,
+    color 180ms ease;
+}
+
+[data-theme-resolved="dark"] body {
+  background:
+    radial-gradient(circle at top left, rgba(93, 154, 212, 0.18), transparent 28%),
+    linear-gradient(180deg, #08111f 0%, #0b1325 100%);
+}
+
+[data-theme-resolved="dark"] .bg-white,
+[data-theme-resolved="dark"] .bg-white\/80,
+[data-theme-resolved="dark"] .bg-white\/90,
+[data-theme-resolved="dark"] .bg-white\/95 {
+  background-color: var(--surface-0) !important;
+}
+
+[data-theme-resolved="dark"] .bg-slate-50 {
+  background-color: var(--surface-1) !important;
+}
+
+[data-theme-resolved="dark"] .bg-slate-100,
+[data-theme-resolved="dark"] .bg-slate-200 {
+  background-color: var(--surface-2) !important;
+}
+
+[data-theme-resolved="dark"] .bg-slate-800,
+[data-theme-resolved="dark"] .bg-slate-900 {
+  background-color: #e2e8f0 !important;
+}
+
+[data-theme-resolved="dark"] .text-slate-900,
+[data-theme-resolved="dark"] .text-slate-800,
+[data-theme-resolved="dark"] .text-slate-700 {
+  color: var(--text-strong) !important;
+}
+
+[data-theme-resolved="dark"] .text-slate-600,
+[data-theme-resolved="dark"] .text-slate-500 {
+  color: var(--text-soft) !important;
+}
+
+[data-theme-resolved="dark"] .text-slate-400 {
+  color: var(--text-faint) !important;
+}
+
+[data-theme-resolved="dark"] .text-white {
+  color: #0f172a !important;
+}
+
+[data-theme-resolved="dark"] .border-slate-100,
+[data-theme-resolved="dark"] .border-slate-200 {
+  border-color: var(--border-soft) !important;
+}
+
+[data-theme-resolved="dark"] .border-slate-300 {
+  border-color: var(--border-strong) !important;
+}
+
+[data-theme-resolved="dark"] .shadow-sm,
+[data-theme-resolved="dark"] .shadow-md,
+[data-theme-resolved="dark"] .shadow-lg,
+[data-theme-resolved="dark"] .shadow-xl,
+[data-theme-resolved="dark"] .shadow-2xl {
+  --tw-shadow-color: var(--shadow-color);
+}
+
+[data-theme-resolved="dark"] .hover\:bg-slate-50:hover {
+  background-color: #172338 !important;
+}
+
+[data-theme-resolved="dark"] .hover\:bg-slate-100:hover,
+[data-theme-resolved="dark"] .hover\:bg-slate-300:hover {
+  background-color: #24324a !important;
+}
+
+[data-theme-resolved="dark"] .hover\:border-slate-300:hover {
+  border-color: var(--border-strong) !important;
+}
+
+[data-theme-resolved="dark"] .placeholder\:text-slate-400::placeholder {
+  color: var(--text-faint) !important;
+}
+
+[data-theme-resolved="dark"] input,
+[data-theme-resolved="dark"] select,
+[data-theme-resolved="dark"] textarea {
+  color-scheme: dark;
+}
+
+[data-theme-resolved="dark"] .theme-shell {
+  background-color: rgba(15, 23, 42, 0.82) !important;
+}
+
+[data-theme-resolved="dark"] .bg-\[radial-gradient\(circle_at_top\,_\#E7F0FB\,_\#FFFFFF_55\%\,_\#FFF4DB_100\%\)\] {
+  background:
+    radial-gradient(circle at top, rgba(93, 154, 212, 0.28), #0b1325 58%, #151932 100%) !important;
+}
+
+[data-theme-resolved="dark"] .bg-\[radial-gradient\(circle_at_top_left\,_rgba\(93\,154\,212\,0\.12\)\,_transparent_30\%\)\,linear-gradient\(180deg\,_\#f8fafc_0\%\,_\#eef4ff_100\%\)\] {
+  background:
+    radial-gradient(circle at top left, rgba(93, 154, 212, 0.2), transparent 32%),
+    linear-gradient(180deg, #08111f 0%, #0b1325 100%) !important;
 }
 
 a[href],
