@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
 import ThemeToggle from "@/components/theme/ThemeToggle";
+import SplashScreen from "@/components/system/SplashScreen";
 import type { Rol } from "@/types/database";
 import { useSearchParams } from "next/navigation";
 
@@ -23,8 +24,6 @@ function HomeContent() {
   );
   const [isLoadingRol, setIsLoadingRol] = useState(false);
   const [view, setView] = useState<"rol" | "accesos">("rol");
-  const [showSplash, setShowSplash] = useState(true);
-  const [splashExiting, setSplashExiting] = useState(false);
   const [autoViewEnabled, setAutoViewEnabled] = useState(true);
   const [isAvatarMenuOpen, setIsAvatarMenuOpen] = useState(false);
 
@@ -73,27 +72,6 @@ function HomeContent() {
 
     void loadRol();
   }, [user?.id]);
-
-  useEffect(() => {
-    if (isLoadingRol) return;
-
-    const start = Date.now();
-    const minDurationMs = 250;
-
-    const startExit = () => {
-      setSplashExiting(true);
-      const exitTimer = setTimeout(() => {
-        setShowSplash(false);
-      }, 600);
-      return exitTimer;
-    };
-
-    const elapsed = Date.now() - start;
-    const remaining = Math.max(minDurationMs - elapsed, 0);
-    const exitTimer = setTimeout(startExit, remaining);
-
-    return () => clearTimeout(exitTimer);
-  }, [isLoadingRol]);
 
   useEffect(() => {
     if (!isAvatarMenuOpen) return;
@@ -146,37 +124,7 @@ function HomeContent() {
   }, [effectiveView, isLoadingRol, isRegisteredUser, rolActual, router]);
 
   if (isLoadingRol || (isRegisteredUser && effectiveView === "accesos")) {
-    return (
-      <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#E7F0FB,_#FFFFFF_55%,_#FFF4DB_100%)] flex items-center justify-center p-6">
-        <div className="flex w-full max-w-md flex-col items-center gap-6 text-center">
-          <div className="rounded-3xl bg-white/80 px-4 py-2 text-xs font-bold tracking-[0.35em] text-slate-500 shadow-sm">
-            SISTEMA
-          </div>
-
-          <div className="flex h-28 w-28 items-center justify-center rounded-[2rem] bg-white shadow-xl shadow-slate-200/60">
-            <Image src="/logo-podat.svg" alt="PODAT" width={104} height={104} />
-          </div>
-
-          <div>
-            <div className="text-4xl font-black tracking-tight text-[#5D9AD4]">
-              PODAT
-            </div>
-            <div className="mt-2 text-xs font-extrabold tracking-[0.35em] text-slate-400">
-              DATOS VIVOS, GESTION INTELIGENTE
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 text-sm font-semibold text-slate-600">
-            <span>Entrando al panel principal</span>
-            <span className="inline-flex gap-1">
-              <span className="h-2 w-2 rounded-full bg-[#5D9AD4] animate-pulse" />
-              <span className="h-2 w-2 rounded-full bg-[#FBC558] animate-pulse" />
-              <span className="h-2 w-2 rounded-full bg-slate-300 animate-pulse" />
-            </span>
-          </div>
-        </div>
-      </div>
-    );
+    return <SplashScreen message="Entrando al panel principal" />;
   }
 
   const handleLogin = async (rol: Exclude<Rol, null>) => {
@@ -254,53 +202,6 @@ function HomeContent() {
       <div className="absolute right-4 top-4 z-30 w-full max-w-[260px]">
         <ThemeToggle />
       </div>
-
-      {showSplash && (
-        <div
-          className={`fixed inset-0 z-50 flex items-center justify-center bg-[radial-gradient(circle_at_top,_#E7F0FB,_#FFFFFF_55%,_#FFF4DB_100%)] transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] ${
-            splashExiting ? "opacity-0 scale-95" : "opacity-100 scale-100"
-          }`}
-          aria-hidden="true"
-        >
-          <div className="absolute inset-0">
-            <div className="absolute -top-24 -left-16 h-64 w-64 rounded-full bg-[#5D9AD4]/15 blur-3xl" />
-            <div className="absolute bottom-0 right-0 h-80 w-80 rounded-full bg-[#FBC558]/20 blur-3xl" />
-            <div className="absolute left-1/2 top-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#5D9AD4]/20" />
-          </div>
-
-          <div
-            className={`relative flex w-full max-w-md flex-col items-center gap-6 px-6 text-center transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] ${
-              splashExiting ? "opacity-0 -translate-y-3" : "opacity-100 translate-y-0"
-            }`}
-          >
-            <div className="rounded-3xl bg-white/80 px-4 py-2 text-xs font-bold tracking-[0.35em] text-slate-500 shadow-sm">
-              SISTEMA
-            </div>
-
-            <div className="flex h-28 w-28 items-center justify-center rounded-[2rem] bg-white shadow-xl shadow-slate-200/60">
-              <Image src="/logo-podat.svg" alt="PODAT" width={104} height={104} />
-            </div>
-
-            <div>
-              <div className="text-4xl font-black text-[#5D9AD4] tracking-tight">
-                PODAT
-              </div>
-              <div className="mt-2 text-xs font-extrabold tracking-[0.35em] text-slate-400">
-                DATOS VIVOS, GESTIÓN INTELIGENTE
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 text-sm font-semibold text-slate-600">
-              <span>Preparando panel académico</span>
-              <span className="inline-flex gap-1">
-                <span className="h-2 w-2 rounded-full bg-[#5D9AD4] animate-pulse" />
-                <span className="h-2 w-2 rounded-full bg-[#FBC558] animate-pulse" />
-                <span className="h-2 w-2 rounded-full bg-slate-300 animate-pulse" />
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
       
       {/* Tarjeta Central */}
       <div className="max-w-3xl w-full bg-white rounded-2xl shadow-xl p-8 border border-slate-100 relative">
@@ -369,9 +270,9 @@ function HomeContent() {
                 </div>
 
                 <div className="space-y-3 p-4">
-                <div className="rounded-2xl border border-slate-100 bg-slate-50 px-3 py-2">
-                  <div className="text-[11px] font-bold uppercase tracking-[0.24em] text-slate-400">
-                    Rol activo
+                  <div className="rounded-2xl border border-slate-100 bg-slate-50 px-3 py-2">
+                    <div className="text-[11px] font-bold uppercase tracking-[0.24em] text-slate-400">
+                      Rol activo
                     </div>
                     <div className="mt-1 text-sm font-semibold capitalize text-slate-800">
                       {rolActual ?? "Pendiente"}
@@ -494,11 +395,7 @@ function HomeContent() {
 export default function Home() {
   return (
     <Suspense
-      fallback={
-        <div className="min-h-screen bg-slate-50 flex items-center justify-center text-slate-500">
-          Cargando...
-        </div>
-      }
+      fallback={<SplashScreen message="Cargando aplicación" />}
     >
       <HomeContent />
     </Suspense>

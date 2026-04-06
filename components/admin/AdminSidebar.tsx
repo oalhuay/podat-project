@@ -27,7 +27,7 @@ const adminNavItems: NavItem[] = [
   },
   {
     href: "/admin/usuarios",
-    label: "Gestion de usuarios",
+    label: "Gestión de usuarios",
     description: "Roles y accesos",
   },
   {
@@ -43,7 +43,7 @@ const adminNavItems: NavItem[] = [
   {
     href: "/admin/materias",
     label: "Materias",
-    description: "Catalogo y asignaciones",
+    description: "Catálogo y asignaciones",
   },
 ];
 

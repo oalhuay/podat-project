@@ -341,7 +341,7 @@ export default function EstadisticasDashboardPage() {
             : "Error desconocido";
         setStatusMessage({
           type: "error",
-          text: `No se pudieron cargar estadisticas: ${message}`,
+          text: `No se pudieron cargar estadísticas: ${message}`,
         });
       } finally {
         setIsLoadingStats(false);
@@ -558,16 +558,16 @@ export default function EstadisticasDashboardPage() {
 
   const renderLoadingOrEmpty = (materiaId: number | "", years: number[]) => {
     if (isLoadingStats) {
-      return <EmptyChartState text="Cargando grafico..." />;
+      return <EmptyChartState text="Cargando gráfico..." />;
     }
 
     if (materiaId === "") {
-      return <EmptyChartState text="Selecciona una materia para visualizar el grafico." />;
+      return <EmptyChartState text="Selecciona una materia para visualizar el gráfico." />;
     }
 
     if (years.length === 0) {
       return (
-        <EmptyChartState text="No hay datos disponibles para la materia y el ano seleccionados." />
+        <EmptyChartState text="No hay datos disponibles para la materia y el año seleccionados." />
       );
     }
 
@@ -602,14 +602,14 @@ export default function EstadisticasDashboardPage() {
             Dashboard principal
           </h1>
           <p className="mt-2 max-w-3xl text-slate-500">
-            Cada grafico trabaja con su propia materia, mientras que el selector
-            global de ano actualiza toda la linea de visualizaciones del panel.
+            Cada gráfico trabaja con su propia materia, mientras que el selector
+            global de año actualiza toda la línea de visualizaciones del panel.
           </p>
         </div>
 
         <div className="w-full max-w-sm rounded-[1.75rem] border border-slate-200 bg-slate-50 p-4">
           <label className="text-xs font-black uppercase tracking-[0.25em] text-slate-400">
-            Ano global del dashboard
+            Año global del dashboard
           </label>
           <input
             type="number"
@@ -627,7 +627,7 @@ export default function EstadisticasDashboardPage() {
       <section className="grid gap-6 xl:grid-cols-2">
         <ChartCard
           title="Inscriptos en serie"
-          description="Evolucion historica de inscriptos por genero hasta el ano global seleccionado."
+          description="Evolución histórica de inscriptos por género hasta el año global seleccionado."
           materiaId={lineaMateriaId}
           materias={materias}
           onMateriaChange={(value) => handleSelectionChange("linea", value)}
@@ -664,7 +664,7 @@ export default function EstadisticasDashboardPage() {
 
         <ChartCard
           title="Inscriptos acumulados"
-          description="Vista de area para seguir la presencia historica por materia."
+          description="Vista de área para seguir la presencia histórica por materia."
           materiaId={areaMateriaId}
           materias={materias}
           onMateriaChange={(value) => handleSelectionChange("area", value)}
@@ -701,7 +701,7 @@ export default function EstadisticasDashboardPage() {
 
         <ChartCard
           title="Estado del alumnado"
-          description={`Fotografia del ano ${estadoYear} para regulares, recursantes e inscripcion.`}
+          description={`Fotografía del año ${estadoYear} para regulares, recursantes e inscripción.`}
           materiaId={estadoMateriaId}
           materias={materias}
           onMateriaChange={(value) => handleSelectionChange("estado", value)}
@@ -718,7 +718,7 @@ export default function EstadisticasDashboardPage() {
                 ],
                 datasets: [
                   {
-                    label: `Ano ${estadoYear}`,
+                    label: `Año ${estadoYear}`,
                     data: [
                       getCount(estadoMateriaId, estadoYear, "VAR_REG"),
                       getCount(estadoMateriaId, estadoYear, "VAR_REC"),
@@ -759,7 +759,7 @@ export default function EstadisticasDashboardPage() {
 
         <ChartCard
           title="Ranking de indicadores"
-          description="Comparacion historica de porcentajes clave por materia."
+          description="Comparación histórica de porcentajes clave por materia."
           materiaId={rankingMateriaId}
           materias={materias}
           onMateriaChange={(value) => handleSelectionChange("ranking", value)}
@@ -813,8 +813,8 @@ export default function EstadisticasDashboardPage() {
         </ChartCard>
 
         <ChartCard
-          title="Proporcion de genero"
-          description={`Distribucion de inscriptos del ano ${generoYear}.`}
+          title="Proporción de género"
+          description={`Distribución de inscriptos del año ${generoYear}.`}
           materiaId={generoMateriaId}
           materias={materias}
           onMateriaChange={(value) => handleSelectionChange("genero", value)}
@@ -842,7 +842,7 @@ export default function EstadisticasDashboardPage() {
 
         <ChartCard
           title="Recursantes vs regularidad"
-          description={`Comparacion radial del ano ${radarYear}.`}
+          description={`Comparación radial del año ${radarYear}.`}
           materiaId={radarMateriaId}
           materias={materias}
           onMateriaChange={(value) => handleSelectionChange("radar", value)}
@@ -878,8 +878,8 @@ export default function EstadisticasDashboardPage() {
         </ChartCard>
 
         <ChartCard
-          title="Dispersion academica"
-          description="Relacion entre regulares y recursantes para cada ano disponible."
+          title="Dispersión académica"
+          description="Relación entre regulares y recursantes para cada año disponible."
           materiaId={dispersionMateriaId}
           materias={materias}
           onMateriaChange={(value) => handleSelectionChange("dispersion", value)}
@@ -889,7 +889,7 @@ export default function EstadisticasDashboardPage() {
               data={{
                 datasets: [
                   {
-                    label: "Anios",
+                    label: "Años",
                     data: dispersionYears.map((year) => ({
                       x: totalRegulares(dispersionMateriaId, year),
                       y: totalRecursantes(dispersionMateriaId, year),
@@ -905,7 +905,7 @@ export default function EstadisticasDashboardPage() {
 
         <ChartCard
           title="Vista combinada"
-          description="Cruce historico entre inscriptos totales y mujeres inscriptas."
+          description="Cruce histórico entre inscriptos totales y mujeres inscriptas."
           materiaId={combinadoMateriaId}
           materias={materias}
           onMateriaChange={(value) => handleSelectionChange("combinado", value)}

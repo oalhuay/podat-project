@@ -9,13 +9,13 @@ const cards = [
     href: "/admin/importar",
   },
   {
-    title: "Dashboard estadistico",
-    description: "Cruza la informacion academica con la vista principal del sistema.",
+    title: "Dashboard estadístico",
+    description: "Cruza la información académica con la vista principal del sistema.",
     href: "/admin/estadisticas/dashboard",
   },
   {
     title: "Materias",
-    description: "Revisa catalogo, codigos y asignaciones asociadas a docentes.",
+    description: "Revisa catálogo, códigos y asignaciones asociadas a docentes.",
     href: "/admin/materias",
   },
 ];
@@ -28,18 +28,18 @@ export default function AlumnosPage() {
           Alumnos
         </h1>
         <p className="mt-2 text-slate-500">
-          Punto de entrada para las tareas operativas vinculadas al padron y su carga.
+          Punto de entrada para las tareas operativas vinculadas al padrón y su carga.
         </p>
       </header>
 
       <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
         <div className="text-xs font-black uppercase tracking-[0.28em] text-slate-400">
-          Estado del modulo
+          Estado del módulo
         </div>
         <p className="mt-4 max-w-3xl text-slate-700">
-          El proyecto ya cuenta con la importacion masiva desde Excel. Esta pantalla
-          queda preparada como acceso especifico para alumnos, evitando mezclar esa
-          operacion con otros modulos administrativos.
+          El proyecto ya cuenta con la importación masiva desde Excel. Esta pantalla
+          queda preparada como acceso específico para alumnos, evitando mezclar esa
+          operación con otros módulos administrativos.
         </p>
       </section>
 

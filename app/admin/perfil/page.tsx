@@ -43,7 +43,7 @@ export default function PerfilPage() {
       if (!userId) {
         setStatusMessage({
           type: "info",
-          text: "Inicia sesion para ver la informacion de perfil.",
+          text: "Inicia sesión para ver la información de perfil.",
         });
         return;
       }
@@ -77,7 +77,7 @@ export default function PerfilPage() {
         ]
       : [
           { href: "/admin/estadisticas/dashboard", label: "Dashboard" },
-          { href: "/admin/usuarios", label: "Gestion de usuarios" },
+          { href: "/admin/usuarios", label: "Gestión de usuarios" },
           { href: "/admin/materias", label: "Materias" },
         ];
 
@@ -138,7 +138,7 @@ export default function PerfilPage() {
                 Identificador
               </div>
               <div className="mt-2 break-all text-sm font-semibold text-slate-700">
-                {user?.id ?? "Sin sesion activa"}
+                {user?.id ?? "Sin sesión activa"}
               </div>
             </div>
           </div>
@@ -146,7 +146,7 @@ export default function PerfilPage() {
 
         <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
           <div className="text-xs font-black uppercase tracking-[0.28em] text-slate-400">
-            Accesos rapidos
+            Accesos rápidos
           </div>
           <div className="mt-4 space-y-3">
             {shortcuts.map((item) => (
