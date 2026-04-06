@@ -173,3 +173,119 @@ select:disabled,
 textarea:disabled {
   cursor: not-allowed;
 }
+
+.brand-mark {
+  animation: brand-mark-enter 480ms cubic-bezier(0.22, 1, 0.36, 1);
+  transform-origin: center;
+  transition:
+    transform 180ms ease,
+    filter 180ms ease;
+}
+
+.brand-mark:hover {
+  transform: translateY(-2px) scale(1.05);
+  filter: drop-shadow(0 10px 22px rgba(93, 154, 212, 0.3));
+}
+
+.brand-logo {
+  overflow: visible;
+}
+
+.brand-logo__outer-ring,
+.brand-logo__inner-ring,
+.brand-logo__core {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.brand-logo__outer-ring {
+  animation: brand-logo-spin-cw 8s linear infinite;
+}
+
+.brand-logo__inner-ring {
+  animation: brand-logo-spin-ccw 10s linear infinite;
+}
+
+.brand-logo__core {
+  animation: brand-logo-core 4.6s ease-in-out infinite;
+}
+
+.brand-logo__core line,
+.brand-logo__core circle {
+  animation: brand-logo-core-glow 4.6s ease-in-out infinite;
+}
+
+@keyframes brand-mark-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.94);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes brand-logo-spin-cw {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes brand-logo-spin-ccw {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+@keyframes brand-logo-core {
+  0%,
+  100% {
+    transform: translateY(0) scale(1) rotate(0deg);
+    opacity: 0.95;
+  }
+
+  50% {
+    transform: translateY(-2px) scale(1.04) rotate(3deg);
+    opacity: 1;
+  }
+}
+
+@keyframes brand-logo-core-glow {
+  0%,
+  100% {
+    opacity: 0.88;
+    filter: drop-shadow(0 0 0 rgba(93, 154, 212, 0));
+  }
+
+  50% {
+    opacity: 1;
+    filter: drop-shadow(0 0 8px rgba(93, 154, 212, 0.3));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brand-mark {
+    animation: none;
+  }
+
+  .brand-mark:hover {
+    transform: none;
+    filter: none;
+  }
+
+  .brand-logo__outer-ring,
+  .brand-logo__inner-ring,
+  .brand-logo__core {
+    animation: none;
+  }
+}

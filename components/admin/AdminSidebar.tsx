@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/app/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
 import ThemeToggle from "@/components/theme/ThemeToggle";
+import BrandLogo from "@/components/brand/BrandLogo";
 import type { Rol } from "@/types/database";
 
 type NavItem = {
@@ -137,6 +138,8 @@ export default function AdminSidebar({
   }, [user?.id]);
 
   const navItems = rolActual === "docente" ? docenteNavItems : adminNavItems;
+  const panelLabel =
+    rolActual === "docente" ? "Panel docente" : "Panel de gestión";
 
   const handleSignOut = async () => {
     await signOut();
@@ -150,11 +153,22 @@ export default function AdminSidebar({
       className={`w-full rounded-[2rem] border border-slate-200 bg-white/95 p-5 shadow-xl shadow-slate-200/60 ${className}`}
     >
       <div className="border-b border-slate-100 pb-5">
-        <div className="text-[11px] font-black uppercase tracking-[0.35em] text-slate-400">
-          Panel principal
-        </div>
-        <div className="mt-2 text-2xl font-black tracking-tight text-slate-900">
-          PODAT Admin
+        <div className="flex items-center gap-3">
+          <Link
+            href="/admin/estadisticas/dashboard"
+            onClick={onNavigate}
+            className="flex min-w-0 items-center gap-3 rounded-2xl transition-transform hover:-translate-y-0.5"
+          >
+            <BrandLogo className="brand-mark h-13 w-13 shrink-0" />
+            <div className="min-w-0">
+              <div className="text-[11px] font-black uppercase tracking-[0.35em] text-slate-400">
+                PODAT
+              </div>
+              <div className="mt-1 text-2xl font-black tracking-tight text-slate-900">
+                {panelLabel}
+              </div>
+            </div>
+          </Link>
         </div>
       </div>
 

@@ -39,6 +39,14 @@ const HEADER_ALIASES = {
   ],
 };
 
+type RowBasedHeaderInfo = {
+  rowIndex: number;
+  materiaCol: number;
+  materiaTitle: string | null;
+  anioCol: number;
+  indicatorCols: Array<{ col: number; label: string }>;
+};
+
 const pickText = (value: unknown) => {
   if (typeof value === "string") return value.trim();
   if (typeof value === "number") return String(value);
@@ -95,20 +103,17 @@ const detectAllHeaderRows = (rows: unknown[][]) => {
   return headers;
 };
 
-const detectSimpleHeaderRow = (rows: unknown[][]) => {
+const detectRowBasedHeaders = (rows: unknown[][]): RowBasedHeaderInfo[] => {
   const normalizedAliases = {
     materia: new Set(HEADER_ALIASES.materia.map(normalizeHeader)),
     anio: new Set(HEADER_ALIASES.anio.map(normalizeHeader)),
-    varones: new Set(HEADER_ALIASES.varones.map(normalizeHeader)),
-    mujeres: new Set(HEADER_ALIASES.mujeres.map(normalizeHeader)),
   };
+  const headers: RowBasedHeaderInfo[] = [];
 
   for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
     const row = rows[rowIndex] ?? [];
     let materiaCol = -1;
     let anioCol = -1;
-    let varonesCol = -1;
-    let mujeresCol = -1;
 
     for (let i = 0; i < row.length; i++) {
       const cell = pickText(row[i]);
@@ -120,57 +125,84 @@ const detectSimpleHeaderRow = (rows: unknown[][]) => {
       if (anioCol === -1 && normalizedAliases.anio.has(normalized)) {
         anioCol = i;
       }
-      if (varonesCol === -1 && normalizedAliases.varones.has(normalized)) {
-        varonesCol = i;
-      }
-      if (mujeresCol === -1 && normalizedAliases.mujeres.has(normalized)) {
-        mujeresCol = i;
+    }
+
+    if (anioCol === -1) continue;
+
+    const indicatorCols: Array<{ col: number; label: string }> = [];
+    for (let i = anioCol + 1; i < row.length; i++) {
+      const label = pickText(row[i]);
+      if (!label) continue;
+      indicatorCols.push({ col: i, label });
+    }
+
+    if (indicatorCols.length === 0) continue;
+
+    let materiaTitle: string | null = null;
+    if (materiaCol === -1) {
+      for (let i = anioCol - 1; i >= 0; i--) {
+        const cell = pickText(row[i]);
+        if (!cell) continue;
+
+        const normalized = normalizeHeader(cell);
+        if (
+          normalizedAliases.materia.has(normalized) ||
+          normalizedAliases.anio.has(normalized)
+        ) {
+          continue;
+        }
+
+        materiaCol = i;
+        materiaTitle = cell;
+        break;
       }
     }
 
-    if (varonesCol !== -1 || mujeresCol !== -1) {
-      return { rowIndex, materiaCol, anioCol, varonesCol, mujeresCol };
-    }
+    headers.push({
+      rowIndex,
+      materiaCol,
+      materiaTitle,
+      anioCol,
+      indicatorCols,
+    });
   }
 
-  return null;
+  return headers;
 };
 
-const parseSimpleRows = (matrix: unknown[][]): ParsedEstadisticaRow[] => {
-  const header = detectSimpleHeaderRow(matrix);
-  if (!header) return [];
+const parseRowBasedRows = (matrix: unknown[][]): ParsedEstadisticaRow[] => {
+  const headers = detectRowBasedHeaders(matrix);
+  if (headers.length === 0) return [];
 
   const rows: ParsedEstadisticaRow[] = [];
-  const { rowIndex, materiaCol, anioCol, varonesCol, mujeresCol } = header;
 
-  for (const row of matrix.slice(rowIndex + 1)) {
-    if (!row || row.length === 0) continue;
+  for (let h = 0; h < headers.length; h++) {
+    const { rowIndex, materiaCol, materiaTitle, anioCol, indicatorCols } = headers[h];
+    const nextHeaderRow = headers[h + 1]?.rowIndex ?? matrix.length;
+    let currentMateria = materiaTitle ?? "";
 
-    const materia = materiaCol === -1 ? null : pickText(row[materiaCol]) || null;
-    const anio = anioCol === -1 ? null : pickYear(row[anioCol]);
-    const varones = varonesCol === -1 ? null : pickNumber(row[varonesCol]);
-    const mujeres = mujeresCol === -1 ? null : pickNumber(row[mujeresCol]);
+    for (const row of matrix.slice(rowIndex + 1, nextHeaderRow)) {
+      if (!row || row.length === 0) continue;
 
-    const hasPayload =
-      materia !== null || anio !== null || varones !== null || mujeres !== null;
-    if (!hasPayload) continue;
+      const materiaCell = materiaCol === -1 ? "" : pickText(row[materiaCol]);
+      if (materiaCell) {
+        currentMateria = materiaCell;
+      }
 
-    if (varones !== null) {
-      rows.push({
-        materia,
-        indicador: "Varones inscriptos",
-        anio,
-        valor: varones,
-      });
-    }
+      const anio = pickYear(row[anioCol]);
+      if (anio === null) continue;
 
-    if (mujeres !== null) {
-      rows.push({
-        materia,
-        indicador: "Mujeres inscriptas",
-        anio,
-        valor: mujeres,
-      });
+      for (const { col, label } of indicatorCols) {
+        const value = pickNumber(row[col]);
+        if (value === null) continue;
+
+        rows.push({
+          materia: currentMateria || materiaTitle || null,
+          indicador: label,
+          anio,
+          valor: value,
+        });
+      }
     }
   }
 
@@ -180,8 +212,8 @@ const parseSimpleRows = (matrix: unknown[][]): ParsedEstadisticaRow[] => {
 export const parseEstadisticasFromMatrix = (
   matrix: unknown[][]
 ): ParsedEstadisticaRow[] => {
-  const simpleRows = parseSimpleRows(matrix);
-  if (simpleRows.length > 0) return simpleRows;
+  const rowBasedRows = parseRowBasedRows(matrix);
+  if (rowBasedRows.length > 0) return rowBasedRows;
 
   const headerInfos = detectAllHeaderRows(matrix);
   if (headerInfos.length === 0) return [];

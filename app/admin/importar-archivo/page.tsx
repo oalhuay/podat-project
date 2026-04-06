@@ -35,11 +35,6 @@ type ChangeSummary = {
   sinCambios: number;
 };
 
-type ImportDefaults = {
-  materiaId: number | null;
-  anio: number | null;
-};
-
 const normalizeText = (value: string): string =>
   value
     .trim()
@@ -121,9 +116,8 @@ export default function ImportarArchivoDocentePage() {
   const [statusMessage, setStatusMessage] = useState<StatusMessage | null>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [isCheckingChanges, setIsCheckingChanges] = useState(false);
+  const [isDragActive, setIsDragActive] = useState(false);
   const [statusFilter, setStatusFilter] = useState<EstadisticaImportStatus | "todos">("todos");
-  const [fallbackMateriaId, setFallbackMateriaId] = useState<number | "">("");
-  const [fallbackYear, setFallbackYear] = useState("");
 
   useEffect(() => {
     const loadMaterias = async () => {
@@ -187,49 +181,31 @@ export default function ImportarArchivoDocentePage() {
     void loadMaterias();
   }, []);
 
-  const importDefaults = useMemo<ImportDefaults>(() => {
-    const parsedYear = Number(fallbackYear);
-    const normalizedYear =
-      fallbackYear.trim() !== "" && Number.isFinite(parsedYear)
-        ? Math.trunc(parsedYear)
-        : null;
-
-    return {
-      materiaId: fallbackMateriaId === "" ? null : Number(fallbackMateriaId),
-      anio: normalizedYear,
-    };
-  }, [fallbackMateriaId, fallbackYear]);
-
   const buildPreview = (
     parsed: ParsedEstadisticaRow[],
-    materiasList: Materia[],
-    defaults: ImportDefaults
+    materiasList: Materia[]
   ): EstadisticaPreviewRow[] => {
     const materiaMap = new Map(materiasList.map((m) => [normalizeText(m.nombre), m]));
-    const fallbackMateria =
-      defaults.materiaId === null
-        ? null
-        : materiasList.find((m) => m.id === defaults.materiaId) ?? null;
 
     return parsed.map((row) => {
-      const materiaName = row.materia?.trim() || fallbackMateria?.nombre || "";
+      const materiaName = row.materia?.trim() || "";
       const materiaKey = materiaName ? normalizeText(materiaName) : "";
-      const materia = materiaKey ? materiaMap.get(materiaKey) : fallbackMateria;
+      const materia = materiaKey ? materiaMap.get(materiaKey) : null;
       const indicator = getIndicatorFromLabel(row.indicador);
-      const anio = row.anio ?? defaults.anio;
+      const anio = row.anio;
 
       let status: EstadisticaImportStatus = "valido";
       let mensaje = "OK";
 
       if (!materiaName) {
         status = "materia_faltante";
-        mensaje = "Completa la materia en el formulario o dentro del archivo.";
+        mensaje = "El archivo debe incluir la materia en la columna o encabezado del bloque.";
       } else if (!materia) {
         status = "materia_desconocida";
         mensaje = "Materia no encontrada en la base.";
       } else if (anio === null) {
         status = "anio_faltante";
-        mensaje = "Completa el año en el formulario o dentro del archivo.";
+        mensaje = "El archivo debe incluir el año para cada fila o columna de datos.";
       } else if (!indicator) {
         status = "indicador_desconocido";
         mensaje = "Indicador no reconocido en el catálogo.";
@@ -333,16 +309,17 @@ export default function ImportarArchivoDocentePage() {
 
   useEffect(() => {
     if (parsedRows.length === 0) return;
-    const preview = buildPreview(parsedRows, materias, importDefaults);
+    const preview = buildPreview(parsedRows, materias);
     setPreviewRows(preview);
     setSummary(buildSummary(preview));
     void computeChangeSummary(preview);
-  }, [parsedRows, materias, importDefaults]);
+  }, [parsedRows, materias]);
 
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+  const processFile = async (file: File) => {
     if (!file) return;
+
     setArchivo(file);
+    setStatusMessage(null);
 
     setIsImporting(true);
     try {
@@ -375,6 +352,31 @@ export default function ImportarArchivoDocentePage() {
     } finally {
       setIsImporting(false);
     }
+  };
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    await processFile(file);
+    event.target.value = "";
+  };
+
+  const handleDragOver = (event: React.DragEvent<HTMLLabelElement>) => {
+    event.preventDefault();
+    setIsDragActive(true);
+  };
+
+  const handleDragLeave = (event: React.DragEvent<HTMLLabelElement>) => {
+    event.preventDefault();
+    setIsDragActive(false);
+  };
+
+  const handleDrop = async (event: React.DragEvent<HTMLLabelElement>) => {
+    event.preventDefault();
+    setIsDragActive(false);
+    const file = event.dataTransfer.files?.[0];
+    if (!file) return;
+    await processFile(file);
   };
 
   const rowsFiltradas = useMemo(() => {
@@ -448,58 +450,72 @@ export default function ImportarArchivoDocentePage() {
 
       <section className="space-y-6">
         <div className="rounded-3xl border-2 border-dashed border-slate-200 bg-slate-50 p-6 md:p-8">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-slate-400">
-                Materia opcional
-              </label>
-              <select
-                className="w-full rounded-2xl border-2 border-slate-100 bg-white p-3 text-slate-900 outline-none focus:border-[#5D9AD4]"
-                value={fallbackMateriaId}
-                onChange={(e) =>
-                  setFallbackMateriaId(e.target.value === "" ? "" : Number(e.target.value))
-                }
-              >
-                <option value="">Tomar del archivo...</option>
-                {materias.map((materia) => (
-                  <option key={materia.id} value={materia.id}>
-                    {materia.nombre}
-                  </option>
-                ))}
-              </select>
-            </div>
+          <input
+            id="docente-import-file"
+            type="file"
+            accept=".xlsx"
+            onChange={handleFileChange}
+            className="sr-only"
+          />
 
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-slate-400">
-                Año opcional
-              </label>
-              <input
-                type="number"
-                min={1900}
-                max={3000}
-                className="w-full rounded-2xl border-2 border-slate-100 bg-white p-3 text-slate-900 outline-none focus:border-[#5D9AD4]"
-                value={fallbackYear}
-                onChange={(e) => setFallbackYear(e.target.value)}
-                placeholder="Tomar del archivo..."
-              />
-            </div>
-          </div>
+          <div className="grid gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.85fr)]">
+            <label
+              htmlFor="docente-import-file"
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              className={`group flex min-h-[18rem] cursor-pointer flex-col items-center justify-center rounded-[2rem] border-2 border-dashed px-8 py-10 text-center shadow-sm transition-all ${
+                isDragActive
+                  ? "border-[#5D9AD4] bg-slate-100 shadow-md"
+                  : "border-slate-200 bg-slate-100 hover:border-[#5D9AD4]/45 hover:shadow-md"
+              }`}
+            >
+              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#5D9AD4]/12 text-[#5D9AD4] ring-8 ring-[#5D9AD4]/5 transition-transform duration-200 group-hover:scale-105">
+                <span className="text-4xl font-black">+</span>
+              </div>
+              <p className="mt-6 text-2xl font-black tracking-tight text-slate-900">
+                Arrastra tu archivo o selecciónalo
+              </p>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-500">
+                Sube un archivo de Excel `.xlsx` desde tu PC. El sistema leerá automáticamente la
+                hoja útil y te mostrará una previsualización antes de guardar.
+              </p>
+              <div className="mt-6 inline-flex rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 shadow-sm">
+                Elegir archivo `.xlsx`
+              </div>
+              {archivo && (
+                <p className="mt-4 rounded-full bg-[#5D9AD4]/12 px-4 py-2 text-sm font-bold text-slate-700">
+                  Archivo cargado: {archivo.name}
+                </p>
+              )}
+            </label>
 
-          <div className="mt-5">
-            <input
-              type="file"
-              accept=".xlsx"
-              onChange={handleFileChange}
-              className="block w-full text-sm text-slate-500"
-            />
-            <p className="mt-4 font-medium text-slate-600">
-              Puedes subir una tabla tipo SyO o un Excel simple con columnas de materia, año,
-              varones inscriptos y mujeres inscriptas.
-            </p>
-            <p className="mt-2 text-sm text-slate-500">
-              Si el archivo no trae materia o año, puedes completarlos aquí antes de importar.
-            </p>
-            {archivo && <p className="mt-2 text-xs text-slate-400">Archivo: {archivo.name}</p>}
+            <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+              <p className="text-xs font-black uppercase tracking-[0.25em] text-slate-400">
+                Guía rápida
+              </p>
+              <div className="mt-5 space-y-4 text-sm leading-6 text-slate-600">
+                <p>
+                  Usa solo archivos <span className="font-black text-slate-900">`.xlsx`</span>.
+                </p>
+                <p>
+                  El archivo debe incluir <span className="font-black text-slate-900">materia</span>{" "}
+                  y <span className="font-black text-slate-900">año</span> dentro del propio Excel.
+                </p>
+                <p>
+                  <span className="font-black text-slate-900">Formato docente PODAT:</span> bloque
+                  por materia con encabezado y luego una fila por año.
+                </p>
+                <p>
+                  <span className="font-black text-slate-900">Formato simple:</span>{" "}
+                  `Materia | Año | Varones inscriptos | Mujeres inscriptas`.
+                </p>
+                <p>
+                  <span className="font-black text-slate-900">Formato tipo SyO:</span> columna
+                  `Materia`, columna `Indicadores` y columnas por año.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
 

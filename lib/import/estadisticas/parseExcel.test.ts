@@ -69,6 +69,93 @@ describe("parseEstadisticasFromMatrix", () => {
     ]);
   });
 
+  it("parsea el formato docente por bloques de materia y años en filas", () => {
+    const matrix = [
+      [],
+      [null, "SISTEMAS Y ORGANIZACIONES", "Año", "Varones Inscriptos", "Varones Regulares", "Mujeres Inscriptas", "Mujeres Regulares"],
+      [null, "SISTEMAS Y ORGANIZACIONES", "2010", "110", "44", "12", "10"],
+      [null, "SISTEMAS Y ORGANIZACIONES", "2011", "105", "40", "10", "9"],
+      [],
+      [null, "INGENIERIA DE SOFTWARE", "Año", "Varones Inscriptos", "Varones Regulares", "Mujeres Inscriptas", "Mujeres Regulares"],
+      [null, "INGENIERIA DE SOFTWARE", "2010", "115", "42", "14", "12"],
+    ];
+
+    expect(parseEstadisticasFromMatrix(matrix)).toEqual([
+      {
+        materia: "SISTEMAS Y ORGANIZACIONES",
+        indicador: "Varones Inscriptos",
+        anio: 2010,
+        valor: 110,
+      },
+      {
+        materia: "SISTEMAS Y ORGANIZACIONES",
+        indicador: "Varones Regulares",
+        anio: 2010,
+        valor: 44,
+      },
+      {
+        materia: "SISTEMAS Y ORGANIZACIONES",
+        indicador: "Mujeres Inscriptas",
+        anio: 2010,
+        valor: 12,
+      },
+      {
+        materia: "SISTEMAS Y ORGANIZACIONES",
+        indicador: "Mujeres Regulares",
+        anio: 2010,
+        valor: 10,
+      },
+      {
+        materia: "SISTEMAS Y ORGANIZACIONES",
+        indicador: "Varones Inscriptos",
+        anio: 2011,
+        valor: 105,
+      },
+      {
+        materia: "SISTEMAS Y ORGANIZACIONES",
+        indicador: "Varones Regulares",
+        anio: 2011,
+        valor: 40,
+      },
+      {
+        materia: "SISTEMAS Y ORGANIZACIONES",
+        indicador: "Mujeres Inscriptas",
+        anio: 2011,
+        valor: 10,
+      },
+      {
+        materia: "SISTEMAS Y ORGANIZACIONES",
+        indicador: "Mujeres Regulares",
+        anio: 2011,
+        valor: 9,
+      },
+      {
+        materia: "INGENIERIA DE SOFTWARE",
+        indicador: "Varones Inscriptos",
+        anio: 2010,
+        valor: 115,
+      },
+      {
+        materia: "INGENIERIA DE SOFTWARE",
+        indicador: "Varones Regulares",
+        anio: 2010,
+        valor: 42,
+      },
+      {
+        materia: "INGENIERIA DE SOFTWARE",
+        indicador: "Mujeres Inscriptas",
+        anio: 2010,
+        valor: 14,
+      },
+      {
+        materia: "INGENIERIA DE SOFTWARE",
+        indicador: "Mujeres Regulares",
+        anio: 2010,
+        valor: 12,
+      },
+    ]);
+  });
+
   it("devuelve vacio cuando no encuentra encabezados", () => {
     const matrix = [
       ["Materia", "Dato", "Valor"],
