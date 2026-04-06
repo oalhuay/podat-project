@@ -8,8 +8,12 @@ const docenteAllowedPrefixes = [
   "/admin/notas",
   "/admin/asistencias",
   "/admin/estadisticas",
+  "/admin/importar-archivo",
   "/admin/mis-materias",
 ];
+
+const matchesPrefix = (pathname: string, prefix: string) =>
+  pathname === prefix || pathname.startsWith(`${prefix}/`);
 
 export async function proxy(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -52,7 +56,7 @@ export async function proxy(request: NextRequest) {
   const rol = perfilData?.rol ?? null;
   const pathname = request.nextUrl.pathname;
 
-  const isAdminOnly = adminOnlyPrefixes.some((prefix) => pathname.startsWith(prefix));
+  const isAdminOnly = adminOnlyPrefixes.some((prefix) => matchesPrefix(pathname, prefix));
   if (isAdminOnly && rol !== "admin") {
     const url = request.nextUrl.clone();
     url.pathname = "/";
@@ -64,7 +68,7 @@ export async function proxy(request: NextRequest) {
   if (!isAdminOnly) {
     const isAdminRoute = pathname.startsWith("/admin");
     const isDocenteAllowed = docenteAllowedPrefixes.some((prefix) =>
-      pathname.startsWith(prefix)
+      matchesPrefix(pathname, prefix)
     );
 
     if (isAdminRoute && !(rol === "admin" || (rol === "docente" && isDocenteAllowed))) {

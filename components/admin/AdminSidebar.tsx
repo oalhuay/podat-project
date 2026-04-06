@@ -59,6 +59,11 @@ const docenteNavItems: NavItem[] = [
     description: "Datos del usuario",
   },
   {
+    href: "/admin/importar-archivo",
+    label: "Importar archivo",
+    description: "Carga .xlsx de tus materias",
+  },
+  {
     href: "/admin/mis-materias",
     label: "Mis materias",
     description: "Asignaciones vigentes",
@@ -75,7 +80,15 @@ const docenteNavItems: NavItem[] = [
   },
 ];
 
-export default function AdminSidebar() {
+type AdminSidebarProps = {
+  className?: string;
+  onNavigate?: () => void;
+};
+
+export default function AdminSidebar({
+  className = "",
+  onNavigate,
+}: AdminSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, signOut } = useAuth();
@@ -127,12 +140,15 @@ export default function AdminSidebar() {
 
   const handleSignOut = async () => {
     await signOut();
+    onNavigate?.();
     router.push("/");
     router.refresh();
   };
 
   return (
-    <aside className="w-full rounded-[2rem] border border-slate-200 bg-white/95 p-5 shadow-xl shadow-slate-200/60 lg:sticky lg:top-6 lg:w-80">
+    <aside
+      className={`w-full rounded-[2rem] border border-slate-200 bg-white/95 p-5 shadow-xl shadow-slate-200/60 ${className}`}
+    >
       <div className="border-b border-slate-100 pb-5">
         <div className="text-[11px] font-black uppercase tracking-[0.35em] text-slate-400">
           Panel principal
@@ -142,7 +158,11 @@ export default function AdminSidebar() {
         </div>
       </div>
 
-      <div className="mt-5 rounded-[1.75rem] bg-[linear-gradient(145deg,_rgba(93,154,212,0.14),_rgba(251,197,88,0.18))] p-4">
+      <Link
+        href="/admin/perfil"
+        onClick={onNavigate}
+        className="mt-5 block rounded-[1.75rem] bg-[linear-gradient(145deg,_rgba(93,154,212,0.14),_rgba(251,197,88,0.18))] p-4 transition-transform hover:-translate-y-0.5"
+      >
         <div className="flex items-center gap-3">
           {profileAvatar ? (
             // Google avatars are remote and not configured in next/image.
@@ -168,19 +188,21 @@ export default function AdminSidebar() {
             </div>
           </div>
         </div>
-      </div>
+      </Link>
 
       <nav className="mt-6 space-y-2">
         {navItems.map((item) => {
           const isActive =
             pathname === item.href ||
             (item.href !== "/admin/estadisticas/dashboard" &&
+              item.href !== "/admin/estadisticas" &&
               pathname.startsWith(`${item.href}/`));
 
           return (
             <Link
               key={item.href}
               href={item.href}
+              onClick={onNavigate}
               className={`block rounded-[1.5rem] border px-4 py-3 transition-all ${
                 isActive
                   ? "border-[#5D9AD4]/30 bg-[#5D9AD4]/10 shadow-sm"

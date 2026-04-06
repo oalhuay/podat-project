@@ -164,6 +164,14 @@ export default function UserAvatarMenu({ compact = false }: UserAvatarMenuProps)
             <ThemeToggle compact />
 
             <Link
+              href="/admin/perfil"
+              onClick={() => setIsMenuOpen(false)}
+              className="block w-full rounded-2xl border border-slate-200 px-4 py-3 text-center text-sm font-bold text-slate-700 transition-colors hover:bg-slate-50"
+            >
+              Ir a perfil
+            </Link>
+
+            <Link
               href="/"
               onClick={() => setIsMenuOpen(false)}
               className="block w-full rounded-2xl border border-slate-200 px-4 py-3 text-center text-sm font-bold text-slate-700 transition-colors hover:bg-slate-50"

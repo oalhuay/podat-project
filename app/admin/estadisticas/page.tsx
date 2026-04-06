@@ -54,6 +54,11 @@ type ChangeSummary = {
   sinCambios: number;
 };
 
+type ImportDefaults = {
+  materiaId: number | null;
+  anio: number | null;
+};
+
 type StatRow = {
   anio: number;
   indicador: IndicatorCode;
@@ -75,7 +80,9 @@ const buildSummary = (rows: EstadisticaPreviewRow[]): EstadisticaImportSummary =
     total: rows.length,
     validos: 0,
     calculados: 0,
+    materiaFaltante: 0,
     materiaDesconocida: 0,
+    anioFaltante: 0,
     indicadorDesconocido: 0,
     valorInvalido: 0,
   };
@@ -88,8 +95,14 @@ const buildSummary = (rows: EstadisticaPreviewRow[]): EstadisticaImportSummary =
       case "calculado_ignorado":
         summary.calculados += 1;
         break;
+      case "materia_faltante":
+        summary.materiaFaltante += 1;
+        break;
       case "materia_desconocida":
         summary.materiaDesconocida += 1;
+        break;
+      case "anio_faltante":
+        summary.anioFaltante += 1;
         break;
       case "indicador_desconocido":
         summary.indicadorDesconocido += 1;
@@ -108,7 +121,9 @@ const buildSummary = (rows: EstadisticaPreviewRow[]): EstadisticaImportSummary =
 const statusLabels: Record<EstadisticaImportStatus, string> = {
   valido: "Válido",
   calculado_ignorado: "Calculado (no se guarda)",
+  materia_faltante: "Materia faltante",
   materia_desconocida: "Materia desconocida",
+  anio_faltante: "Año faltante",
   indicador_desconocido: "Indicador desconocido",
   valor_invalido: "Valor inválido",
 };
@@ -116,7 +131,9 @@ const statusLabels: Record<EstadisticaImportStatus, string> = {
 const statusClasses: Record<EstadisticaImportStatus, string> = {
   valido: "bg-emerald-50 text-emerald-700",
   calculado_ignorado: "bg-amber-50 text-amber-700",
+  materia_faltante: "bg-rose-50 text-rose-700",
   materia_desconocida: "bg-rose-50 text-rose-700",
+  anio_faltante: "bg-rose-50 text-rose-700",
   indicador_desconocido: "bg-rose-50 text-rose-700",
   valor_invalido: "bg-rose-50 text-rose-700",
 };
@@ -173,6 +190,8 @@ export default function EstadisticasPage() {
   const [isCheckingChanges, setIsCheckingChanges] = useState(false);
   const [statusFilter, setStatusFilter] = useState<EstadisticaImportStatus | "todos">("todos");
   const [currentRole, setCurrentRole] = useState<Rol | null>(null);
+  const [fallbackMateriaId, setFallbackMateriaId] = useState<number | "">("");
+  const [fallbackYear, setFallbackYear] = useState("");
 
   const [selectedMateriaId, setSelectedMateriaId] = useState<number | "">("");
   const [selectedIndicator, setSelectedIndicator] = useState<IndicatorCode>("VAR_INS");
@@ -246,23 +265,36 @@ export default function EstadisticasPage() {
 
   const buildPreview = (
     parsed: ParsedEstadisticaRow[],
-    materiasList: Materia[]
+    materiasList: Materia[],
+    defaults: ImportDefaults
   ): EstadisticaPreviewRow[] => {
     const materiaMap = new Map(
       materiasList.map((m) => [normalizeText(m.nombre), m])
     );
+    const fallbackMateria =
+      defaults.materiaId === null
+        ? null
+        : materiasList.find((m) => m.id === defaults.materiaId) ?? null;
 
     const preview = parsed.map((row) => {
-      const materiaKey = normalizeText(row.materia);
-      const materia = materiaMap.get(materiaKey);
+      const materiaName = row.materia?.trim() || fallbackMateria?.nombre || "";
+      const materiaKey = materiaName ? normalizeText(materiaName) : "";
+      const materia = materiaKey ? materiaMap.get(materiaKey) : fallbackMateria;
       const indicator = getIndicatorFromLabel(row.indicador);
+      const anio = row.anio ?? defaults.anio;
 
       let status: EstadisticaImportStatus = "valido";
       let mensaje = "OK";
 
-      if (!materia) {
+      if (!materiaName) {
+        status = "materia_faltante";
+        mensaje = "Completa la materia en el formulario o dentro del archivo.";
+      } else if (!materia) {
         status = "materia_desconocida";
         mensaje = "Materia no encontrada en la base.";
+      } else if (anio === null) {
+        status = "anio_faltante";
+        mensaje = "Completa el año en el formulario o dentro del archivo.";
       } else if (!indicator) {
         status = "indicador_desconocido";
         mensaje = "Indicador no reconocido en el catálogo.";
@@ -275,11 +307,11 @@ export default function EstadisticasPage() {
       }
 
       return {
-        materia: row.materia,
+        materia: materiaName || "—",
         materiaId: materia?.id ?? null,
         indicadorRaw: row.indicador,
         indicadorCode: indicator?.code ?? null,
-        anio: row.anio,
+        anio,
         valor: Number.isFinite(row.valor) ? row.valor : null,
         status,
         mensaje,
@@ -289,12 +321,26 @@ export default function EstadisticasPage() {
     return preview;
   };
 
+  const importDefaults = useMemo<ImportDefaults>(() => {
+    const parsedYear = Number(fallbackYear);
+    const normalizedYear =
+      fallbackYear.trim() !== "" && Number.isFinite(parsedYear)
+        ? Math.trunc(parsedYear)
+        : null;
+
+    return {
+      materiaId: fallbackMateriaId === "" ? null : Number(fallbackMateriaId),
+      anio: normalizedYear,
+    };
+  }, [fallbackMateriaId, fallbackYear]);
+
   const computeChangeSummary = async (preview: EstadisticaPreviewRow[]) => {
     const validRows = preview.filter(
       (row) =>
         row.status === "valido" &&
         row.materiaId &&
         row.indicadorCode &&
+        row.anio !== null &&
         row.valor !== null
     );
 
@@ -383,10 +429,6 @@ export default function EstadisticasPage() {
           text: "No se encontraron datos válidos en el Excel.",
         });
       } else {
-        const preview = buildPreview(parsed, materias);
-        setPreviewRows(preview);
-        setSummary(buildSummary(preview));
-        await computeChangeSummary(preview);
         setStatusMessage({
           type: "info",
           text: `Archivo listo. Filas detectadas: ${parsed.length}.`,
@@ -405,6 +447,14 @@ export default function EstadisticasPage() {
     }
   };
 
+  useEffect(() => {
+    if (parsedRows.length === 0) return;
+    const preview = buildPreview(parsedRows, materias, importDefaults);
+    setPreviewRows(preview);
+    setSummary(buildSummary(preview));
+    void computeChangeSummary(preview);
+  }, [parsedRows, materias, importDefaults]);
+
   const crearMateriasFaltantes = async () => {
     if (parsedRows.length === 0) return;
     setIsImporting(true);
@@ -415,9 +465,11 @@ export default function EstadisticasPage() {
       parsedRows.forEach((row) => {
         const indicator = getIndicatorFromLabel(row.indicador);
         if (!indicator || indicator.isCalculated) return;
-        const key = normalizeText(row.materia);
+        const materiaName = row.materia?.trim();
+        if (!materiaName) return;
+        const key = normalizeText(materiaName);
         if (!existentes.has(key)) {
-          faltantes.add(row.materia.trim());
+          faltantes.add(materiaName);
         }
       });
 
@@ -441,7 +493,7 @@ export default function EstadisticasPage() {
 
       const materiasList = (refreshed ?? []) as Materia[];
       setMaterias(materiasList);
-      const preview = buildPreview(parsedRows, materiasList);
+      const preview = buildPreview(parsedRows, materiasList, importDefaults);
       setPreviewRows(preview);
       setSummary(buildSummary(preview));
       await computeChangeSummary(preview);
@@ -479,9 +531,10 @@ export default function EstadisticasPage() {
 
     const payload = previewRows
       .filter((row) => row.status === "valido" && row.materiaId && row.indicadorCode)
+      .filter((row) => row.anio !== null)
       .map((row) => ({
         materia_id: row.materiaId,
-        anio: row.anio,
+        anio: row.anio as number,
         indicador: row.indicadorCode,
         valor: row.valor,
       }));
@@ -636,24 +689,69 @@ export default function EstadisticasPage() {
           Estadísticas
         </h1>
         <p className="text-slate-500 mt-2 font-medium">
-          Importa tablas tipo SyO y construye el dashboard estadístico.
+          Importa archivos .xlsx de estadísticas y construye el dashboard de tus materias.
         </p>
       </header>
 
       <section className="space-y-6">
-        <div className="rounded-3xl border-2 border-dashed border-slate-200 p-10 bg-slate-50 text-center">
-          <input
-            type="file"
-            accept=".xlsx"
-            onChange={handleFileChange}
-            className="block w-full text-sm text-slate-500"
-          />
-          <p className="mt-4 text-slate-600 font-medium">
-            Formato esperado: Materia + Indicadores + columnas por año.
-          </p>
-          {archivo && (
-            <p className="mt-2 text-xs text-slate-400">Archivo: {archivo.name}</p>
-          )}
+        <div className="rounded-3xl border-2 border-dashed border-slate-200 p-6 md:p-8 bg-slate-50">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <label className="text-xs uppercase tracking-widest font-bold text-slate-400">
+                Materia opcional
+              </label>
+              <select
+                className="w-full rounded-2xl border-2 border-slate-100 bg-white p-3 text-slate-900 outline-none focus:border-[#5D9AD4]"
+                value={fallbackMateriaId}
+                onChange={(e) =>
+                  setFallbackMateriaId(
+                    e.target.value === "" ? "" : Number(e.target.value)
+                  )
+                }
+              >
+                <option value="">Tomar del archivo...</option>
+                {materias.map((materia) => (
+                  <option key={materia.id} value={materia.id}>
+                    {materia.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs uppercase tracking-widest font-bold text-slate-400">
+                Año opcional
+              </label>
+              <input
+                type="number"
+                min={1900}
+                max={3000}
+                className="w-full rounded-2xl border-2 border-slate-100 bg-white p-3 text-slate-900 outline-none focus:border-[#5D9AD4]"
+                value={fallbackYear}
+                onChange={(e) => setFallbackYear(e.target.value)}
+                placeholder="Tomar del archivo..."
+              />
+            </div>
+          </div>
+
+          <div className="mt-5">
+            <input
+              type="file"
+              accept=".xlsx"
+              onChange={handleFileChange}
+              className="block w-full text-sm text-slate-500"
+            />
+            <p className="mt-4 text-slate-600 font-medium">
+              Puedes subir una tabla tipo SyO o un Excel simple con columnas de materia, año,
+              varones inscriptos y mujeres inscriptas.
+            </p>
+            <p className="mt-2 text-sm text-slate-500">
+              Si el archivo no trae materia o año, puedes completarlos aquí antes de importar.
+            </p>
+            {archivo && (
+              <p className="mt-2 text-xs text-slate-400">Archivo: {archivo.name}</p>
+            )}
+          </div>
         </div>
 
         {statusMessage && <StatusBanner message={statusMessage} />}
@@ -673,19 +771,29 @@ export default function EstadisticasPage() {
               <p className="text-2xl font-black text-amber-800">{summary.calculados}</p>
             </div>
             <div className="rounded-2xl p-4 bg-rose-50">
-              <p className="text-xs uppercase text-rose-700 font-bold">Materia?</p>
+              <p className="text-xs uppercase text-rose-700 font-bold">Materia faltante</p>
+              <p className="text-2xl font-black text-rose-800">
+                {summary.materiaFaltante}
+              </p>
+            </div>
+            <div className="rounded-2xl p-4 bg-rose-50">
+              <p className="text-xs uppercase text-rose-700 font-bold">Materia inválida</p>
               <p className="text-2xl font-black text-rose-800">
                 {summary.materiaDesconocida}
               </p>
             </div>
             <div className="rounded-2xl p-4 bg-rose-50">
-              <p className="text-xs uppercase text-rose-700 font-bold">Indicador?</p>
+              <p className="text-xs uppercase text-rose-700 font-bold">Año faltante</p>
+              <p className="text-2xl font-black text-rose-800">{summary.anioFaltante}</p>
+            </div>
+            <div className="rounded-2xl p-4 bg-rose-50">
+              <p className="text-xs uppercase text-rose-700 font-bold">Indicador inválido</p>
               <p className="text-2xl font-black text-rose-800">
                 {summary.indicadorDesconocido}
               </p>
             </div>
             <div className="rounded-2xl p-4 bg-rose-50">
-              <p className="text-xs uppercase text-rose-700 font-bold">Valor?</p>
+              <p className="text-xs uppercase text-rose-700 font-bold">Valor inválido</p>
               <p className="text-2xl font-black text-rose-800">{summary.valorInvalido}</p>
             </div>
           </div>
@@ -753,7 +861,9 @@ export default function EstadisticasPage() {
                 "todos",
                 "valido",
                 "calculado_ignorado",
+                "materia_faltante",
                 "materia_desconocida",
+                "anio_faltante",
                 "indicador_desconocido",
                 "valor_invalido",
               ] as const).map((status) => (

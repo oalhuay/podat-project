@@ -1,9 +1,9 @@
 import { readWorkbookMatrix } from "@/lib/import/excel/readWorkbookMatrix";
 
 export type ParsedEstadisticaRow = {
-  materia: string;
+  materia: string | null;
   indicador: string;
-  anio: number;
+  anio: number | null;
   valor: number;
 };
 
@@ -17,12 +17,25 @@ const normalizeHeader = (value: string) =>
 
 const HEADER_ALIASES = {
   materia: ["Materia"],
+  anio: ["Año", "Anio"],
   indicador: [
     "Indicadores de Alumnos",
     "Indicadores de Alumno",
     "Indicadores",
     "Datos",
     "IndicadoresdeAlumnos",
+  ],
+  varones: [
+    "Varones inscriptos",
+    "Varones inscritos",
+    "Varones",
+    "Cantidad de varones",
+  ],
+  mujeres: [
+    "Mujeres inscriptas",
+    "Mujeres inscritas",
+    "Mujeres",
+    "Cantidad de mujeres",
   ],
 };
 
@@ -82,9 +95,94 @@ const detectAllHeaderRows = (rows: unknown[][]) => {
   return headers;
 };
 
+const detectSimpleHeaderRow = (rows: unknown[][]) => {
+  const normalizedAliases = {
+    materia: new Set(HEADER_ALIASES.materia.map(normalizeHeader)),
+    anio: new Set(HEADER_ALIASES.anio.map(normalizeHeader)),
+    varones: new Set(HEADER_ALIASES.varones.map(normalizeHeader)),
+    mujeres: new Set(HEADER_ALIASES.mujeres.map(normalizeHeader)),
+  };
+
+  for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
+    const row = rows[rowIndex] ?? [];
+    let materiaCol = -1;
+    let anioCol = -1;
+    let varonesCol = -1;
+    let mujeresCol = -1;
+
+    for (let i = 0; i < row.length; i++) {
+      const cell = pickText(row[i]);
+      if (!cell) continue;
+      const normalized = normalizeHeader(cell);
+      if (materiaCol === -1 && normalizedAliases.materia.has(normalized)) {
+        materiaCol = i;
+      }
+      if (anioCol === -1 && normalizedAliases.anio.has(normalized)) {
+        anioCol = i;
+      }
+      if (varonesCol === -1 && normalizedAliases.varones.has(normalized)) {
+        varonesCol = i;
+      }
+      if (mujeresCol === -1 && normalizedAliases.mujeres.has(normalized)) {
+        mujeresCol = i;
+      }
+    }
+
+    if (varonesCol !== -1 || mujeresCol !== -1) {
+      return { rowIndex, materiaCol, anioCol, varonesCol, mujeresCol };
+    }
+  }
+
+  return null;
+};
+
+const parseSimpleRows = (matrix: unknown[][]): ParsedEstadisticaRow[] => {
+  const header = detectSimpleHeaderRow(matrix);
+  if (!header) return [];
+
+  const rows: ParsedEstadisticaRow[] = [];
+  const { rowIndex, materiaCol, anioCol, varonesCol, mujeresCol } = header;
+
+  for (const row of matrix.slice(rowIndex + 1)) {
+    if (!row || row.length === 0) continue;
+
+    const materia = materiaCol === -1 ? null : pickText(row[materiaCol]) || null;
+    const anio = anioCol === -1 ? null : pickYear(row[anioCol]);
+    const varones = varonesCol === -1 ? null : pickNumber(row[varonesCol]);
+    const mujeres = mujeresCol === -1 ? null : pickNumber(row[mujeresCol]);
+
+    const hasPayload =
+      materia !== null || anio !== null || varones !== null || mujeres !== null;
+    if (!hasPayload) continue;
+
+    if (varones !== null) {
+      rows.push({
+        materia,
+        indicador: "Varones inscriptos",
+        anio,
+        valor: varones,
+      });
+    }
+
+    if (mujeres !== null) {
+      rows.push({
+        materia,
+        indicador: "Mujeres inscriptas",
+        anio,
+        valor: mujeres,
+      });
+    }
+  }
+
+  return rows;
+};
+
 export const parseEstadisticasFromMatrix = (
   matrix: unknown[][]
 ): ParsedEstadisticaRow[] => {
+  const simpleRows = parseSimpleRows(matrix);
+  if (simpleRows.length > 0) return simpleRows;
+
   const headerInfos = detectAllHeaderRows(matrix);
   if (headerInfos.length === 0) return [];
 

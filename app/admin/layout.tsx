@@ -1,13 +1,67 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isMobileSidebarOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isMobileSidebarOpen]);
+
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(93,154,212,0.12),_transparent_30%),linear-gradient(180deg,_#f8fafc_0%,_#eef4ff_100%)]">
-      <div className="mx-auto flex max-w-[1600px] flex-col gap-6 px-4 py-4 sm:px-6 lg:flex-row lg:px-8 lg:py-6">
-        <AdminSidebar />
+      <div className="sticky top-0 z-30 border-b border-white/70 bg-white/80 px-4 py-3 shadow-sm backdrop-blur sm:px-6 xl:hidden">
+        <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4">
+          <div>
+            <div className="text-[11px] font-black uppercase tracking-[0.35em] text-slate-400">
+              PODAT
+            </div>
+            <div className="text-lg font-black tracking-tight text-slate-900">
+              Panel principal
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setIsMobileSidebarOpen(true)}
+            aria-label="Abrir menú lateral"
+            className="inline-flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-900 shadow-sm transition-colors hover:bg-slate-50"
+          >
+            <span className="flex flex-col gap-1.5">
+              <span className="block h-0.5 w-5 rounded-full bg-current" />
+              <span className="block h-0.5 w-5 rounded-full bg-current" />
+              <span className="block h-0.5 w-5 rounded-full bg-current" />
+            </span>
+          </button>
+        </div>
+      </div>
+
+      {isMobileSidebarOpen && (
+        <div className="xl:hidden">
+          <button
+            type="button"
+            aria-label="Cerrar menú lateral"
+            className="fixed inset-0 z-40 bg-slate-950/35 backdrop-blur-[2px]"
+            onClick={() => setIsMobileSidebarOpen(false)}
+          />
+          <div className="fixed inset-y-0 left-0 z-50 w-[min(88vw,22rem)] p-4 sm:p-6">
+            <AdminSidebar onNavigate={() => setIsMobileSidebarOpen(false)} />
+          </div>
+        </div>
+      )}
+
+      <div className="mx-auto flex max-w-[1600px] flex-col gap-6 px-4 py-4 sm:px-6 xl:flex-row xl:px-8 xl:py-6">
+        <AdminSidebar className="hidden xl:sticky xl:top-6 xl:block xl:w-80" />
         <div className="min-w-0 flex-1">
           <div className="rounded-[2rem] border border-white/70 bg-white/90 p-6 shadow-xl shadow-slate-200/40 backdrop-blur sm:p-8">
             {children}
