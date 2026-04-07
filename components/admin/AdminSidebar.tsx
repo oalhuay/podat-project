@@ -37,29 +37,9 @@ const adminNavItems: NavItem[] = [
     description: "Estadísticas (admin)",
   },
   {
-    href: "/admin/importar-archivo",
-    label: "Importar archivo docente",
-    description: "Carga .xlsx por materia",
-  },
-  {
     href: "/admin/alumnos",
     label: "Alumnos",
-    description: "Carga de alumnos",
-  },
-  {
-    href: "/admin/notas",
-    label: "Notas",
-    description: "Carga de evaluaciones",
-  },
-  {
-    href: "/admin/asistencias",
-    label: "Asistencias",
-    description: "Control diario",
-  },
-  {
-    href: "/admin/mis-materias",
-    label: "Mis materias",
-    description: "Vista por docente",
+    description: "Alumnos, notas y asistencias",
   },
   {
     href: "/admin/materias",
@@ -87,22 +67,12 @@ const docenteNavItems: NavItem[] = [
   {
     href: "/admin/alumnos",
     label: "Alumnos",
-    description: "Padrones e importación",
+    description: "Carga, notas y asistencias",
   },
   {
     href: "/admin/mis-materias",
     label: "Mis materias",
     description: "Asignaciones vigentes",
-  },
-  {
-    href: "/admin/notas",
-    label: "Notas",
-    description: "Carga de evaluaciones",
-  },
-  {
-    href: "/admin/asistencias",
-    label: "Asistencias",
-    description: "Control diario",
   },
 ];
 
