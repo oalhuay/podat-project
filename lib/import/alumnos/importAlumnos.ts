@@ -8,6 +8,11 @@ type AlumnoRecord = {
   legajo: string;
   nombre: string;
   apellido: string;
+  genero?: string | null;
+};
+
+type ProcesableAlumnoRecord = AlumnoRecord & {
+  condicion?: string | null;
 };
 
 type Awaitable<T> = PromiseLike<T> | Promise<T>;
@@ -16,10 +21,11 @@ export type ImportPlan = {
   result: ImportResult;
   nuevos: AlumnoRecord[];
   actualizados: AlumnoRecord[];
+  aplicables: ProcesableAlumnoRecord[];
 };
 
 type SelectInResponse = Awaitable<{
-  data: Array<{ legajo: string; nombre: string; apellido: string }> | null;
+  data: Array<{ legajo: string; nombre: string; apellido: string; genero?: string | null }> | null;
   error: unknown;
 }>;
 
@@ -39,9 +45,11 @@ export type ImportAlumnosDbClient = {
 };
 
 export const toImportAlumnosDbClient = (
-  client: { from: (table: "alumnos") => unknown }
+  client: { from: (table: "alumnos") => unknown },
+  options?: { supportsGenero?: boolean }
 ): ImportAlumnosDbClient => ({
   from: (table) => {
+    const supportsGenero = options?.supportsGenero ?? false;
     const raw = client.from(table) as {
       select: (columns: string) => { in: (column: "legajo", values: string[]) => Awaitable<unknown> };
       insert: (rows: AlumnoRecord[]) => Awaitable<unknown>;
@@ -54,19 +62,28 @@ export const toImportAlumnosDbClient = (
     return {
       select: (columns) => ({
         in: async (column, values) => {
-          const result = (await raw.select(columns).in(column, values)) as {
-            data: Array<{ legajo: string; nombre: string; apellido: string }> | null;
+          const selectedColumns = supportsGenero
+            ? "legajo, nombre, apellido, genero"
+            : columns;
+          const result = (await raw.select(selectedColumns).in(column, values)) as {
+            data: Array<{ legajo: string; nombre: string; apellido: string; genero?: string | null }> | null;
             error: unknown;
           };
           return { data: result.data, error: result.error };
         },
       }),
       insert: async (rows) => {
-        const result = (await raw.insert(rows)) as { error: unknown };
+        const payload = rows.map((row) =>
+          supportsGenero ? row : { legajo: row.legajo, nombre: row.nombre, apellido: row.apellido }
+        );
+        const result = (await raw.insert(payload)) as { error: unknown };
         return { error: result.error };
       },
       upsert: async (rows, options) => {
-        const result = (await raw.upsert(rows, options)) as { error: unknown };
+        const payload = rows.map((row) =>
+          supportsGenero ? row : { legajo: row.legajo, nombre: row.nombre, apellido: row.apellido }
+        );
+        const result = (await raw.upsert(payload, options)) as { error: unknown };
         return { error: result.error };
       },
     };
@@ -100,10 +117,12 @@ export const prepararImportAlumnos = async (
     legajo: normalize(row.Legajo),
     nombre: normalize(row.Nombre),
     apellido: normalize(row.Apellido),
+    genero: normalize(row.Genero),
+    condicion: normalize(row.Condicion),
   }));
 
   const resultRows: ImportRowResult[] = [];
-  const uniqueByLegajo = new Map<string, AlumnoRecord>();
+  const uniqueByLegajo = new Map<string, ProcesableAlumnoRecord>();
 
   for (const row of preRows) {
     if (!row.legajo || !row.nombre || !row.apellido) {
@@ -141,6 +160,7 @@ export const prepararImportAlumnos = async (
       },
       nuevos: [],
       actualizados: [],
+      aplicables: [],
     };
   }
 
@@ -170,7 +190,12 @@ export const prepararImportAlumnos = async (
 
     const sameNombre = normalize(String(existing.nombre ?? "")) === row.nombre;
     const sameApellido = normalize(String(existing.apellido ?? "")) === row.apellido;
-    if (!sameNombre || !sameApellido) {
+    const canCompareGenero = "genero" in existing;
+    const sameGenero =
+      !canCompareGenero ||
+      row.genero === "" ||
+      normalize(String(existing.genero ?? "")) === row.genero;
+    if (!sameNombre || !sameApellido || !sameGenero) {
       actualizados.push(row);
     }
   }
@@ -208,6 +233,7 @@ export const prepararImportAlumnos = async (
     },
     nuevos,
     actualizados,
+    aplicables: uniqueRows,
   };
 };
 

@@ -20,6 +20,8 @@ export default function ImportResults({
   statusFilter,
   onChangeStatusFilter,
 }: ImportResultsProps) {
+  const showGenero = result.rows.some((row) => Boolean(row.genero));
+  const showCondicion = result.rows.some((row) => Boolean(row.condicion));
   const rowsFiltradas =
     statusFilter === "todos"
       ? result.rows
@@ -81,6 +83,8 @@ export default function ImportResults({
                 <th className="text-left p-3">Legajo</th>
                 <th className="text-left p-3">Apellido</th>
                 <th className="text-left p-3">Nombre</th>
+                {showGenero && <th className="text-left p-3">Género</th>}
+                {showCondicion && <th className="text-left p-3">Condición</th>}
                 <th className="text-left p-3">Estado</th>
                 <th className="text-left p-3">Detalle</th>
               </tr>
@@ -88,7 +92,10 @@ export default function ImportResults({
             <tbody>
               {rowsFiltradas.length === 0 && (
                 <tr className="border-t border-slate-100">
-                  <td colSpan={5} className="p-4 text-center text-slate-500">
+                  <td
+                    colSpan={5 + (showGenero ? 1 : 0) + (showCondicion ? 1 : 0)}
+                    className="p-4 text-center text-slate-500"
+                  >
                     No hay filas para el filtro seleccionado.
                   </td>
                 </tr>
@@ -98,6 +105,10 @@ export default function ImportResults({
                   <td className="p-3 font-mono text-slate-900">{row.legajo}</td>
                   <td className="p-3 text-slate-900">{row.apellido}</td>
                   <td className="p-3 text-slate-900">{row.nombre}</td>
+                  {showGenero && <td className="p-3 text-slate-900">{row.genero ?? "—"}</td>}
+                  {showCondicion && (
+                    <td className="p-3 text-slate-900">{row.condicion ?? "—"}</td>
+                  )}
                   <td className="p-3">
                     <span
                       className={`inline-flex px-2.5 py-1 rounded-full text-xs font-bold ${badgeClasses[row.status]}`}

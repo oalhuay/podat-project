@@ -13,8 +13,51 @@ describe("parseAlumnosFromMatrix", () => {
     const result = parseAlumnosFromMatrix(matrix);
 
     expect(result).toEqual([
-      { Legajo: "1001", Nombre: "Lionel", Apellido: "Messi" },
-      { Legajo: "1002", Nombre: "Julian", Apellido: "Alvarez" },
+      {
+        Legajo: "1001",
+        Nombre: "Lionel",
+        Apellido: "Messi",
+        Alumno: "Messi, Lionel",
+        Genero: "",
+        Condicion: "",
+      },
+      {
+        Legajo: "1002",
+        Nombre: "Julian",
+        Apellido: "Alvarez",
+        Alumno: "Alvarez, Julian",
+        Genero: "",
+        Condicion: "",
+      },
+    ]);
+  });
+
+  it("parsea el formato docente con alumno combinado, genero y condicion", () => {
+    const matrix = [
+      ["Legajo", "Alumno", "Genero", "Cond."],
+      [8536, "Alhuay Ramirez, Oscar Anthony", "Masculino", "Regular"],
+      [8500, "Di Maria, Maria Susana", "Femenino", "Libre"],
+    ];
+
+    const result = parseAlumnosFromMatrix(matrix);
+
+    expect(result).toEqual([
+      {
+        Legajo: "8536",
+        Nombre: "Oscar Anthony",
+        Apellido: "Alhuay Ramirez",
+        Alumno: "Alhuay Ramirez, Oscar Anthony",
+        Genero: "Masculino",
+        Condicion: "Regular",
+      },
+      {
+        Legajo: "8500",
+        Nombre: "Maria Susana",
+        Apellido: "Di Maria",
+        Alumno: "Di Maria, Maria Susana",
+        Genero: "Femenino",
+        Condicion: "Libre",
+      },
     ]);
   });
 
@@ -29,4 +72,3 @@ describe("parseAlumnosFromMatrix", () => {
     expect(result).toEqual([]);
   });
 });
-

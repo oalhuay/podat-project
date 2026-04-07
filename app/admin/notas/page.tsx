@@ -7,6 +7,7 @@ import {
   EvaluacionNombre,
   TipoEvaluacion,
   formatNota,
+  getAlertaCalificacion,
   getHabilitacionRecuperatorio,
   isNotaEnRango,
 } from "@/lib/notas/rules";
@@ -35,6 +36,8 @@ type AlumnoFila = {
   nombre: string;
   nota: string;
   ausente: boolean;
+  alertaEstado: "en_riesgo" | "libre" | null;
+  alertaMensaje: string | null;
   habilitado: boolean;
   motivoBloqueo: string | null;
 };
@@ -46,14 +49,19 @@ type StatusMessage = {
 
 const EVALUACIONES: EvaluacionNombre[] = ["Parcial1", "Parcial2", "Integrador"];
 const TIPOS: TipoEvaluacion[] = ["Parcial", "Recuperatorio"];
-const COMISIONES = ["A", "B", "C"] as const;
+const DEFAULT_COMISION = "A";
 const CURRENT_YEAR = new Date().getFullYear();
+
+const parseNotaInput = (value: string): number | null => {
+  if (value.trim() === "") return null;
+  const parsed = Number(value);
+  return Number.isNaN(parsed) ? null : parsed;
+};
 
 export default function CargarNotasPage() {
   const [materias, setMaterias] = useState<Materia[]>([]);
   const [materiaId, setMateriaId] = useState("");
   const [anio, setAnio] = useState(String(CURRENT_YEAR));
-  const [comision, setComision] = useState("");
   const [evaluacionNombre, setEvaluacionNombre] = useState<EvaluacionNombre | "">("");
   const [tipo, setTipo] = useState<TipoEvaluacion>("Parcial");
   const [comisionId, setComisionId] = useState<number | null>(null);
@@ -63,8 +71,8 @@ export default function CargarNotasPage() {
   const [step, setStep] = useState<"seleccion" | "carga">("seleccion");
 
   const puedeContinuar = useMemo(
-    () => Boolean(materiaId && anio && comision && evaluacionNombre && tipo),
-    [materiaId, anio, comision, evaluacionNombre, tipo]
+    () => Boolean(materiaId && anio && evaluacionNombre && tipo),
+    [materiaId, anio, evaluacionNombre, tipo]
   );
 
   const materiasMostradas = materias;
@@ -142,11 +150,17 @@ export default function CargarNotasPage() {
     setAlumnos((prev) =>
       prev.map((a) =>
         a.alumnoId === alumnoId
-          ? {
-              ...a,
-              nota,
-              ausente: nota.trim() === "" ? a.ausente : false,
-            }
+          ? (() => {
+              const nextAusente = nota.trim() === "" ? a.ausente : false;
+              const alerta = getAlertaCalificacion(tipo, parseNotaInput(nota), nextAusente);
+              return {
+                ...a,
+                nota,
+                ausente: nextAusente,
+                alertaEstado: alerta.estado,
+                alertaMensaje: alerta.mensaje,
+              };
+            })()
           : a
       )
     );
@@ -156,11 +170,17 @@ export default function CargarNotasPage() {
     setAlumnos((prev) =>
       prev.map((a) =>
         a.alumnoId === alumnoId
-          ? {
-              ...a,
-              ausente: checked,
-              nota: checked ? "" : a.nota,
-            }
+          ? (() => {
+              const nextNota = checked ? "" : a.nota;
+              const alerta = getAlertaCalificacion(tipo, parseNotaInput(nextNota), checked);
+              return {
+                ...a,
+                ausente: checked,
+                nota: nextNota,
+                alertaEstado: alerta.estado,
+                alertaMensaje: alerta.mensaje,
+              };
+            })()
           : a
       )
     );
@@ -170,7 +190,7 @@ export default function CargarNotasPage() {
     if (!puedeContinuar || !evaluacionNombre) {
       setStatusMessage({
         type: "error",
-        text: "Completa Materia, Año, Comisión, Nombre de evaluación y Tipo.",
+        text: "Completa Materia, Año, Nombre de evaluación y Tipo.",
       });
       return;
     }
@@ -184,14 +204,14 @@ export default function CargarNotasPage() {
         .select("id")
         .eq("materia_id", materiaIdNum)
         .eq("anio", Number(anio))
-        .eq("nombre", comision)
+        .eq("nombre", DEFAULT_COMISION)
         .maybeSingle();
 
       if (comisionError) throw comisionError;
       if (!comisionData) {
         setStatusMessage({
           type: "error",
-          text: "No existe la comisión para esa materia/año. Crea o carga la comisión primero.",
+          text: "No existe el curso para esa materia/año. Crea o carga alumnos primero.",
         });
         return;
       }
@@ -227,7 +247,7 @@ export default function CargarNotasPage() {
       if (alumnosBase.length === 0) {
         setStatusMessage({
           type: "info",
-          text: "No hay alumnos vinculados a esa comisión.",
+          text: "No hay alumnos vinculados a esa materia y año.",
         });
         return;
       }
@@ -305,10 +325,18 @@ export default function CargarNotasPage() {
           motivoBloqueo = result.motivoBloqueo;
         }
 
+        const alerta = getAlertaCalificacion(
+          tipo,
+          notaActual?.nota ?? null,
+          notaActual?.ausente ?? false
+        );
+
         return {
           ...alumno,
           nota: formatNota(notaActual?.nota ?? null),
           ausente: notaActual?.ausente ?? false,
+          alertaEstado: alerta.estado,
+          alertaMensaje: alerta.mensaje,
           habilitado,
           motivoBloqueo,
         };
@@ -347,7 +375,7 @@ export default function CargarNotasPage() {
     if (!comisionId || !evaluacionNombre) {
       setStatusMessage({
         type: "error",
-        text: "No hay comisión/evaluación seleccionada para guardar notas.",
+        text: "No hay curso/evaluación seleccionada para guardar notas.",
       });
       return;
     }
@@ -425,7 +453,7 @@ export default function CargarNotasPage() {
 
       if (notasError) throw notasError;
 
-      resetToStart({
+      setStatusMessage({
         type: "success",
         text: `Notas guardadas correctamente para ${alumnosHabilitados.length} alumnos habilitados.`,
       });
@@ -491,20 +519,11 @@ export default function CargarNotasPage() {
 
             <div className="space-y-2">
               <label className="text-xs uppercase tracking-widest font-bold text-slate-400">
-                Comisión
+                Curso interno
               </label>
-              <select
-                className="w-full p-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-slate-900 focus:border-[#5D9AD4] outline-none transition-all"
-                value={comision}
-                onChange={(e) => setComision(e.target.value)}
-              >
-                <option value="">Elegir...</option>
-                {COMISIONES.map((c) => (
-                  <option key={c} value={c}>
-                    Comisión {c}
-                  </option>
-                ))}
-              </select>
+              <div className="w-full p-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-slate-500">
+                Automático ({DEFAULT_COMISION})
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -579,6 +598,7 @@ export default function CargarNotasPage() {
                     <th className="text-left p-3">Nombre</th>
                     <th className="text-left p-3">Nota (1 a 10)</th>
                     <th className="text-left p-3">Ausente</th>
+                    <th className="text-left p-3">Alerta</th>
                   </tr>
                 </thead>
                 <tbody className="text-slate-800">
@@ -620,6 +640,21 @@ export default function CargarNotasPage() {
                             Ausente
                           </span>
                         </label>
+                      </td>
+                      <td className="p-3">
+                        {alumno.alertaEstado ? (
+                          <span
+                            className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${
+                              alumno.alertaEstado === "libre"
+                                ? "bg-red-100 text-red-700"
+                                : "bg-amber-100 text-amber-700"
+                            }`}
+                          >
+                            {alumno.alertaMensaje}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-slate-400">Sin alerta</span>
+                        )}
                       </td>
                     </tr>
                   ))}

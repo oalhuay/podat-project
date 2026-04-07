@@ -34,7 +34,7 @@ type StatusMessage = {
   text: string;
 };
 
-const COMISIONES = ["A", "B", "C"] as const;
+const DEFAULT_COMISION = "A";
 const UMBRAL_PORCENTAJE = 75;
 const MIN_CLASES_PARA_LIBRE = 3;
 const JUSTIFICADO_CUENTA_COMO_PRESENTE = true;
@@ -53,7 +53,6 @@ export default function CargarAsistenciaPage() {
   const [materias, setMaterias] = useState<Materia[]>([]);
   const [materiaId, setMateriaId] = useState("");
   const [anio, setAnio] = useState(String(CURRENT_YEAR));
-  const [comision, setComision] = useState("");
   const [fecha, setFecha] = useState(today);
   const [tema, setTema] = useState("");
   const [comisionId, setComisionId] = useState<number | null>(null);
@@ -68,8 +67,8 @@ export default function CargarAsistenciaPage() {
   const [step, setStep] = useState<"seleccion" | "carga">("seleccion");
 
   const puedeContinuar = useMemo(
-    () => Boolean(materiaId && anio && comision && fecha),
-    [materiaId, anio, comision, fecha]
+    () => Boolean(materiaId && anio && fecha),
+    [materiaId, anio, fecha]
   );
 
   useEffect(() => {
@@ -169,7 +168,7 @@ export default function CargarAsistenciaPage() {
     if (!puedeContinuar) {
       setStatusMessage({
         type: "error",
-        text: "Completa Materia, Año, Comisión y Fecha.",
+        text: "Completa Materia, Año y Fecha.",
       });
       return;
     }
@@ -183,14 +182,14 @@ export default function CargarAsistenciaPage() {
         .select("id")
         .eq("materia_id", materiaIdNum)
         .eq("anio", Number(anio))
-        .eq("nombre", comision)
+        .eq("nombre", DEFAULT_COMISION)
         .maybeSingle();
 
       if (comisionError) throw comisionError;
       if (!comisionData) {
         setStatusMessage({
           type: "error",
-          text: "No existe la comisión para esa materia/año. Crea o carga la comisión primero.",
+          text: "No existe el curso para esa materia/año. Crea o carga alumnos primero.",
         });
         return;
       }
@@ -238,7 +237,7 @@ export default function CargarAsistenciaPage() {
       if (alumnosBase.length === 0) {
         setStatusMessage({
           type: "info",
-          text: "No hay alumnos vinculados a esa comisión.",
+          text: "No hay alumnos vinculados a esa materia y año.",
         });
         return;
       }
@@ -453,20 +452,11 @@ export default function CargarAsistenciaPage() {
 
             <div className="space-y-2">
               <label className="text-xs uppercase tracking-widest font-bold text-slate-400">
-                Comisión
+                Curso interno
               </label>
-              <select
-                className="w-full p-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-slate-900 focus:border-[#5D9AD4] outline-none transition-all"
-                value={comision}
-                onChange={(e) => setComision(e.target.value)}
-              >
-                <option value="">Elegir...</option>
-                {COMISIONES.map((c) => (
-                  <option key={c} value={c}>
-                    Comisión {c}
-                  </option>
-                ))}
-              </select>
+              <div className="w-full p-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-slate-500">
+                Automático ({DEFAULT_COMISION})
+              </div>
             </div>
 
             <div className="space-y-2">

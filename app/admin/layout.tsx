@@ -92,8 +92,10 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             className="fixed inset-0 z-40 bg-slate-950/35 backdrop-blur-[2px]"
             onClick={() => setIsMobileSidebarOpen(false)}
           />
-          <div className="fixed inset-y-0 left-0 z-50 w-[min(88vw,22rem)] p-4 sm:p-6">
-            <AdminSidebar onNavigate={() => setIsMobileSidebarOpen(false)} />
+          <div className="fixed inset-0 z-50 overflow-y-auto p-4 sm:p-6">
+            <div className="w-[min(88vw,22rem)]">
+              <AdminSidebar onNavigate={() => setIsMobileSidebarOpen(false)} />
+            </div>
           </div>
         </div>
       )}

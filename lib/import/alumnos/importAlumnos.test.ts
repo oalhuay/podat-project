@@ -34,9 +34,30 @@ describe("importAlumnos", () => {
   it("marca invalidos y duplicados internos del Excel", async () => {
     const { client, inserted, upserted } = createDbClientMock([]);
     const rows: ParsedAlumnoRow[] = [
-      { Legajo: "1001", Nombre: "Lionel", Apellido: "Messi" },
-      { Legajo: "1001", Nombre: "Leo", Apellido: "Messi" },
-      { Legajo: "", Nombre: "Paulo", Apellido: "Dybala" },
+      {
+        Legajo: "1001",
+        Nombre: "Lionel",
+        Apellido: "Messi",
+        Alumno: "Messi, Lionel",
+        Genero: "Masculino",
+        Condicion: "Regular",
+      },
+      {
+        Legajo: "1001",
+        Nombre: "Leo",
+        Apellido: "Messi",
+        Alumno: "Messi, Leo",
+        Genero: "Masculino",
+        Condicion: "Regular",
+      },
+      {
+        Legajo: "",
+        Nombre: "Paulo",
+        Apellido: "Dybala",
+        Alumno: "Dybala, Paulo",
+        Genero: "Masculino",
+        Condicion: "Libre",
+      },
     ];
 
     const result = await importAlumnos(rows, client);
@@ -59,9 +80,30 @@ describe("importAlumnos", () => {
     ];
     const { client, inserted, upserted } = createDbClientMock(existing);
     const rows: ParsedAlumnoRow[] = [
-      { Legajo: "1001", Nombre: "Lionel", Apellido: "Messi" },
-      { Legajo: "1002", Nombre: "Angel", Apellido: "Di Maria Jr" },
-      { Legajo: "1003", Nombre: "Julian", Apellido: "Alvarez" },
+      {
+        Legajo: "1001",
+        Nombre: "Lionel",
+        Apellido: "Messi",
+        Alumno: "Messi, Lionel",
+        Genero: "Masculino",
+        Condicion: "Regular",
+      },
+      {
+        Legajo: "1002",
+        Nombre: "Angel",
+        Apellido: "Di Maria Jr",
+        Alumno: "Di Maria Jr, Angel",
+        Genero: "Masculino",
+        Condicion: "Libre",
+      },
+      {
+        Legajo: "1003",
+        Nombre: "Julian",
+        Apellido: "Alvarez",
+        Alumno: "Alvarez, Julian",
+        Genero: "Masculino",
+        Condicion: "Regular",
+      },
     ];
 
     const result = await importAlumnos(rows, client);
@@ -74,11 +116,22 @@ describe("importAlumnos", () => {
       invalidos: 0,
     });
     expect(inserted).toEqual([
-      { legajo: "1003", nombre: "Julian", apellido: "Alvarez" },
+      {
+        legajo: "1003",
+        nombre: "Julian",
+        apellido: "Alvarez",
+        genero: "Masculino",
+        condicion: "Regular",
+      },
     ]);
     expect(upserted).toEqual([
-      { legajo: "1002", nombre: "Angel", apellido: "Di Maria Jr" },
+      {
+        legajo: "1002",
+        nombre: "Angel",
+        apellido: "Di Maria Jr",
+        genero: "Masculino",
+        condicion: "Libre",
+      },
     ]);
   });
 });
-

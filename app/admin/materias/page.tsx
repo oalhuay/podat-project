@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import StatusBanner from "@/components/admin/StatusBanner";
+import { readWorkbookMatrix } from "@/lib/import/excel/readWorkbookMatrix";
 
 type Materia = {
   id: number;
@@ -20,7 +21,11 @@ type MateriaDocente = {
   id: number;
   materia_id: number;
   user_id: string;
-  comision: string | null;
+};
+
+type ParsedMateriaRow = {
+  nombre: string;
+  codigo: string;
 };
 
 type StatusMessage = {
@@ -28,22 +33,99 @@ type StatusMessage = {
   text: string;
 };
 
+const normalizeHeader = (value: string): string =>
+  value
+    .trim()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .toLowerCase();
+
+const normalizeMateriaName = (value: string): string =>
+  value
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ");
+
+const pickText = (value: unknown): string => {
+  if (typeof value === "string") return value.trim();
+  if (typeof value === "number") return String(value);
+  return "";
+};
+
+const parseMateriasFromMatrix = (matrix: unknown[][]): ParsedMateriaRow[] => {
+  const materiaAliases = new Set(["materia", "nombremateria", "asignatura"]);
+  const codigoAliases = new Set(["codigo", "codigomateria", "codigodeMateria", "cod"]);
+
+  let headerRowIndex = -1;
+  let materiaCol = -1;
+  let codigoCol = -1;
+
+  for (let rowIndex = 0; rowIndex < Math.min(matrix.length, 30); rowIndex += 1) {
+    const row = matrix[rowIndex] ?? [];
+    let foundMateria = -1;
+    let foundCodigo = -1;
+
+    for (let col = 0; col < row.length; col += 1) {
+      const normalized = normalizeHeader(pickText(row[col]));
+      if (foundMateria === -1 && materiaAliases.has(normalized)) foundMateria = col;
+      if (foundCodigo === -1 && codigoAliases.has(normalized)) foundCodigo = col;
+    }
+
+    if (foundMateria !== -1 && foundCodigo !== -1) {
+      headerRowIndex = rowIndex;
+      materiaCol = foundMateria;
+      codigoCol = foundCodigo;
+      break;
+    }
+  }
+
+  if (headerRowIndex === -1) {
+    throw new Error(
+      "No se detectó el encabezado requerido. Usa columnas: Materia | Código."
+    );
+  }
+
+  const parsed = matrix
+    .slice(headerRowIndex + 1)
+    .map((row) => ({
+      nombre: pickText(row[materiaCol]),
+      codigo: pickText(row[codigoCol]),
+    }))
+    .filter((row) => row.nombre || row.codigo);
+
+  if (parsed.length === 0) {
+    throw new Error("El archivo no tiene filas de materias para importar.");
+  }
+
+  return parsed;
+};
+
 export default function MateriasAdminPage() {
   const [materias, setMaterias] = useState<Materia[]>([]);
   const [docentes, setDocentes] = useState<Perfil[]>([]);
   const [asignaciones, setAsignaciones] = useState<MateriaDocente[]>([]);
   const [statusMessage, setStatusMessage] = useState<StatusMessage | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+
+  const [isLoadingData, setIsLoadingData] = useState(false);
+  const [isSavingManual, setIsSavingManual] = useState(false);
+  const [isSavingExcel, setIsSavingExcel] = useState(false);
+  const [isAssigning, setIsAssigning] = useState(false);
 
   const [nuevaMateria, setNuevaMateria] = useState("");
   const [nuevoCodigo, setNuevoCodigo] = useState("");
 
   const [selectedMateriaId, setSelectedMateriaId] = useState<number | "">("");
   const [selectedDocenteId, setSelectedDocenteId] = useState<string | "">("");
-  const [comision, setComision] = useState("");
+
+  const [excelFile, setExcelFile] = useState<File | null>(null);
+  const [isDragActive, setIsDragActive] = useState(false);
+  const [parsedExcelRows, setParsedExcelRows] = useState<ParsedMateriaRow[]>([]);
 
   const loadData = async () => {
-    setIsLoading(true);
+    setIsLoadingData(true);
     try {
       const { data: materiasData, error: materiasError } = await supabase
         .from("materias")
@@ -60,7 +142,7 @@ export default function MateriasAdminPage() {
 
       const { data: asignacionesData, error: asignacionesError } = await supabase
         .from("materias_docentes")
-        .select("id, materia_id, user_id, comision")
+        .select("id, materia_id, user_id")
         .order("id", { ascending: false });
       if (asignacionesError) throw asignacionesError;
 
@@ -77,7 +159,7 @@ export default function MateriasAdminPage() {
         text: `Error cargando datos: ${message}`,
       });
     } finally {
-      setIsLoading(false);
+      setIsLoadingData(false);
     }
   };
 
@@ -85,24 +167,69 @@ export default function MateriasAdminPage() {
     void loadData();
   }, []);
 
-  const crearMateria = async () => {
+  const processExcelFile = async (file: File) => {
+    try {
+      const matrix = await readWorkbookMatrix(file);
+      const rows = parseMateriasFromMatrix(matrix);
+      setExcelFile(file);
+      setParsedExcelRows(rows);
+      setStatusMessage({
+        type: "info",
+        text: `Archivo listo. Filas detectadas: ${rows.length}.`,
+      });
+    } catch (error: unknown) {
+      const message =
+        typeof error === "object" && error !== null && "message" in error
+          ? String((error as { message: unknown }).message)
+          : "Error desconocido";
+      setExcelFile(null);
+      setParsedExcelRows([]);
+      setStatusMessage({
+        type: "error",
+        text: `No se pudo procesar el archivo: ${message}`,
+      });
+    }
+  };
+
+  const crearMateriaManual = async () => {
     const nombre = nuevaMateria.trim();
+    const codigo = nuevoCodigo.trim();
     if (!nombre) {
-      setStatusMessage({ type: "error", text: "Ingresa un nombre de materia." });
+      setStatusMessage({ type: "error", text: "Ingresa el nombre de la materia." });
+      return;
+    }
+    if (!codigo) {
+      setStatusMessage({ type: "error", text: "Ingresa el código de la materia." });
       return;
     }
 
-    setIsLoading(true);
+    setIsSavingManual(true);
     try {
-      const payload = {
-        nombre,
-        codigo: nuevoCodigo.trim() === "" ? null : nuevoCodigo.trim(),
-      };
-      const { error } = await supabase.from("materias").insert(payload);
-      if (error) throw error;
+      const materiaExistente = materias.find(
+        (m) => normalizeMateriaName(m.nombre) === normalizeMateriaName(nombre)
+      );
+
+      if (materiaExistente) {
+        const { error: updateError } = await supabase
+          .from("materias")
+          .update({ codigo })
+          .eq("id", materiaExistente.id);
+        if (updateError) throw updateError;
+        setStatusMessage({
+          type: "success",
+          text: "Materia existente actualizada con el nuevo código.",
+        });
+      } else {
+        const { error: insertError } = await supabase.from("materias").insert({
+          nombre,
+          codigo,
+        });
+        if (insertError) throw insertError;
+        setStatusMessage({ type: "success", text: "Materia creada correctamente." });
+      }
+
       setNuevaMateria("");
       setNuevoCodigo("");
-      setStatusMessage({ type: "success", text: "Materia creada." });
       await loadData();
     } catch (error: unknown) {
       const message =
@@ -111,10 +238,76 @@ export default function MateriasAdminPage() {
           : "Error desconocido";
       setStatusMessage({
         type: "error",
-        text: `Error creando materia: ${message}`,
+        text: `Error guardando materia: ${message}`,
       });
     } finally {
-      setIsLoading(false);
+      setIsSavingManual(false);
+    }
+  };
+
+  const importarMateriasDesdeExcel = async () => {
+    if (parsedExcelRows.length === 0) {
+      setStatusMessage({ type: "error", text: "Primero carga un archivo válido." });
+      return;
+    }
+
+    setIsSavingExcel(true);
+    try {
+      const existingByName = new Map(
+        materias.map((m) => [normalizeMateriaName(m.nombre), m] as const)
+      );
+
+      let creadas = 0;
+      let actualizadas = 0;
+      let sinCambios = 0;
+
+      for (const row of parsedExcelRows) {
+        const nombre = row.nombre.trim();
+        const codigo = row.codigo.trim();
+        if (!nombre) continue;
+
+        const existing = existingByName.get(normalizeMateriaName(nombre));
+        if (!existing) {
+          const { error: insertError } = await supabase.from("materias").insert({
+            nombre,
+            codigo: codigo || null,
+          });
+          if (insertError) throw insertError;
+          creadas += 1;
+          continue;
+        }
+
+        const codigoActual = existing.codigo?.trim() ?? "";
+        if (codigoActual !== codigo) {
+          const { error: updateError } = await supabase
+            .from("materias")
+            .update({ codigo: codigo || null })
+            .eq("id", existing.id);
+          if (updateError) throw updateError;
+          actualizadas += 1;
+        } else {
+          sinCambios += 1;
+        }
+      }
+
+      setStatusMessage({
+        type: "success",
+        text: `Importación completada. Creadas: ${creadas}, actualizadas: ${actualizadas}, sin cambios: ${sinCambios}.`,
+      });
+      setExcelFile(null);
+      setParsedExcelRows([]);
+      await loadData();
+    } catch (error: unknown) {
+      const message =
+        typeof error === "object" && error !== null && "message" in error
+          ? String((error as { message: unknown }).message)
+          : "Error desconocido";
+      setStatusMessage({
+        type: "error",
+        text: `Error importando materias: ${message}`,
+      });
+    } finally {
+      setIsSavingExcel(false);
     }
   };
 
@@ -127,20 +320,33 @@ export default function MateriasAdminPage() {
       return;
     }
 
-    setIsLoading(true);
+    setIsAssigning(true);
     try {
-      const payload = {
+      const { data: existing, error: existingError } = await supabase
+        .from("materias_docentes")
+        .select("id")
+        .eq("materia_id", Number(selectedMateriaId))
+        .eq("user_id", selectedDocenteId)
+        .limit(1);
+      if (existingError) throw existingError;
+
+      if ((existing ?? []).length > 0) {
+        setStatusMessage({
+          type: "info",
+          text: "Esa materia ya está asignada a este docente.",
+        });
+        return;
+      }
+
+      const { error } = await supabase.from("materias_docentes").insert({
         materia_id: Number(selectedMateriaId),
         user_id: selectedDocenteId,
-        comision: comision.trim() === "" ? null : comision.trim(),
-      };
-      const { error } = await supabase
-        .from("materias_docentes")
-        .upsert(payload, { onConflict: "materia_id,user_id,comision" });
+        comision: null,
+      });
       if (error) throw error;
+
       setSelectedMateriaId("");
       setSelectedDocenteId("");
-      setComision("");
       setStatusMessage({ type: "success", text: "Asignación creada." });
       await loadData();
     } catch (error: unknown) {
@@ -153,17 +359,14 @@ export default function MateriasAdminPage() {
         text: `Error asignando materia: ${message}`,
       });
     } finally {
-      setIsLoading(false);
+      setIsAssigning(false);
     }
   };
 
   const eliminarAsignacion = async (id: number) => {
-    setIsLoading(true);
+    setIsAssigning(true);
     try {
-      const { error } = await supabase
-        .from("materias_docentes")
-        .delete()
-        .eq("id", id);
+      const { error } = await supabase.from("materias_docentes").delete().eq("id", id);
       if (error) throw error;
       setStatusMessage({ type: "success", text: "Asignación eliminada." });
       await loadData();
@@ -177,7 +380,7 @@ export default function MateriasAdminPage() {
         text: `Error eliminando asignación: ${message}`,
       });
     } finally {
-      setIsLoading(false);
+      setIsAssigning(false);
     }
   };
 
@@ -197,59 +400,139 @@ export default function MateriasAdminPage() {
     <div className="p-8 max-w-6xl mx-auto min-h-screen bg-white space-y-10">
       <header>
         <h1 className="text-4xl font-black text-slate-900 tracking-tight">
-          Materias y Asignaciones
+          Materias y asignaciones
         </h1>
         <p className="text-slate-500 mt-2 font-medium">
-          Administra el catálogo de materias y vincula docentes.
+          Gestiona materias (Excel o manual) y asigna/quita materias a docentes.
         </p>
       </header>
 
       {statusMessage && <StatusBanner message={statusMessage} />}
 
+      <section className="rounded-3xl border border-slate-200 bg-slate-50 p-6 space-y-5">
+        <h2 className="text-lg font-black text-slate-900">Importar materias desde Excel</h2>
+        <p className="text-sm text-slate-500">
+          Formato requerido: dos columnas con encabezados <span className="font-black">Materia</span>{" "}
+          y <span className="font-black">Código</span>.
+        </p>
+        <label
+          htmlFor="materias-xlsx"
+          onDragOver={(event) => {
+            event.preventDefault();
+            setIsDragActive(true);
+          }}
+          onDragLeave={(event) => {
+            event.preventDefault();
+            setIsDragActive(false);
+          }}
+          onDrop={async (event) => {
+            event.preventDefault();
+            setIsDragActive(false);
+            const file = event.dataTransfer.files?.[0];
+            if (file) await processExcelFile(file);
+          }}
+          className={`flex min-h-[12rem] cursor-pointer flex-col items-center justify-center rounded-[1.75rem] border-2 border-dashed text-center transition-colors ${
+            isDragActive ? "border-[#5D9AD4] bg-[#5D9AD4]/10" : "border-slate-200 bg-white"
+          }`}
+        >
+          <input
+            id="materias-xlsx"
+            type="file"
+            accept=".xlsx"
+            onChange={async (event) => {
+              const file = event.target.files?.[0];
+              if (file) await processExcelFile(file);
+              event.target.value = "";
+            }}
+            className="sr-only"
+          />
+          <p className="text-xl font-black text-slate-900">Arrastra un .xlsx o haz clic</p>
+          <p className="mt-2 text-sm text-slate-500">Columnas: Materia | Código</p>
+          {excelFile && <p className="mt-3 text-sm font-bold text-slate-700">{excelFile.name}</p>}
+        </label>
+
+        {parsedExcelRows.length > 0 && (
+          <>
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-600">
+              Filas listas para importar:{" "}
+              <span className="font-black text-slate-900">{parsedExcelRows.length}</span>
+            </div>
+            <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
+              <table className="w-full text-sm">
+                <thead className="bg-slate-50 text-xs uppercase text-slate-500">
+                  <tr>
+                    <th className="p-3 text-left">Materia</th>
+                    <th className="p-3 text-left">Código</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {parsedExcelRows.slice(0, 20).map((row, index) => (
+                    <tr key={`${row.nombre}-${index}`} className="border-t border-slate-100">
+                      <td className="p-3">{row.nombre}</td>
+                      <td className="p-3">{row.codigo || "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <button
+              type="button"
+              onClick={importarMateriasDesdeExcel}
+              disabled={isSavingExcel}
+              className="w-full rounded-2xl bg-[#5D9AD4] p-3 text-white font-black disabled:opacity-70"
+            >
+              {isSavingExcel ? "IMPORTANDO..." : "IMPORTAR MATERIAS"}
+            </button>
+          </>
+        )}
+      </section>
+
       <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="rounded-3xl border border-slate-200 p-6 bg-slate-50">
-          <h2 className="text-lg font-black text-slate-900">Nueva Materia</h2>
+          <h2 className="text-lg font-black text-slate-900">Carga manual de materia</h2>
+          <p className="mt-2 text-sm text-slate-500">
+            Mismo formato que Excel: <span className="font-black">Materia</span> y{" "}
+            <span className="font-black">Código</span>.
+          </p>
           <div className="mt-4 space-y-3">
             <input
               type="text"
-              placeholder="Nombre de materia"
+              placeholder="Materia"
               value={nuevaMateria}
               onChange={(e) => setNuevaMateria(e.target.value)}
               className="w-full p-3 rounded-2xl border-2 border-slate-100 bg-white text-slate-900 focus:border-[#5D9AD4] outline-none"
             />
             <input
               type="text"
-              placeholder="Código (opcional)"
+              placeholder="Código de materia"
               value={nuevoCodigo}
               onChange={(e) => setNuevoCodigo(e.target.value)}
               className="w-full p-3 rounded-2xl border-2 border-slate-100 bg-white text-slate-900 focus:border-[#5D9AD4] outline-none"
             />
             <button
-              onClick={crearMateria}
-              disabled={isLoading}
+              onClick={crearMateriaManual}
+              disabled={isSavingManual}
               className="w-full p-3 rounded-2xl bg-slate-900 text-white font-bold hover:bg-slate-800 transition-colors disabled:opacity-70"
             >
-              {isLoading ? "CREANDO..." : "CREAR MATERIA"}
+              {isSavingManual ? "GUARDANDO..." : "GUARDAR MATERIA"}
             </button>
           </div>
         </div>
 
         <div className="rounded-3xl border border-slate-200 p-6 bg-white">
-          <h2 className="text-lg font-black text-slate-900">Asignar Materia</h2>
+          <h2 className="text-lg font-black text-slate-900">Asignar materia a docente</h2>
           <div className="mt-4 space-y-3">
             <select
               value={selectedMateriaId}
               onChange={(e) =>
-                setSelectedMateriaId(
-                  e.target.value === "" ? "" : Number(e.target.value)
-                )
+                setSelectedMateriaId(e.target.value === "" ? "" : Number(e.target.value))
               }
               className="w-full p-3 rounded-2xl border-2 border-slate-100 bg-slate-50 text-slate-900 focus:border-[#5D9AD4] outline-none"
             >
               <option value="">Seleccionar materia</option>
               {materias.map((m) => (
                 <option key={m.id} value={m.id}>
-                  {m.nombre}
+                  {m.nombre} {m.codigo ? `(${m.codigo})` : ""}
                 </option>
               ))}
             </select>
@@ -267,20 +550,12 @@ export default function MateriasAdminPage() {
               ))}
             </select>
 
-            <input
-              type="text"
-              placeholder="Comisión (opcional)"
-              value={comision}
-              onChange={(e) => setComision(e.target.value)}
-              className="w-full p-3 rounded-2xl border-2 border-slate-100 bg-slate-50 text-slate-900 focus:border-[#5D9AD4] outline-none"
-            />
-
             <button
               onClick={asignarMateria}
-              disabled={isLoading}
+              disabled={isAssigning}
               className="w-full p-3 rounded-2xl bg-[#5D9AD4] text-white font-bold hover:bg-[#4C86BD] transition-colors disabled:opacity-70"
             >
-              {isLoading ? "ASIGNANDO..." : "ASIGNAR"}
+              {isAssigning ? "ASIGNANDO..." : "ASIGNAR"}
             </button>
           </div>
         </div>
@@ -294,7 +569,6 @@ export default function MateriasAdminPage() {
                 <th className="text-left p-3">Materia</th>
                 <th className="text-left p-3">Código</th>
                 <th className="text-left p-3">Docente</th>
-                <th className="text-left p-3">Comisión</th>
                 <th className="text-left p-3"></th>
               </tr>
             </thead>
@@ -307,14 +581,13 @@ export default function MateriasAdminPage() {
                     <td className="p-3">{materia?.nombre ?? "—"}</td>
                     <td className="p-3 text-slate-500">{materia?.codigo ?? "—"}</td>
                     <td className="p-3">{docente?.correo ?? asig.user_id}</td>
-                    <td className="p-3">{asig.comision ?? "—"}</td>
                     <td className="p-3 text-right">
                       <button
                         onClick={() => eliminarAsignacion(asig.id)}
-                        disabled={isLoading}
-                        className="text-xs font-bold text-rose-600 hover:text-rose-700"
+                        disabled={isAssigning}
+                        className="text-xs font-bold text-rose-600 hover:text-rose-700 disabled:opacity-70"
                       >
-                        Eliminar
+                        Quitar
                       </button>
                     </td>
                   </tr>
@@ -322,7 +595,7 @@ export default function MateriasAdminPage() {
               })}
               {asignaciones.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="p-4 text-center text-slate-400">
+                  <td colSpan={4} className="p-4 text-center text-slate-400">
                     No hay asignaciones todavía.
                   </td>
                 </tr>
@@ -331,6 +604,8 @@ export default function MateriasAdminPage() {
           </table>
         </div>
       </section>
+
+      {isLoadingData && <p className="text-sm text-slate-500">Cargando datos...</p>}
     </div>
   );
 }

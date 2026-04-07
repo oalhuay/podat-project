@@ -34,12 +34,32 @@ const adminNavItems: NavItem[] = [
   {
     href: "/admin/importar",
     label: "Importar archivo",
-    description: "Carga masiva",
+    description: "Estadísticas (admin)",
+  },
+  {
+    href: "/admin/importar-archivo",
+    label: "Importar archivo docente",
+    description: "Carga .xlsx por materia",
   },
   {
     href: "/admin/alumnos",
     label: "Alumnos",
-    description: "Vista operativa",
+    description: "Carga de alumnos",
+  },
+  {
+    href: "/admin/notas",
+    label: "Notas",
+    description: "Carga de evaluaciones",
+  },
+  {
+    href: "/admin/asistencias",
+    label: "Asistencias",
+    description: "Control diario",
+  },
+  {
+    href: "/admin/mis-materias",
+    label: "Mis materias",
+    description: "Vista por docente",
   },
   {
     href: "/admin/materias",
@@ -63,6 +83,11 @@ const docenteNavItems: NavItem[] = [
     href: "/admin/importar-archivo",
     label: "Importar archivo",
     description: "Carga .xlsx de tus materias",
+  },
+  {
+    href: "/admin/alumnos",
+    label: "Alumnos",
+    description: "Padrones e importación",
   },
   {
     href: "/admin/mis-materias",

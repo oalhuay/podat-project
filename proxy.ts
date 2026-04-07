@@ -9,6 +9,7 @@ const docenteAllowedPrefixes = [
   "/admin/asistencias",
   "/admin/estadisticas",
   "/admin/importar-archivo",
+  "/admin/alumnos",
   "/admin/mis-materias",
 ];
 
