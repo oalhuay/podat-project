@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Chart as ChartJS,
   ArcElement,
@@ -48,10 +48,17 @@ type StatusMessage = {
   text: string;
 };
 
+type Materia = {
+  id: number;
+  nombre: string;
+  codigo?: string | null;
+};
+
 const CURRENT_YEAR = new Date().getFullYear();
 
 export default function ImportarAlumnos() {
   const { resolvedTheme } = useTheme();
+  const [materias, setMaterias] = useState<Materia[]>([]);
   const [materia, setMateria] = useState("");
   const [anio, setAnio] = useState(String(CURRENT_YEAR));
   const [comision, setComision] = useState("");
@@ -65,6 +72,35 @@ export default function ImportarAlumnos() {
   const importDbClient = toImportAlumnosDbClient(supabase);
 
   const puedeSubir = materia && anio && comision && archivo;
+
+  useEffect(() => {
+    const loadMaterias = async () => {
+      const { data, error } = await supabase
+        .from("materias")
+        .select("id, nombre, codigo")
+        .order("nombre", { ascending: true });
+
+      if (error) {
+        setStatusMessage({
+          type: "error",
+          text: `No se pudieron cargar materias: ${error.message}`,
+        });
+        return;
+      }
+
+      const materiasList = (data ?? []) as Materia[];
+      setMaterias(materiasList);
+
+      if (materiasList.length === 0) {
+        setStatusMessage({
+          type: "info",
+          text: "No hay materias cargadas en la base de datos.",
+        });
+      }
+    };
+
+    void loadMaterias();
+  }, []);
 
   const chartSummary = useMemo(() => {
     if (!importResult) return null;
@@ -236,13 +272,11 @@ export default function ImportarAlumnos() {
           text: `Archivo listo. Filas detectadas: ${data.length}.`,
         });
       }
-      console.log("Datos leídos:", data);
       setDatosPrevia(data);
       setImportResult(null);
       setImportPlan(null);
       setStatusFilter("todos");
-    } catch (err) {
-      console.error("Error al procesar el archivo:", err);
+    } catch {
       setDatosPrevia([]);
       setImportResult(null);
       setImportPlan(null);
@@ -263,7 +297,6 @@ export default function ImportarAlumnos() {
       return;
     }
 
-    console.log("Iniciando análisis previo de importación...");
     setIsImporting(true);
 
     try {
@@ -280,7 +313,6 @@ export default function ImportarAlumnos() {
         typeof err === "object" && err !== null && "message" in err
           ? String((err as { message: unknown }).message)
           : fallbackMessage;
-      console.error("Error en la carga (detalle completo):", err);
       setStatusMessage({
         type: "error",
         text: `Error al subir los datos: ${errorMessage}`,
@@ -307,7 +339,6 @@ export default function ImportarAlumnos() {
         typeof err === "object" && err !== null && "message" in err
           ? String((err as { message: unknown }).message)
           : fallbackMessage;
-      console.error("Error confirmando importación:", err);
       setStatusMessage({
         type: "error",
         text: `Error al confirmar la importación: ${errorMessage}`,
@@ -349,11 +380,12 @@ export default function ImportarAlumnos() {
             onChange={(e) => setMateria(e.target.value)}
           >
             <option value="">Elegir Materia...</option>
-            <option value="1">Programación I</option>
-            <option value="2">Sistemas Operativos</option>
-            <option value="3">Base de Datos</option>
-            <option value="4">Matemática Discreta</option>
-            <option value="5">Arquitectura de Computadoras</option>
+            {materias.map((item) => (
+              <option key={item.id} value={String(item.id)}>
+                {item.nombre}
+                {item.codigo ? ` (${item.codigo})` : ""}
+              </option>
+            ))}
           </select>
         </div>
 
@@ -375,16 +407,13 @@ export default function ImportarAlumnos() {
           <label className="text-xs uppercase tracking-widest font-bold text-slate-400">
             Comisión
           </label>
-          <select
-            className="w-full p-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-slate-900 focus:border-[#5D9AD4] outline-none transition-all appearance-none cursor-pointer"
+          <input
+            type="text"
+            placeholder="Ej. A, B, mañana, comisión única"
+            className="w-full p-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-slate-900 focus:border-[#5D9AD4] outline-none transition-all"
             value={comision}
             onChange={(e) => setComision(e.target.value)}
-          >
-            <option value="">Elegir...</option>
-            <option value="A">Comisión A</option>
-            <option value="B">Comisión B</option>
-            <option value="C">Comisión C</option>
-          </select>
+          />
         </div>
       </section>
 

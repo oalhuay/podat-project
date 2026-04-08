@@ -55,7 +55,6 @@ type AsistenciaAlumnoRow = {
 };
 
 const CURRENT_YEAR = new Date().getFullYear();
-const DEFAULT_COMISION = "A";
 const EVALUACIONES: EvaluacionNombre[] = ["Parcial1", "Parcial2", "Integrador"];
 const UMBRAL_PORCENTAJE = 75;
 const MIN_CLASES_PARA_LIBRE = 3;
@@ -146,13 +145,11 @@ export default function AlumnosPage() {
   const [evaluacionNombre, setEvaluacionNombre] = useState<EvaluacionNombre>("Parcial1");
   const [tipoEvaluacion, setTipoEvaluacion] = useState<TipoEvaluacion>("Parcial");
   const [notasRows, setNotasRows] = useState<NotaAlumnoRow[]>([]);
-  const [comisionIdNotas, setComisionIdNotas] = useState<number | null>(null);
   const [isNotasReady, setIsNotasReady] = useState(false);
   const [isLoadingNotas, setIsLoadingNotas] = useState(false);
   const [fecha, setFecha] = useState(today);
   const [tema, setTema] = useState("");
   const [asistenciaRows, setAsistenciaRows] = useState<AsistenciaAlumnoRow[]>([]);
-  const [comisionIdAsistencia, setComisionIdAsistencia] = useState<number | null>(null);
   const [claseIdAsistencia, setClaseIdAsistencia] = useState<string | null>(null);
   const [isAsistenciaReady, setIsAsistenciaReady] = useState(false);
   const [isLoadingAsistencia, setIsLoadingAsistencia] = useState(false);
@@ -240,13 +237,11 @@ export default function AlumnosPage() {
 
   const resetNotasState = () => {
     setNotasRows([]);
-    setComisionIdNotas(null);
     setIsNotasReady(false);
   };
 
   const resetAsistenciaState = () => {
     setAsistenciaRows([]);
-    setComisionIdAsistencia(null);
     setClaseIdAsistencia(null);
     setIsAsistenciaReady(false);
     setTotalClasesAsistencia(0);
@@ -308,26 +303,50 @@ export default function AlumnosPage() {
     }
   };
 
-  const ensureComision = async (): Promise<number> => {
+  const vincularAlumnosAMateriaAnio = async (plan: ImportPlan): Promise<void> => {
     const materiaId = Number(selectedMateriaId);
-    const nombre = DEFAULT_COMISION;
-    const { data: existing, error: selectError } = await supabase
-      .from("comisiones")
-      .select("id")
-      .eq("materia_id", materiaId)
-      .eq("anio", Number(anio))
-      .eq("nombre", nombre)
-      .maybeSingle();
-    if (selectError) throw selectError;
-    if (existing?.id) return Number(existing.id);
+    const anioValue = Number(anio);
+    const legajos = Array.from(new Set(plan.aplicables.map((row) => row.legajo).filter(Boolean)));
+    if (legajos.length === 0) return;
 
-    const { data: created, error: createError } = await supabase
-      .from("comisiones")
-      .insert({ materia_id: materiaId, anio: Number(anio), nombre })
-      .select("id")
-      .single();
-    if (createError) throw createError;
-    return Number(created.id);
+    const { data: alumnosData, error: alumnosError } = await supabase
+      .from("alumnos")
+      .select("id, legajo")
+      .in("legajo", legajos);
+    if (alumnosError) throw alumnosError;
+
+    const alumnoIdByLegajo = new Map(
+      (alumnosData ?? []).map((row) => [String(row.legajo), Number(row.id)] as const)
+    );
+
+    const payload = plan.aplicables
+      .map((row) => {
+        const alumnoId = alumnoIdByLegajo.get(row.legajo);
+        if (!alumnoId) return null;
+        return {
+          alumno_id: alumnoId,
+          materia_id: materiaId,
+          anio: anioValue,
+          condicion: row.condicion?.trim() ? row.condicion.trim() : null,
+        };
+      })
+      .filter(
+        (
+          row
+        ): row is {
+          alumno_id: number;
+          materia_id: number;
+          anio: number;
+          condicion: string | null;
+        } => row !== null
+      );
+
+    if (payload.length === 0) return;
+
+    const { error: upsertError } = await supabase
+      .from("alumno_materia_anio")
+      .upsert(payload, { onConflict: "alumno_id,materia_id,anio" });
+    if (upsertError) throw upsertError;
   };
 
   const confirmImport = async () => {
@@ -335,7 +354,7 @@ export default function AlumnosPage() {
     setIsLoading(true);
     try {
       await ejecutarImportPlan(importPlan, importDbClient);
-      await ensureComision();
+      await vincularAlumnosAMateriaAnio(importPlan);
       setImportPlan(null);
       setStatusMessage({ type: "success", text: "Importación aplicada correctamente." });
     } catch (error: unknown) {
@@ -409,32 +428,13 @@ export default function AlumnosPage() {
     setIsLoadingNotas(true);
     try {
       const materiaId = Number(selectedMateriaId);
-      const comisionNombre = DEFAULT_COMISION;
-
-      const { data: comisionData, error: comisionError } = await supabase
-        .from("comisiones")
-        .select("id")
-        .eq("materia_id", materiaId)
-        .eq("anio", Number(anio))
-        .eq("nombre", comisionNombre)
-        .maybeSingle();
-
-      if (comisionError) throw comisionError;
-      if (!comisionData?.id) {
-        setStatusMessage({
-          type: "error",
-          text: "No existe el curso para la materia y año seleccionados. Carga alumnos primero.",
-        });
-        return;
-      }
-
-      const currentComisionId = Number(comisionData.id);
-      setComisionIdNotas(currentComisionId);
+      const anioValue = Number(anio);
 
       const { data: alumnosData, error: alumnosError } = await supabase
-        .from("alumno_comision")
+        .from("alumno_materia_anio")
         .select("alumno_id, alumnos(id, legajo, nombre, apellido)")
-        .eq("comision_id", currentComisionId);
+        .eq("materia_id", materiaId)
+        .eq("anio", anioValue);
 
       if (alumnosError) throw alumnosError;
 
@@ -468,7 +468,8 @@ export default function AlumnosPage() {
       const { data: evaluacionActual, error: evaluacionActualError } = await supabase
         .from("evaluaciones")
         .select("id")
-        .eq("comision_id", currentComisionId)
+        .eq("materia_id", materiaId)
+        .eq("anio", anioValue)
         .eq("nombre", evaluacionNombre)
         .eq("tipo", tipoEvaluacion)
         .maybeSingle();
@@ -494,7 +495,8 @@ export default function AlumnosPage() {
         const { data: evalParcial, error: evalParcialError } = await supabase
           .from("evaluaciones")
           .select("id")
-          .eq("comision_id", currentComisionId)
+          .eq("materia_id", materiaId)
+          .eq("anio", anioValue)
           .eq("nombre", evaluacionNombre)
           .eq("tipo", "Parcial")
           .maybeSingle();
@@ -572,7 +574,7 @@ export default function AlumnosPage() {
   };
 
   const guardarNotas = async () => {
-    if (!comisionIdNotas || !isNotasReady) {
+    if (!isNotasReady || selectedMateriaId === "" || !anio.trim()) {
       setStatusMessage({ type: "error", text: "Primero carga la lista de alumnos." });
       return;
     }
@@ -602,10 +604,13 @@ export default function AlumnosPage() {
 
     setIsLoadingNotas(true);
     try {
+      const materiaId = Number(selectedMateriaId);
+      const anioValue = Number(anio);
       const { data: evalExistente, error: evalSelectError } = await supabase
         .from("evaluaciones")
         .select("id")
-        .eq("comision_id", comisionIdNotas)
+        .eq("materia_id", materiaId)
+        .eq("anio", anioValue)
         .eq("nombre", evaluacionNombre)
         .eq("tipo", tipoEvaluacion)
         .maybeSingle();
@@ -616,7 +621,8 @@ export default function AlumnosPage() {
         const { data: evalNueva, error: evalInsertError } = await supabase
           .from("evaluaciones")
           .insert({
-            comision_id: comisionIdNotas,
+            materia_id: materiaId,
+            anio: anioValue,
             nombre: evaluacionNombre,
             tipo: tipoEvaluacion,
           })
@@ -688,32 +694,13 @@ export default function AlumnosPage() {
     setIsLoadingAsistencia(true);
     try {
       const materiaId = Number(selectedMateriaId);
-      const comisionNombre = DEFAULT_COMISION;
-
-      const { data: comisionData, error: comisionError } = await supabase
-        .from("comisiones")
-        .select("id")
-        .eq("materia_id", materiaId)
-        .eq("anio", Number(anio))
-        .eq("nombre", comisionNombre)
-        .maybeSingle();
-
-      if (comisionError) throw comisionError;
-      if (!comisionData?.id) {
-        setStatusMessage({
-          type: "error",
-          text: "No existe el curso para la materia y año seleccionados. Carga alumnos primero.",
-        });
-        return;
-      }
-
-      const currentComisionId = Number(comisionData.id);
-      setComisionIdAsistencia(currentComisionId);
+      const anioValue = Number(anio);
 
       const { data: claseData, error: claseError } = await supabase
         .from("clases")
         .select("id")
-        .eq("comision_id", currentComisionId)
+        .eq("materia_id", materiaId)
+        .eq("anio", anioValue)
         .eq("fecha", fecha)
         .maybeSingle();
       if (claseError) throw claseError;
@@ -722,9 +709,10 @@ export default function AlumnosPage() {
       setClaseIdAsistencia(currentClaseId);
 
       const { data: alumnosData, error: alumnosError } = await supabase
-        .from("alumno_comision")
+        .from("alumno_materia_anio")
         .select("alumno_id, alumnos(id, legajo, nombre, apellido)")
-        .eq("comision_id", currentComisionId);
+        .eq("materia_id", materiaId)
+        .eq("anio", anioValue);
       if (alumnosError) throw alumnosError;
 
       const alumnosBase = (alumnosData ?? [])
@@ -770,7 +758,8 @@ export default function AlumnosPage() {
       const { data: clasesData, error: clasesDataError } = await supabase
         .from("clases")
         .select("id")
-        .eq("comision_id", currentComisionId);
+        .eq("materia_id", materiaId)
+        .eq("anio", anioValue);
       if (clasesDataError) throw clasesDataError;
 
       const clasesIds = (clasesData ?? []).map((c) => String(c.id));
@@ -840,19 +829,22 @@ export default function AlumnosPage() {
   };
 
   const guardarAsistencia = async () => {
-    if (!comisionIdAsistencia || !isAsistenciaReady) {
+    if (!isAsistenciaReady || selectedMateriaId === "" || !anio.trim()) {
       setStatusMessage({ type: "error", text: "Primero carga la lista de asistencia." });
       return;
     }
 
     setIsLoadingAsistencia(true);
     try {
+      const materiaId = Number(selectedMateriaId);
+      const anioValue = Number(anio);
       let currentClaseId = claseIdAsistencia;
       if (!currentClaseId) {
         const { data: nuevaClase, error: nuevaClaseError } = await supabase
           .from("clases")
           .insert({
-            comision_id: comisionIdAsistencia,
+            materia_id: materiaId,
+            anio: anioValue,
             fecha,
             tema: tema.trim() === "" ? null : tema.trim(),
           })
@@ -918,7 +910,7 @@ export default function AlumnosPage() {
       {hasSelectedMateria && (
         <section className="mb-6 rounded-[2rem] border border-slate-200 bg-slate-50 p-6">
           <p className="text-xs font-black uppercase tracking-[0.25em] text-slate-400">Paso 2</p>
-          <div className="mt-3 grid gap-4 md:grid-cols-2">
+          <div className="mt-3 grid gap-4">
             <input
               type="number"
               min={1900}
@@ -927,9 +919,6 @@ export default function AlumnosPage() {
               onChange={(event) => setAnio(event.target.value)}
               className="rounded-2xl border-2 border-slate-100 bg-white p-4 text-slate-900 outline-none focus:border-[#5D9AD4]"
             />
-            <div className="flex items-center rounded-2xl border-2 border-slate-100 bg-white p-4 text-sm font-semibold text-slate-500">
-              Comisión interna automática: {DEFAULT_COMISION}
-            </div>
           </div>
         </section>
       )}

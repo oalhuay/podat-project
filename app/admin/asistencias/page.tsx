@@ -34,7 +34,6 @@ type StatusMessage = {
   text: string;
 };
 
-const DEFAULT_COMISION = "A";
 const UMBRAL_PORCENTAJE = 75;
 const MIN_CLASES_PARA_LIBRE = 3;
 const JUSTIFICADO_CUENTA_COMO_PRESENTE = true;
@@ -55,7 +54,6 @@ export default function CargarAsistenciaPage() {
   const [anio, setAnio] = useState(String(CURRENT_YEAR));
   const [fecha, setFecha] = useState(today);
   const [tema, setTema] = useState("");
-  const [comisionId, setComisionId] = useState<number | null>(null);
   const [claseId, setClaseId] = useState<string | null>(null);
   const [alumnos, setAlumnos] = useState<AlumnoFila[]>([]);
   const [totalClases, setTotalClases] = useState<number>(0);
@@ -135,7 +133,6 @@ export default function CargarAsistenciaPage() {
 
   const resetToStart = (message?: StatusMessage) => {
     setStep("seleccion");
-    setComisionId(null);
     setClaseId(null);
     setAlumnos([]);
     setTotalClases(0);
@@ -177,30 +174,13 @@ export default function CargarAsistenciaPage() {
     try {
       const materiaIdNum = Number(materiaId);
 
-      const { data: comisionData, error: comisionError } = await supabase
-        .from("comisiones")
-        .select("id")
-        .eq("materia_id", materiaIdNum)
-        .eq("anio", Number(anio))
-        .eq("nombre", DEFAULT_COMISION)
-        .maybeSingle();
-
-      if (comisionError) throw comisionError;
-      if (!comisionData) {
-        setStatusMessage({
-          type: "error",
-          text: "No existe el curso para esa materia/año. Crea o carga alumnos primero.",
-        });
-        return;
-      }
-
-      const comisionIdValue = Number(comisionData.id);
-      setComisionId(comisionIdValue);
+      const anioValue = Number(anio);
 
       const { data: claseData, error: claseError } = await supabase
         .from("clases")
         .select("id")
-        .eq("comision_id", comisionIdValue)
+        .eq("materia_id", materiaIdNum)
+        .eq("anio", anioValue)
         .eq("fecha", fecha)
         .maybeSingle();
 
@@ -210,9 +190,10 @@ export default function CargarAsistenciaPage() {
       setClaseId(claseIdValue);
 
       const { data: alumnosData, error: alumnosError } = await supabase
-        .from("alumno_comision")
+        .from("alumno_materia_anio")
         .select("alumno_id, alumnos(id, legajo, nombre, apellido)")
-        .eq("comision_id", comisionIdValue);
+        .eq("materia_id", materiaIdNum)
+        .eq("anio", anioValue);
 
       if (alumnosError) throw alumnosError;
 
@@ -259,7 +240,8 @@ export default function CargarAsistenciaPage() {
       const { data: clasesData, error: clasesDataError } = await supabase
         .from("clases")
         .select("id")
-        .eq("comision_id", comisionIdValue);
+        .eq("materia_id", materiaIdNum)
+        .eq("anio", anioValue);
 
       if (clasesDataError) throw clasesDataError;
 
@@ -345,10 +327,10 @@ export default function CargarAsistenciaPage() {
   };
 
   const guardarAsistencia = async () => {
-    if (!comisionId) {
+    if (!materiaId || !anio) {
       setStatusMessage({
         type: "error",
-        text: "No hay comisión seleccionada para guardar asistencia.",
+        text: "No hay curso seleccionado para guardar asistencia.",
       });
       return;
     }
@@ -360,7 +342,8 @@ export default function CargarAsistenciaPage() {
         const { data: nuevaClase, error: insertClaseError } = await supabase
           .from("clases")
           .insert({
-            comision_id: comisionId,
+            materia_id: Number(materiaId),
+            anio: Number(anio),
             fecha,
             tema: tema.trim() === "" ? null : tema.trim(),
           })
@@ -455,7 +438,7 @@ export default function CargarAsistenciaPage() {
                 Curso interno
               </label>
               <div className="w-full p-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-slate-500">
-                Automático ({DEFAULT_COMISION})
+                Automático por materia y año
               </div>
             </div>
 

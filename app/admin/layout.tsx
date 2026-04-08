@@ -86,14 +86,14 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
       {isMobileSidebarOpen && (
         <div className="xl:hidden">
-          <button
-            type="button"
-            aria-label="Cerrar menú lateral"
-            className="fixed inset-0 z-40 bg-slate-950/35 backdrop-blur-[2px]"
+          <div
+            className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/35 p-4 backdrop-blur-[2px] sm:p-6"
             onClick={() => setIsMobileSidebarOpen(false)}
-          />
-          <div className="fixed inset-0 z-50 overflow-y-auto p-4 sm:p-6">
-            <div className="w-[min(88vw,22rem)]">
+          >
+            <div
+              className="w-[min(88vw,22rem)]"
+              onClick={(event) => event.stopPropagation()}
+            >
               <AdminSidebar onNavigate={() => setIsMobileSidebarOpen(false)} />
             </div>
           </div>

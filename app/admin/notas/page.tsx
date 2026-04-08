@@ -49,7 +49,6 @@ type StatusMessage = {
 
 const EVALUACIONES: EvaluacionNombre[] = ["Parcial1", "Parcial2", "Integrador"];
 const TIPOS: TipoEvaluacion[] = ["Parcial", "Recuperatorio"];
-const DEFAULT_COMISION = "A";
 const CURRENT_YEAR = new Date().getFullYear();
 
 const parseNotaInput = (value: string): number | null => {
@@ -64,7 +63,6 @@ export default function CargarNotasPage() {
   const [anio, setAnio] = useState(String(CURRENT_YEAR));
   const [evaluacionNombre, setEvaluacionNombre] = useState<EvaluacionNombre | "">("");
   const [tipo, setTipo] = useState<TipoEvaluacion>("Parcial");
-  const [comisionId, setComisionId] = useState<number | null>(null);
   const [alumnos, setAlumnos] = useState<AlumnoFila[]>([]);
   const [statusMessage, setStatusMessage] = useState<StatusMessage | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -141,7 +139,6 @@ export default function CargarNotasPage() {
 
   const resetToStart = (message?: StatusMessage) => {
     setStep("seleccion");
-    setComisionId(null);
     setAlumnos([]);
     if (message) setStatusMessage(message);
   };
@@ -199,30 +196,13 @@ export default function CargarNotasPage() {
     try {
       const materiaIdNum = Number(materiaId);
 
-      const { data: comisionData, error: comisionError } = await supabase
-        .from("comisiones")
-        .select("id")
-        .eq("materia_id", materiaIdNum)
-        .eq("anio", Number(anio))
-        .eq("nombre", DEFAULT_COMISION)
-        .maybeSingle();
-
-      if (comisionError) throw comisionError;
-      if (!comisionData) {
-        setStatusMessage({
-          type: "error",
-          text: "No existe el curso para esa materia/año. Crea o carga alumnos primero.",
-        });
-        return;
-      }
-
-      const comisionIdValue = Number(comisionData.id);
-      setComisionId(comisionIdValue);
+      const anioValue = Number(anio);
 
       const { data: alumnosData, error: alumnosError } = await supabase
-        .from("alumno_comision")
+        .from("alumno_materia_anio")
         .select("alumno_id, alumnos(id, legajo, nombre, apellido)")
-        .eq("comision_id", comisionIdValue);
+        .eq("materia_id", materiaIdNum)
+        .eq("anio", anioValue);
 
       if (alumnosError) throw alumnosError;
 
@@ -255,7 +235,8 @@ export default function CargarNotasPage() {
       const { data: evaluacionActualData, error: evalActualError } = await supabase
         .from("evaluaciones")
         .select("id")
-        .eq("comision_id", comisionIdValue)
+        .eq("materia_id", materiaIdNum)
+        .eq("anio", anioValue)
         .eq("nombre", evaluacionNombre)
         .eq("tipo", tipo)
         .maybeSingle();
@@ -284,7 +265,8 @@ export default function CargarNotasPage() {
         const { data: evalParcialData, error: evalParcialError } = await supabase
           .from("evaluaciones")
           .select("id")
-          .eq("comision_id", comisionIdValue)
+          .eq("materia_id", materiaIdNum)
+          .eq("anio", anioValue)
           .eq("nombre", evaluacionNombre)
           .eq("tipo", "Parcial")
           .maybeSingle();
@@ -372,7 +354,7 @@ export default function CargarNotasPage() {
   };
 
   const guardarNotas = async () => {
-    if (!comisionId || !evaluacionNombre) {
+    if (!materiaId || !anio || !evaluacionNombre) {
       setStatusMessage({
         type: "error",
         text: "No hay curso/evaluación seleccionada para guardar notas.",
@@ -415,7 +397,8 @@ export default function CargarNotasPage() {
       const { data: evaluacionExistente, error: evalSelectError } = await supabase
         .from("evaluaciones")
         .select("id")
-        .eq("comision_id", comisionId)
+        .eq("materia_id", Number(materiaId))
+        .eq("anio", Number(anio))
         .eq("nombre", evaluacionNombre)
         .eq("tipo", tipo)
         .maybeSingle();
@@ -429,7 +412,8 @@ export default function CargarNotasPage() {
         const { data: evaluacionNueva, error: evalInsertError } = await supabase
           .from("evaluaciones")
           .insert({
-            comision_id: comisionId,
+            materia_id: Number(materiaId),
+            anio: Number(anio),
             nombre: evaluacionNombre,
             tipo,
           })
@@ -522,7 +506,7 @@ export default function CargarNotasPage() {
                 Curso interno
               </label>
               <div className="w-full p-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-slate-500">
-                Automático ({DEFAULT_COMISION})
+                Automático por materia y año
               </div>
             </div>
 

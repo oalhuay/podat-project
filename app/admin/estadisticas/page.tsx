@@ -434,10 +434,11 @@ export default function EstadisticasPage() {
           text: `Archivo listo. Filas detectadas: ${parsed.length}.`,
         });
       }
-    } catch (error) {
-      console.error(error);
+    } catch {
+      setParsedRows([]);
       setPreviewRows([]);
       setSummary(null);
+      setChangeSummary(null);
       setStatusMessage({
         type: "error",
         text: "No se pudo leer el archivo. Verifica que sea un Excel .xlsx válido.",
@@ -519,6 +520,15 @@ export default function EstadisticasPage() {
     if (statusFilter === "todos") return previewRows;
     return previewRows.filter((row) => row.status === statusFilter);
   }, [previewRows, statusFilter]);
+
+  const clearPreview = () => {
+    setArchivo(null);
+    setParsedRows([]);
+    setPreviewRows([]);
+    setSummary(null);
+    setChangeSummary(null);
+    setStatusFilter("todos");
+  };
 
   const aceptarImportacion = async () => {
     if (previewRows.length === 0) {
@@ -935,12 +945,7 @@ export default function EstadisticasPage() {
                 {isImporting ? "GUARDANDO..." : "GUARDAR ESTADÍSTICAS"}
               </button>
               <button
-                onClick={() => {
-                  setArchivo(null);
-                  setPreviewRows([]);
-                  setSummary(null);
-                  setStatusFilter("todos");
-                }}
+                onClick={clearPreview}
                 disabled={isImporting}
                 className="w-full p-4 bg-slate-200 text-slate-800 font-black text-lg rounded-2xl hover:bg-slate-300 transition-colors disabled:opacity-70"
               >

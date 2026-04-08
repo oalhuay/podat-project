@@ -339,8 +339,7 @@ export default function ImportarArchivoDocentePage() {
           text: `Archivo listo. Filas detectadas: ${parsed.length}.`,
         });
       }
-    } catch (error) {
-      console.error(error);
+    } catch {
       setParsedRows([]);
       setPreviewRows([]);
       setSummary(null);
