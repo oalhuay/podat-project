@@ -11,10 +11,10 @@ export default function FileDropzone({
 }: FileDropzoneProps) {
   return (
     <div
-      className={`relative border-4 border-dashed rounded-[2.5rem] p-16 transition-all flex flex-col items-center justify-center ${
+      className={`relative flex flex-col items-center justify-center rounded-[2.5rem] border-2 border-dashed p-16 text-center transition-all ${
         archivo
-          ? "border-green-200 bg-green-50"
-          : "border-slate-100 bg-slate-50 hover:bg-slate-100"
+          ? "border-emerald-200 bg-emerald-50/80 shadow-sm"
+          : "border-slate-200 bg-slate-50 hover:border-[#5D9AD4]/40 hover:bg-slate-100"
       }`}
     >
       <input
@@ -25,12 +25,20 @@ export default function FileDropzone({
       />
 
       <div className="text-center">
-        <span className="text-6xl mb-6 block">{archivo ? "OK" : "FILE"}</span>
-        <p className="text-xl font-bold text-slate-700">
-          {archivo ? archivo.name : "Arrastra el Excel .xlsx aqui"}
+        <div
+          className={`mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full text-sm font-black uppercase tracking-[0.25em] ${
+            archivo
+              ? "bg-emerald-100 text-emerald-700"
+              : "bg-[#5D9AD4]/10 text-[#5D9AD4]"
+          }`}
+        >
+          {archivo ? "OK" : "XLSX"}
+        </div>
+        <p className="text-xl font-black text-slate-800">
+          {archivo ? archivo.name : "Arrastra el archivo o haz clic para elegirlo"}
         </p>
-        <p className="text-slate-400 text-sm mt-2">
-          Campos requeridos: Legajo, Apellido, Nombre, Email, Genero.
+        <p className="mt-2 text-sm text-slate-500">
+          Formato esperado: `Legajo`, `Alumno` o `Apellido/Nombre`, `Género` y `Condición`.
         </p>
       </div>
     </div>

@@ -10,18 +10,27 @@ type StatusBannerProps = {
 };
 
 const statusMessageClasses = {
-  success: "bg-green-50 text-green-800 border-green-200",
-  error: "bg-red-50 text-red-800 border-red-200",
-  info: "bg-slate-50 text-slate-700 border-slate-200",
+  success: "border-emerald-200 bg-emerald-50 text-emerald-800",
+  error: "border-rose-200 bg-rose-50 text-rose-800",
+  info: "border-slate-200 bg-slate-50 text-slate-700",
+};
+
+const statusAccentClasses = {
+  success: "bg-emerald-500",
+  error: "bg-rose-500",
+  info: "bg-[#5D9AD4]",
 };
 
 export default function StatusBanner({ message }: StatusBannerProps) {
   return (
     <div
-      className={`mt-6 rounded-2xl border px-4 py-3 text-sm font-medium ${statusMessageClasses[message.type]}`}
+      className={`mt-6 flex items-start gap-3 rounded-[1.5rem] border px-4 py-3 text-sm font-medium shadow-sm ${statusMessageClasses[message.type]}`}
     >
-      {message.text}
+      <span
+        aria-hidden="true"
+        className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${statusAccentClasses[message.type]}`}
+      />
+      <span className="leading-6">{message.text}</span>
     </div>
   );
 }
-

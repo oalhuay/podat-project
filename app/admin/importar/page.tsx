@@ -362,7 +362,7 @@ export default function ImportarAlumnos() {
     <div className="p-8 max-w-4xl mx-auto min-h-screen bg-white">
       <header className="mb-10">
         <h1 className="text-4xl font-black text-slate-900 tracking-tight">
-          Carga de Alumnos
+          Importación de Alumnos
         </h1>
         <p className="text-slate-500 mt-2 font-medium">
           Configura el curso y arrastra el Excel (.xlsx)
@@ -429,7 +429,7 @@ export default function ImportarAlumnos() {
               disabled={isImporting}
               className="w-full p-5 bg-[#5D9AD4] text-white font-black text-xl rounded-3xl shadow-xl shadow-blue-100 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-70"
             >
-              {isImporting ? "ANALIZANDO..." : "PREVISUALIZAR IMPORTACIÓN"}
+              {isImporting ? "ANALIZANDO..." : "REVISAR IMPORTACIÓN"}
             </button>
           )}
 
@@ -485,14 +485,14 @@ export default function ImportarAlumnos() {
                   disabled={isImporting}
                   className="w-full p-4 bg-green-600 text-white font-black text-lg rounded-2xl hover:bg-green-700 transition-colors disabled:opacity-70"
                 >
-                  {isImporting ? "APLICANDO..." : "ACEPTAR IMPORTACIÓN"}
+                  {isImporting ? "APLICANDO..." : "CONFIRMAR IMPORTACIÓN"}
                 </button>
                 <button
                   onClick={cancelarImportacion}
                   disabled={isImporting}
                   className="w-full p-4 bg-slate-200 text-slate-800 font-black text-lg rounded-2xl hover:bg-slate-300 transition-colors disabled:opacity-70"
                 >
-                  CANCELAR IMPORTACIÓN
+                  DESCARTAR IMPORTACIÓN
                 </button>
               </div>
             </div>

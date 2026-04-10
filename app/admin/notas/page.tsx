@@ -74,6 +74,11 @@ export default function CargarNotasPage() {
   );
 
   const materiasMostradas = materias;
+  const selectedMateria =
+    materiaId === ""
+      ? null
+      : materias.find((materia) => String(materia.id) === materiaId) ?? null;
+  const alumnosHabilitadosCount = alumnos.filter((alumno) => alumno.habilitado).length;
 
   useEffect(() => {
     const loadMaterias = async () => {
@@ -458,7 +463,7 @@ export default function CargarNotasPage() {
   return (
     <div className="p-8 max-w-5xl mx-auto min-h-screen bg-white">
       <header className="mb-10">
-        <h1 className="text-4xl font-black text-slate-900 tracking-tight">Carga de Notas</h1>
+        <h1 className="text-4xl font-black text-slate-900 tracking-tight">Notas</h1>
         <p className="text-slate-500 mt-2 font-medium">
           Selecciona evaluación y registra una nota (1 a 10) o ausente por alumno.
         </p>
@@ -467,7 +472,20 @@ export default function CargarNotasPage() {
       {statusMessage && <StatusBanner message={statusMessage} />}
 
       {step === "seleccion" && (
-        <section className="mt-6 space-y-6">
+        <section className="mt-6 grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+          <div className="space-y-6 rounded-[2rem] border border-slate-200 bg-slate-50 p-6">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.25em] text-slate-400">
+                Paso 1
+              </p>
+              <h2 className="mt-3 text-2xl font-black text-slate-900">
+                Configura la evaluación
+              </h2>
+              <p className="mt-2 text-sm text-slate-600">
+                Define materia, año, evaluación y tipo antes de cargar la lista de alumnos.
+              </p>
+            </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <label className="text-xs uppercase tracking-widest font-bold text-slate-400">
@@ -478,7 +496,7 @@ export default function CargarNotasPage() {
                 value={materiaId}
                 onChange={(e) => setMateriaId(e.target.value)}
               >
-                <option value="">Elegir Materia...</option>
+                  <option value="">Seleccionar materia...</option>
                 {materiasMostradas.map((m) => (
                   <option key={m.id} value={m.id}>
                     {m.nombre}
@@ -519,7 +537,7 @@ export default function CargarNotasPage() {
                 value={evaluacionNombre}
                 onChange={(e) => setEvaluacionNombre(e.target.value as EvaluacionNombre)}
               >
-                <option value="">Elegir...</option>
+                  <option value="">Seleccionar...</option>
                 {EVALUACIONES.map((e) => (
                   <option key={e} value={e}>
                     {e}
@@ -552,7 +570,7 @@ export default function CargarNotasPage() {
               disabled={!puedeContinuar || isLoading}
               className="w-full p-4 bg-[#5D9AD4] text-white font-black text-lg rounded-2xl hover:scale-[1.01] transition-all disabled:opacity-60 disabled:hover:scale-100"
             >
-              {isLoading ? "CARGANDO..." : "CONTINUAR"}
+              {isLoading ? "CARGANDO..." : "CARGAR LISTA DEL CURSO"}
             </button>
             <button
               onClick={() =>
@@ -564,14 +582,98 @@ export default function CargarNotasPage() {
               disabled={isLoading}
               className="w-full p-4 bg-slate-200 text-slate-800 font-black text-lg rounded-2xl hover:bg-slate-300 transition-colors disabled:opacity-60"
             >
-              CANCELAR
+              CANCELAR CARGA
             </button>
           </div>
+          </div>
+
+          <aside className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+            <p className="text-xs font-black uppercase tracking-[0.25em] text-slate-400">
+              Contexto actual
+            </p>
+            <div className="mt-5 grid gap-3">
+              <div className="rounded-2xl bg-slate-50 p-4">
+                <div className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+                  Materia
+                </div>
+                <div className="mt-2 text-lg font-black text-slate-900">
+                  {selectedMateria?.nombre ?? "Sin seleccionar"}
+                </div>
+              </div>
+              <div className="rounded-2xl bg-slate-50 p-4">
+                <div className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+                  Año
+                </div>
+                <div className="mt-2 text-lg font-black text-slate-900">{anio || "—"}</div>
+              </div>
+              <div className="rounded-2xl bg-slate-50 p-4">
+                <div className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+                  Evaluación
+                </div>
+                <div className="mt-2 text-sm font-black text-slate-900">
+                  {evaluacionNombre || "Sin seleccionar"} · {tipo}
+                </div>
+              </div>
+              <div className="rounded-2xl bg-slate-50 p-4">
+                <div className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+                  Estado
+                </div>
+                <div className="mt-2 text-sm font-semibold text-slate-700">
+                  {puedeContinuar
+                    ? "Configuración lista para cargar alumnos"
+                    : "Completa todos los campos para continuar"}
+                </div>
+              </div>
+            </div>
+          </aside>
         </section>
       )}
 
       {step === "carga" && (
         <section className="mt-8 space-y-6">
+          <div className="rounded-[2rem] border border-slate-200 bg-slate-50 p-6">
+            <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.25em] text-slate-400">
+                  Paso 2
+                </p>
+                <h2 className="mt-3 text-2xl font-black text-slate-900">
+                  Cargar y revisar notas
+                </h2>
+                <p className="mt-2 text-sm text-slate-600">
+                  Completa una nota entre 1 y 10 o marca ausente. Los alumnos no habilitados
+                  aparecen bloqueados con su motivo.
+                </p>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-3 xl:min-w-[24rem]">
+                <div className="rounded-2xl bg-white p-4">
+                  <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">
+                    Materia
+                  </div>
+                  <div className="mt-2 text-sm font-black text-slate-900">
+                    {selectedMateria?.nombre ?? "—"}
+                  </div>
+                </div>
+                <div className="rounded-2xl bg-white p-4">
+                  <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">
+                    Evaluación
+                  </div>
+                  <div className="mt-2 text-sm font-black text-slate-900">
+                    {evaluacionNombre} · {tipo}
+                  </div>
+                </div>
+                <div className="rounded-2xl bg-white p-4">
+                  <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">
+                    Habilitados
+                  </div>
+                  <div className="mt-2 text-sm font-black text-slate-900">
+                    {alumnosHabilitadosCount}/{alumnos.length}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div className="rounded-3xl border border-slate-200 overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-slate-900">
@@ -653,7 +755,7 @@ export default function CargarNotasPage() {
               disabled={isLoading}
               className="w-full p-4 bg-green-600 text-white font-black text-lg rounded-2xl hover:bg-green-700 transition-colors disabled:opacity-60"
             >
-              {isLoading ? "GUARDANDO..." : "GUARDAR NOTAS"}
+              {isLoading ? "GUARDANDO..." : "GUARDAR CAMBIOS"}
             </button>
             <button
               onClick={() =>
@@ -665,7 +767,7 @@ export default function CargarNotasPage() {
               disabled={isLoading}
               className="w-full p-4 bg-slate-200 text-slate-800 font-black text-lg rounded-2xl hover:bg-slate-300 transition-colors disabled:opacity-60"
             >
-              CANCELAR
+              VOLVER A CONFIGURACIÓN
             </button>
           </div>
         </section>

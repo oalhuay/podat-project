@@ -440,7 +440,7 @@ export default function ImportarArchivoDocentePage() {
     <div className="min-h-screen max-w-5xl mx-auto bg-white p-8">
       <header className="mb-10">
         <h1 className="text-4xl font-black tracking-tight text-slate-900">
-          Importar archivo
+          Importación de Estadísticas
         </h1>
         <p className="mt-2 font-medium text-slate-500">
           Carga un archivo .xlsx con datos de tus materias y registra estadísticas en el sistema.

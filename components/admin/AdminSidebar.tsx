@@ -32,9 +32,9 @@ const adminNavItems: NavItem[] = [
     description: "Roles y accesos",
   },
   {
-    href: "/admin/importar",
-    label: "Importar archivo",
-    description: "Estadísticas (admin)",
+    href: "/admin/importar-archivo",
+    label: "Importación",
+    description: "Estadísticas e importación",
   },
   {
     href: "/admin/alumnos",
@@ -61,8 +61,8 @@ const docenteNavItems: NavItem[] = [
   },
   {
     href: "/admin/importar-archivo",
-    label: "Importar archivo",
-    description: "Carga .xlsx de tus materias",
+    label: "Importación",
+    description: "Estadísticas de tus materias",
   },
   {
     href: "/admin/alumnos",
@@ -71,7 +71,7 @@ const docenteNavItems: NavItem[] = [
   },
   {
     href: "/admin/mis-materias",
-    label: "Mis materias",
+    label: "Mis Materias",
     description: "Asignaciones vigentes",
   },
 ];

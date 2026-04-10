@@ -29,6 +29,25 @@ export default function ImportResults({
 
   return (
     <section className="mt-10 space-y-6">
+      <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.25em] text-slate-400">
+            Resultado de importación
+          </p>
+          <h3 className="mt-2 text-2xl font-black tracking-tight text-slate-900">
+            Resumen y detalle de filas
+          </h3>
+          <p className="mt-2 max-w-3xl text-sm text-slate-500">
+            Revisa rápidamente cuántos registros son nuevos, cuáles se actualizaron y qué filas
+            necesitan corrección antes de volver a intentar la carga.
+          </p>
+        </div>
+        <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
+          <span className="font-black text-slate-900">{rowsFiltradas.length}</span> fila(s) en la
+          vista actual
+        </div>
+      </div>
+
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <div className="rounded-2xl p-4 bg-slate-100">
           <p className="text-xs uppercase text-slate-500 font-bold">Total</p>
@@ -113,7 +132,7 @@ export default function ImportResults({
                     <span
                       className={`inline-flex px-2.5 py-1 rounded-full text-xs font-bold ${badgeClasses[row.status]}`}
                     >
-                      {row.status.toUpperCase()}
+                      {row.status.toUpperCase().replace("_", " ")}
                     </span>
                   </td>
                   <td className="p-3 text-slate-700">{row.mensaje ?? "-"}</td>

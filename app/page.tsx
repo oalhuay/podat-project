@@ -296,7 +296,7 @@ function HomeContent() {
         {/* Logo y Lema */}
         <div className="text-center mb-8">
           <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-white shadow-sm">
-            <Image src="/logo-podat.svg" alt="PODAT" width={80} height={80} />
+            <Image src="/logo-podat.svg" alt="PODAT" width={80} height={80} priority />
           </div>
           <h1 className="text-5xl font-black text-[#5D9AD4] tracking-tight">PODAT</h1>
           <p className="text-xs font-bold text-slate-400 mt-2 tracking-widest">

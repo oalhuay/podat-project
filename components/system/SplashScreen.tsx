@@ -40,7 +40,7 @@ export default function SplashScreen({
         </div>
 
         <div className="flex h-28 w-28 items-center justify-center rounded-[2rem] bg-white shadow-xl shadow-slate-200/60">
-          <Image src="/logo-podat.svg" alt="PODAT" width={104} height={104} />
+          <Image src="/logo-podat.svg" alt="PODAT" width={104} height={104} priority />
         </div>
 
         <div>

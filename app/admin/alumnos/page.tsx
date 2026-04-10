@@ -54,11 +54,33 @@ type AsistenciaAlumnoRow = {
   condicion: CondicionAsistencia | null;
 };
 
+type ActiveSection = "padron" | "notas" | "asistencias";
+
 const CURRENT_YEAR = new Date().getFullYear();
 const EVALUACIONES: EvaluacionNombre[] = ["Parcial1", "Parcial2", "Integrador"];
 const UMBRAL_PORCENTAJE = 75;
 const MIN_CLASES_PARA_LIBRE = 3;
 const JUSTIFICADO_CUENTA_COMO_PRESENTE = true;
+const SECTION_META: Record<
+  ActiveSection,
+  { label: string; description: string; readyLabel: string }
+> = {
+  padron: {
+    label: "Carga de alumnos",
+    description: "Importa o escribe el padrón y revisa la previsualización antes de guardar.",
+    readyLabel: "Padrón listo para revisar",
+  },
+  notas: {
+    label: "Notas",
+    description: "Carga la lista del curso, completa calificaciones y guarda en una sola acción.",
+    readyLabel: "Lista de notas cargada",
+  },
+  asistencias: {
+    label: "Asistencias",
+    description: "Marca presente, ausente o justificado y controla la condición acumulada.",
+    readyLabel: "Lista de asistencia cargada",
+  },
+};
 
 const getToday = (): string => {
   const now = new Date();
@@ -129,9 +151,7 @@ export default function AlumnosPage() {
   const [materias, setMaterias] = useState<Materia[]>([]);
   const [selectedMateriaId, setSelectedMateriaId] = useState<number | "">("");
   const [anio, setAnio] = useState(String(CURRENT_YEAR));
-  const [activeSection, setActiveSection] = useState<"padron" | "notas" | "asistencias">(
-    "padron"
-  );
+  const [activeSection, setActiveSection] = useState<ActiveSection>("padron");
   const [sourceMode, setSourceMode] = useState<"excel" | "manual">("excel");
   const [isDragActive, setIsDragActive] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -225,6 +245,15 @@ export default function AlumnosPage() {
   const hasCursoConfigurado = Boolean(hasSelectedMateria && anio.trim());
   const rowsDisponibles = sourceMode === "excel" ? parsedRows : toParsedManualRows(manualRows);
   const canPreview = hasCursoConfigurado && rowsDisponibles.length > 0;
+  const selectedMateria =
+    selectedMateriaId === ""
+      ? null
+      : materias.find((materia) => materia.id === selectedMateriaId) ?? null;
+  const selectedSectionMeta = SECTION_META[activeSection];
+  const currentSourceLabel = sourceMode === "excel" ? "Excel .xlsx" : "Carga manual";
+  const padronReady = Boolean(importPlan || importResult);
+  const notasReadyCount = notasRows.length;
+  const asistenciaReadyCount = asistenciaRows.length;
 
   const resetImportState = () => {
     setImportPlan(null);
@@ -886,73 +915,205 @@ export default function AlumnosPage() {
       <header className="mb-8">
         <h1 className="text-4xl font-black tracking-tight text-slate-900">Alumnos</h1>
         <p className="mt-2 text-slate-500">
-          Carga de alumnos por materia y año desde Excel o de forma manual.
+          Gestiona padrón, notas y asistencias por materia y año desde una sola vista.
         </p>
       </header>
 
       {statusMessage && <StatusBanner message={statusMessage} />}
 
-      <section className="mb-6 rounded-[2rem] border border-slate-200 bg-slate-50 p-6">
-        <p className="text-xs font-black uppercase tracking-[0.25em] text-slate-400">Paso 1</p>
-        <p className="mt-2 text-sm text-slate-600">Selecciona primero la materia.</p>
-        <select
-          value={selectedMateriaId}
-          onChange={(event) => onMateriaChange(event.target.value)}
-          className="mt-4 w-full max-w-xl rounded-2xl border-2 border-slate-100 bg-white p-4 text-slate-900 outline-none focus:border-[#5D9AD4]"
-        >
-          <option value="">Elegir materia...</option>
-          {materias.map((materia) => (
-            <option key={materia.id} value={materia.id}>{materia.nombre}</option>
-          ))}
-        </select>
-      </section>
+      <section className="mb-6 grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+        <div className="rounded-[2rem] border border-slate-200 bg-slate-50 p-6">
+          <p className="text-xs font-black uppercase tracking-[0.25em] text-slate-400">
+            Paso 1
+          </p>
+          <h2 className="mt-3 text-2xl font-black text-slate-900">Define el curso de trabajo</h2>
+          <p className="mt-2 max-w-2xl text-sm text-slate-600">
+            Elige la materia y el año antes de pasar a padrón, notas o asistencias. Cada cambio
+            reinicia los datos cargados del módulo actual.
+          </p>
 
-      {hasSelectedMateria && (
-        <section className="mb-6 rounded-[2rem] border border-slate-200 bg-slate-50 p-6">
-          <p className="text-xs font-black uppercase tracking-[0.25em] text-slate-400">Paso 2</p>
-          <div className="mt-3 grid gap-4">
-            <input
-              type="number"
-              min={1900}
-              max={CURRENT_YEAR + 1}
-              value={anio}
-              onChange={(event) => setAnio(event.target.value)}
-              className="rounded-2xl border-2 border-slate-100 bg-white p-4 text-slate-900 outline-none focus:border-[#5D9AD4]"
-            />
+          <div className="mt-6 grid gap-4 lg:grid-cols-[minmax(0,1fr)_14rem]">
+            <div className="space-y-2">
+              <label className="text-xs font-black uppercase tracking-[0.22em] text-slate-400">
+                Materia
+              </label>
+              <select
+                value={selectedMateriaId}
+                onChange={(event) => onMateriaChange(event.target.value)}
+                className="w-full rounded-2xl border-2 border-slate-100 bg-white p-4 text-slate-900 outline-none focus:border-[#5D9AD4]"
+              >
+                <option value="">Seleccionar materia...</option>
+                {materias.map((materia) => (
+                  <option key={materia.id} value={materia.id}>
+                    {materia.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-black uppercase tracking-[0.22em] text-slate-400">
+                Año
+              </label>
+              <input
+                type="number"
+                min={1900}
+                max={CURRENT_YEAR + 1}
+                value={anio}
+                onChange={(event) => setAnio(event.target.value)}
+                className="w-full rounded-2xl border-2 border-slate-100 bg-white p-4 text-slate-900 outline-none focus:border-[#5D9AD4]"
+              />
+            </div>
           </div>
-        </section>
-      )}
+        </div>
+
+        <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+          <p className="text-xs font-black uppercase tracking-[0.25em] text-slate-400">
+            Contexto actual
+          </p>
+          <div className="mt-5 grid gap-3">
+            <div className="rounded-2xl bg-slate-50 p-4">
+              <div className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">
+                Materia
+              </div>
+              <div className="mt-2 text-lg font-black text-slate-900">
+                {selectedMateria?.nombre ?? "Sin seleccionar"}
+              </div>
+            </div>
+            <div className="rounded-2xl bg-slate-50 p-4">
+              <div className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">
+                Año activo
+              </div>
+              <div className="mt-2 text-lg font-black text-slate-900">{anio || "—"}</div>
+            </div>
+            <div className="rounded-2xl bg-slate-50 p-4">
+              <div className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">
+                Estado
+              </div>
+              <div className="mt-2 text-sm font-semibold text-slate-700">
+                {hasCursoConfigurado
+                  ? "Curso listo para trabajar"
+                  : "Completa materia y año para desbloquear los módulos"}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {hasCursoConfigurado && (
         <section className="space-y-6">
-          <p className="text-xs font-black uppercase tracking-[0.25em] text-slate-400">Paso 3</p>
-          <div className="inline-flex rounded-full border border-slate-200 bg-slate-50 p-1">
-            <button
-              type="button"
-              onClick={() => setActiveSection("padron")}
-              className={`rounded-full px-4 py-2 text-sm font-black ${activeSection === "padron" ? "bg-slate-900 text-white" : "text-slate-700"}`}
-            >
-              Carga de alumnos
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveSection("notas")}
-              className={`rounded-full px-4 py-2 text-sm font-black ${activeSection === "notas" ? "bg-slate-900 text-white" : "text-slate-700"}`}
-            >
-              Notas
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveSection("asistencias")}
-              className={`rounded-full px-4 py-2 text-sm font-black ${activeSection === "asistencias" ? "bg-slate-900 text-white" : "text-slate-700"}`}
-            >
-              Asistencias
-            </button>
+          <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+            <p className="text-xs font-black uppercase tracking-[0.25em] text-slate-400">
+              Paso 2
+            </p>
+            <div className="mt-3 flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+              <div className="max-w-2xl">
+                <h2 className="text-2xl font-black text-slate-900">
+                  Elige el bloque que quieres trabajar
+                </h2>
+                <p className="mt-2 text-sm text-slate-600">
+                  Cambia entre padrón, notas y asistencias sin perder el contexto del curso
+                  seleccionado.
+                </p>
+              </div>
+              <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                <span className="font-black text-slate-900">{selectedSectionMeta.label}:</span>{" "}
+                {selectedSectionMeta.description}
+              </div>
+            </div>
+
+            <div className="mt-6 grid gap-3 md:grid-cols-3">
+              {(Object.keys(SECTION_META) as ActiveSection[]).map((sectionKey) => {
+                const section = SECTION_META[sectionKey];
+                const isActive = activeSection === sectionKey;
+                const isReady =
+                  sectionKey === "padron"
+                    ? padronReady
+                    : sectionKey === "notas"
+                      ? isNotasReady
+                      : isAsistenciaReady;
+                const itemCount =
+                  sectionKey === "notas"
+                    ? notasReadyCount
+                    : sectionKey === "asistencias"
+                      ? asistenciaReadyCount
+                      : rowsDisponibles.length;
+
+                return (
+                  <button
+                    key={sectionKey}
+                    type="button"
+                    onClick={() => setActiveSection(sectionKey)}
+                    className={`rounded-[1.5rem] border p-4 text-left transition-all ${
+                      isActive
+                        ? "border-[#5D9AD4]/40 bg-[#5D9AD4]/10 shadow-sm"
+                        : "border-slate-200 bg-slate-50 hover:border-slate-300 hover:bg-white"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="text-sm font-black uppercase tracking-[0.18em] text-slate-700">
+                        {section.label}
+                      </div>
+                      <span
+                        className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold uppercase ${
+                          isReady
+                            ? "bg-emerald-100 text-emerald-700"
+                            : "bg-slate-200 text-slate-600"
+                        }`}
+                      >
+                        {isReady ? "listo" : "pendiente"}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-sm text-slate-500">{section.description}</p>
+                    <p className="mt-3 text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+                      {isReady ? section.readyLabel : "Sin cargar todavía"} · {itemCount} item(s)
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
           </div>
+
+          <section className="rounded-[2rem] border border-slate-200 bg-slate-50 p-6">
+            <p className="text-xs font-black uppercase tracking-[0.25em] text-slate-400">
+              Paso 3
+            </p>
+            <div className="mt-3 flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+              <div>
+                <h3 className="text-2xl font-black text-slate-900">{selectedSectionMeta.label}</h3>
+                <p className="mt-2 max-w-2xl text-sm text-slate-600">
+                  {selectedSectionMeta.description}
+                </p>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-3 xl:min-w-[22rem]">
+                <div className="rounded-2xl bg-white p-4">
+                  <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">
+                    Materia
+                  </div>
+                  <div className="mt-2 text-sm font-black text-slate-900">
+                    {selectedMateria?.nombre ?? "Sin seleccionar"}
+                  </div>
+                </div>
+                <div className="rounded-2xl bg-white p-4">
+                  <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">
+                    Año
+                  </div>
+                  <div className="mt-2 text-sm font-black text-slate-900">{anio}</div>
+                </div>
+                <div className="rounded-2xl bg-white p-4">
+                  <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">
+                    Fuente
+                  </div>
+                  <div className="mt-2 text-sm font-black text-slate-900">
+                    {activeSection === "padron" ? currentSourceLabel : selectedSectionMeta.label}
+                  </div>
+                </div>
+              </div>
+            </div>
 
           {activeSection === "padron" && (
             <>
-          <div className="inline-flex rounded-full border border-slate-200 bg-slate-50 p-1">
+          <div className="mt-6 inline-flex rounded-full border border-slate-200 bg-white p-1">
             <button
               type="button"
               onClick={() => setSourceMode("excel")}
@@ -967,6 +1128,12 @@ export default function AlumnosPage() {
             >
               Carga manual
             </button>
+          </div>
+
+          <div className="mt-4 rounded-2xl border border-dashed border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
+            {sourceMode === "excel"
+              ? "Sube un archivo .xlsx con legajo, alumno, género y condición. Luego revisa la previsualización antes de aplicar."
+              : 'Completa el padrón escribiendo "Apellido, Nombre" y usa la previsualización para validar filas antes de guardar.'}
           </div>
 
           {sourceMode === "excel" && (
@@ -1020,20 +1187,20 @@ export default function AlumnosPage() {
 
           <div className="grid gap-3 md:grid-cols-2">
             <button type="button" onClick={preview} disabled={!canPreview || isLoading} className="rounded-2xl bg-[#5D9AD4] p-4 text-lg font-black text-white disabled:opacity-60">
-              {isLoading ? "ANALIZANDO..." : "PREVISUALIZAR CARGA"}
+              {isLoading ? "ANALIZANDO..." : "REVISAR IMPORTACIÓN"}
             </button>
             <button type="button" onClick={resetImportState} disabled={isLoading} className="rounded-2xl bg-slate-200 p-4 text-lg font-black text-slate-800 disabled:opacity-60">
-              LIMPIAR
+              LIMPIAR FORMULARIO
             </button>
           </div>
 
           {importPlan && (
             <div className="grid gap-3 md:grid-cols-2">
               <button type="button" onClick={confirmImport} disabled={isLoading} className="rounded-2xl bg-green-600 p-4 text-lg font-black text-white disabled:opacity-60">
-                {isLoading ? "APLICANDO..." : "ACEPTAR IMPORTACIÓN"}
+                {isLoading ? "APLICANDO..." : "CONFIRMAR IMPORTACIÓN"}
               </button>
               <button type="button" onClick={() => { setImportPlan(null); setStatusMessage({ type: "info", text: "Importación cancelada." }); }} className="rounded-2xl bg-slate-200 p-4 text-lg font-black text-slate-800">
-                CANCELAR
+                DESCARTAR IMPORTACIÓN
               </button>
             </div>
           )}
@@ -1081,9 +1248,14 @@ export default function AlumnosPage() {
                     disabled={isLoadingNotas}
                     className="w-full rounded-xl bg-[#5D9AD4] p-3 text-sm font-black text-white disabled:opacity-60"
                   >
-                    {isLoadingNotas ? "CARGANDO..." : "CARGAR LISTA"}
+                    {isLoadingNotas ? "CARGANDO..." : "CARGAR LISTA DEL CURSO"}
                   </button>
                 </div>
+              </div>
+
+              <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                Primero carga la lista del curso. Después podrás ingresar notas, marcar ausencias y
+                guardar todos los cambios.
               </div>
 
               {!isNotasReady && (
@@ -1166,7 +1338,7 @@ export default function AlumnosPage() {
                     disabled={isLoadingNotas}
                     className="w-full rounded-xl bg-green-600 p-3 text-sm font-black text-white disabled:opacity-60"
                   >
-                    {isLoadingNotas ? "GUARDANDO..." : "GUARDAR NOTAS"}
+                    {isLoadingNotas ? "GUARDANDO..." : "GUARDAR CAMBIOS"}
                   </button>
                 </>
               )}
@@ -1206,9 +1378,14 @@ export default function AlumnosPage() {
                     disabled={isLoadingAsistencia || !fecha}
                     className="w-full rounded-xl bg-[#5D9AD4] p-3 text-sm font-black text-white disabled:opacity-60"
                   >
-                    {isLoadingAsistencia ? "CARGANDO..." : "CARGAR LISTA"}
+                    {isLoadingAsistencia ? "CARGANDO..." : "CARGAR LISTA DEL CURSO"}
                   </button>
                 </div>
+              </div>
+
+              <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                Carga la clase del día y revisa la condición acumulada antes de guardar la
+                asistencia definitiva.
               </div>
 
               {!isAsistenciaReady && (
@@ -1287,12 +1464,13 @@ export default function AlumnosPage() {
                     disabled={isLoadingAsistencia}
                     className="w-full rounded-xl bg-green-600 p-3 text-sm font-black text-white disabled:opacity-60"
                   >
-                    {isLoadingAsistencia ? "GUARDANDO..." : "GUARDAR ASISTENCIA"}
+                    {isLoadingAsistencia ? "GUARDANDO..." : "GUARDAR CAMBIOS"}
                   </button>
                 </>
               )}
             </div>
           )}
+          </section>
         </section>
       )}
 

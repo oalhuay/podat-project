@@ -520,6 +520,12 @@ export default function EstadisticasPage() {
     if (statusFilter === "todos") return previewRows;
     return previewRows.filter((row) => row.status === statusFilter);
   }, [previewRows, statusFilter]);
+  const selectedDashboardMateria =
+    selectedMateriaId === ""
+      ? null
+      : materias.find((materia) => materia.id === selectedMateriaId) ?? null;
+  const importReady = previewRows.length > 0;
+  const dashboardReady = selectedMateriaId !== "";
 
   const clearPreview = () => {
     setArchivo(null);
@@ -704,70 +710,148 @@ export default function EstadisticasPage() {
       </header>
 
       <section className="space-y-6">
-        <div className="rounded-3xl border-2 border-dashed border-slate-200 p-6 md:p-8 bg-slate-50">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <label className="text-xs uppercase tracking-widest font-bold text-slate-400">
-                Materia opcional
-              </label>
-              <select
-                className="w-full rounded-2xl border-2 border-slate-100 bg-white p-3 text-slate-900 outline-none focus:border-[#5D9AD4]"
-                value={fallbackMateriaId}
-                onChange={(e) =>
-                  setFallbackMateriaId(
-                    e.target.value === "" ? "" : Number(e.target.value)
-                  )
-                }
-              >
-                <option value="">Tomar del archivo...</option>
-                {materias.map((materia) => (
-                  <option key={materia.id} value={materia.id}>
-                    {materia.nombre}
-                  </option>
-                ))}
-              </select>
+        <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
+          <div className="rounded-[2rem] border border-slate-200 bg-slate-50 p-6 md:p-8">
+            <p className="text-xs font-black uppercase tracking-[0.25em] text-slate-400">
+              Paso 1
+            </p>
+            <h2 className="mt-3 text-2xl font-black text-slate-900">
+              Preparar importación
+            </h2>
+            <p className="mt-2 max-w-3xl text-sm text-slate-600">
+              Sube un archivo `.xlsx`, completa materia o año solo si faltan en el Excel y revisa
+              la previsualización antes de guardar cambios en la base.
+            </p>
+
+            <div className="mt-6 grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <label className="text-xs uppercase tracking-widest font-bold text-slate-400">
+                  Materia opcional
+                </label>
+                <select
+                  className="w-full rounded-2xl border-2 border-slate-100 bg-white p-3 text-slate-900 outline-none focus:border-[#5D9AD4]"
+                  value={fallbackMateriaId}
+                  onChange={(e) =>
+                    setFallbackMateriaId(
+                      e.target.value === "" ? "" : Number(e.target.value)
+                    )
+                  }
+                >
+                <option value="">Usar la del archivo...</option>
+                  {materias.map((materia) => (
+                    <option key={materia.id} value={materia.id}>
+                      {materia.nombre}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs uppercase tracking-widest font-bold text-slate-400">
+                  Año opcional
+                </label>
+                <input
+                  type="number"
+                  min={1900}
+                  max={3000}
+                  className="w-full rounded-2xl border-2 border-slate-100 bg-white p-3 text-slate-900 outline-none focus:border-[#5D9AD4]"
+                  value={fallbackYear}
+                  onChange={(e) => setFallbackYear(e.target.value)}
+                  placeholder="Usar el del archivo..."
+                />
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-xs uppercase tracking-widest font-bold text-slate-400">
-                Año opcional
-              </label>
+            <div className="mt-6 rounded-[1.75rem] border-2 border-dashed border-slate-200 bg-white p-5">
               <input
-                type="number"
-                min={1900}
-                max={3000}
-                className="w-full rounded-2xl border-2 border-slate-100 bg-white p-3 text-slate-900 outline-none focus:border-[#5D9AD4]"
-                value={fallbackYear}
-                onChange={(e) => setFallbackYear(e.target.value)}
-                placeholder="Tomar del archivo..."
+                type="file"
+                accept=".xlsx"
+                onChange={handleFileChange}
+                className="block w-full text-sm text-slate-500"
               />
+              <p className="mt-4 text-slate-600 font-medium">
+                Puedes subir una tabla tipo SyO o un Excel simple con columnas de materia, año,
+                varones inscriptos y mujeres inscriptas.
+              </p>
+              <p className="mt-2 text-sm text-slate-500">
+                Si el archivo no trae materia o año, puedes completarlos aquí antes de importar.
+              </p>
+              {archivo && (
+                <p className="mt-3 rounded-full bg-[#5D9AD4]/10 px-4 py-2 text-xs font-bold text-slate-600">
+                  Archivo cargado: {archivo.name}
+                </p>
+              )}
             </div>
           </div>
 
-          <div className="mt-5">
-            <input
-              type="file"
-              accept=".xlsx"
-              onChange={handleFileChange}
-              className="block w-full text-sm text-slate-500"
-            />
-            <p className="mt-4 text-slate-600 font-medium">
-              Puedes subir una tabla tipo SyO o un Excel simple con columnas de materia, año,
-              varones inscriptos y mujeres inscriptas.
+          <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+            <p className="text-xs font-black uppercase tracking-[0.25em] text-slate-400">
+              Contexto actual
             </p>
-            <p className="mt-2 text-sm text-slate-500">
-              Si el archivo no trae materia o año, puedes completarlos aquí antes de importar.
-            </p>
-            {archivo && (
-              <p className="mt-2 text-xs text-slate-400">Archivo: {archivo.name}</p>
-            )}
+            <div className="mt-5 grid gap-3">
+              <div className="rounded-2xl bg-slate-50 p-4">
+                <div className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+                  Materia de apoyo
+                </div>
+                <div className="mt-2 text-sm font-black text-slate-900">
+                  {fallbackMateriaId === ""
+                    ? "Se leerá desde el archivo"
+                    : materias.find((materia) => materia.id === fallbackMateriaId)?.nombre ??
+                      "No disponible"}
+                </div>
+              </div>
+              <div className="rounded-2xl bg-slate-50 p-4">
+                <div className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+                  Año de apoyo
+                </div>
+                <div className="mt-2 text-sm font-black text-slate-900">
+                  {fallbackYear.trim() === "" ? "Se leerá desde el archivo" : fallbackYear}
+                </div>
+              </div>
+              <div className="rounded-2xl bg-slate-50 p-4">
+                <div className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+                  Estado de importación
+                </div>
+                <div className="mt-2 text-sm font-semibold text-slate-700">
+                  {importReady
+                    ? "Previsualización lista para revisar y guardar"
+                    : "Carga un archivo para generar la previsualización"}
+                </div>
+              </div>
+              <div className="rounded-2xl bg-slate-50 p-4">
+                <div className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+                  Estado del dashboard
+                </div>
+                <div className="mt-2 text-sm font-semibold text-slate-700">
+                  {dashboardReady
+                    ? "Dashboard listo para explorar"
+                    : "Selecciona una materia para visualizar datos"}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
         {statusMessage && <StatusBanner message={statusMessage} />}
 
         {summary && (
-          <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+          <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.25em] text-slate-400">
+                  Paso 2
+                </p>
+                <h3 className="mt-2 text-2xl font-black text-slate-900">
+                  Revisar calidad del archivo
+                </h3>
+                <p className="mt-2 text-sm text-slate-600">
+                  Antes de guardar, verifica cuántas filas son válidas y qué datos necesitan
+                  corrección o intervención manual.
+                </p>
+              </div>
+            </div>
+
+          <div className="mt-6 grid grid-cols-2 md:grid-cols-6 gap-3">
             <div className="rounded-2xl p-4 bg-slate-100">
               <p className="text-xs uppercase text-slate-500 font-bold">Total</p>
               <p className="text-2xl font-black text-slate-800">{summary.total}</p>
@@ -806,6 +890,7 @@ export default function EstadisticasPage() {
               <p className="text-xs uppercase text-rose-700 font-bold">Valor inválido</p>
               <p className="text-2xl font-black text-rose-800">{summary.valorInvalido}</p>
             </div>
+          </div>
           </div>
         )}
 
@@ -865,7 +950,20 @@ export default function EstadisticasPage() {
         )}
 
         {previewRows.length > 0 && (
-          <div className="space-y-4">
+          <div className="space-y-4 rounded-[2rem] border border-slate-200 bg-slate-50 p-6">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.25em] text-slate-400">
+                Paso 3
+              </p>
+              <h3 className="mt-2 text-2xl font-black text-slate-900">
+                Confirmar importación
+              </h3>
+              <p className="mt-2 text-sm text-slate-600">
+                Usa los filtros para revisar las filas y guarda solo cuando estés conforme con la
+                previsualización.
+              </p>
+            </div>
+
             <div className="flex flex-wrap gap-2">
               {([
                 "todos",
@@ -949,19 +1047,50 @@ export default function EstadisticasPage() {
                 disabled={isImporting}
                 className="w-full p-4 bg-slate-200 text-slate-800 font-black text-lg rounded-2xl hover:bg-slate-300 transition-colors disabled:opacity-70"
               >
-                LIMPIAR PREVISUALIZACIÓN
+                LIMPIAR REVISIÓN
               </button>
             </div>
           </div>
         )}
       </section>
 
-      <section className="space-y-6">
-        <div>
-          <h2 className="text-2xl font-black text-slate-900">Dashboard</h2>
-          <p className="text-slate-500 mt-2">
-            Selecciona materia, indicador y rango de años para visualizar.
-          </p>
+      <section className="space-y-6 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.25em] text-slate-400">
+              Paso 4
+            </p>
+            <h2 className="mt-2 text-2xl font-black text-slate-900">Explorar dashboard</h2>
+            <p className="mt-2 text-slate-500">
+              Selecciona materia, indicador y rango de años para visualizar la serie temporal.
+            </p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-3 xl:min-w-[24rem]">
+            <div className="rounded-2xl bg-slate-50 p-4">
+              <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">
+                Materia activa
+              </div>
+              <div className="mt-2 text-sm font-black text-slate-900">
+                {selectedDashboardMateria?.nombre ?? "Sin seleccionar"}
+              </div>
+            </div>
+            <div className="rounded-2xl bg-slate-50 p-4">
+              <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">
+                Indicador
+              </div>
+              <div className="mt-2 text-sm font-black text-slate-900">
+                {INDICATOR_BY_CODE[selectedIndicator]?.label ?? "Sin indicador"}
+              </div>
+            </div>
+            <div className="rounded-2xl bg-slate-50 p-4">
+              <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">
+                Rango
+              </div>
+              <div className="mt-2 text-sm font-black text-slate-900">
+                {yearFrom} - {yearTo}
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -978,7 +1107,7 @@ export default function EstadisticasPage() {
                 )
               }
             >
-              <option value="">Elegir materia...</option>
+                <option value="">Seleccionar materia...</option>
               {materias.map((m) => (
                 <option key={m.id} value={m.id}>
                   {m.nombre}

@@ -163,7 +163,7 @@ function ChartCard({
               )
             }
           >
-            <option value="">Elegir materia...</option>
+                <option value="">Seleccionar materia...</option>
             {materias.map((materia) => (
               <option key={materia.id} value={materia.id}>
                 {materia.nombre}

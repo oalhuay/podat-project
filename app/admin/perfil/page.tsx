@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/app/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
@@ -35,6 +35,7 @@ type EditableProfile = {
 
 export default function PerfilPage() {
   const { user } = useAuth();
+  const hydratedUserIdRef = useRef<string | null>(null);
   const [rolActual, setRolActual] = useState<Rol>(null);
   const [statusMessage, setStatusMessage] = useState<StatusMessage | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -69,6 +70,22 @@ export default function PerfilPage() {
     .join("");
 
   useEffect(() => {
+    if (!user?.id) {
+      hydratedUserIdRef.current = null;
+      setProfileForm({
+        displayName: "",
+        phone: "",
+        department: "",
+        bio: "",
+        declaredSubjects: "",
+      });
+      return;
+    }
+
+    if (hydratedUserIdRef.current === user.id) {
+      return;
+    }
+
     const metadata = user?.user_metadata;
     const declaredSubjects = Array.isArray(metadata?.declared_subjects)
       ? metadata.declared_subjects.filter(
@@ -83,7 +100,8 @@ export default function PerfilPage() {
       bio: String(metadata?.bio ?? ""),
       declaredSubjects: declaredSubjects.join(", "),
     });
-  }, [user?.user_metadata]);
+    hydratedUserIdRef.current = user.id;
+  }, [user?.id, user?.user_metadata]);
 
   useEffect(() => {
     const loadProfileData = async () => {
