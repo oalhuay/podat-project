@@ -1,22 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/app/hooks/useAuth";
 import StatusBanner from "@/components/admin/StatusBanner";
-import type { Rol } from "@/types/database";
-
-type Materia = {
-  id: number;
-  nombre: string;
-  codigo: string | null;
-};
-
-type MateriaDocente = {
-  id: number;
-  materia_id: number;
-  comision: string | null;
-  materias?: Materia | Materia[] | null;
-};
+import {
+  dedupeMaterias,
+  getAccessibleMaterias,
+  getMateriaAssignmentsForUser,
+  extractMateriasFromAssignments,
+  type Materia,
+  type MateriaDocenteAssignment,
+} from "@/lib/materias";
 
 type StatusMessage = {
   type: "success" | "error" | "info";
@@ -24,8 +18,9 @@ type StatusMessage = {
 };
 
 export default function MisMateriasPage() {
+  const { user, role, isLoadingProfile } = useAuth();
   const [materias, setMaterias] = useState<Materia[]>([]);
-  const [asignaciones, setAsignaciones] = useState<MateriaDocente[]>([]);
+  const [asignaciones, setAsignaciones] = useState<MateriaDocenteAssignment[]>([]);
   const [statusMessage, setStatusMessage] = useState<StatusMessage | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -33,40 +28,20 @@ export default function MisMateriasPage() {
     const loadMaterias = async () => {
       setIsLoading(true);
       try {
-        const { data: userData } = await supabase.auth.getUser();
-        const userId = userData.user?.id ?? null;
-        if (!userId) {
+        if (isLoadingProfile) return;
+        if (!user?.id || !role) {
           setStatusMessage({ type: "error", text: "No se pudo identificar el usuario." });
           return;
         }
 
-        const { data: perfilData } = await supabase
-          .from("perfiles")
-          .select("rol")
-          .eq("id", userId)
-          .maybeSingle();
-        const rol = (perfilData?.rol as Rol) ?? null;
-
-        if (rol === "admin") {
-          const { data, error } = await supabase
-            .from("materias")
-            .select("id, nombre, codigo")
-            .order("nombre", { ascending: true });
-          if (error) throw error;
-          setMaterias((data ?? []) as Materia[]);
+        if (role === "admin") {
+          const allMaterias = await getAccessibleMaterias(user.id, role);
+          setMaterias(allMaterias);
           setAsignaciones([]);
         } else {
-          const { data, error } = await supabase
-            .from("materias_docentes")
-            .select("id, materia_id, comision, materias(id, nombre, codigo)")
-            .eq("user_id", userId)
-            .order("id", { ascending: false });
-          if (error) throw error;
-          const asigns = (data ?? []) as MateriaDocente[];
+          const asigns = await getMateriaAssignmentsForUser(user.id);
           setAsignaciones(asigns);
-          setMaterias(asigns.flatMap(({ materias }) =>
-            Array.isArray(materias) ? materias : materias ? [materias] : []
-          ));
+          setMaterias(extractMateriasFromAssignments(asigns));
         }
       } catch (error: unknown) {
         const message =
@@ -83,12 +58,10 @@ export default function MisMateriasPage() {
     };
 
     void loadMaterias();
-  }, []);
+  }, [isLoadingProfile, role, user?.id]);
 
   const materiasUnicas = useMemo(() => {
-    const map = new Map<number, Materia>();
-    materias.forEach((m) => map.set(m.id, m));
-    return Array.from(map.values());
+    return dedupeMaterias(materias);
   }, [materias]);
 
   return (

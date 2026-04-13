@@ -5,24 +5,15 @@ import Link from "next/link";
 import { useAuth } from "@/app/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
 import StatusBanner from "@/components/admin/StatusBanner";
-import type { Rol } from "@/types/database";
+import {
+  extractMateriasFromAssignments,
+  getMateriaAssignmentsForUser,
+  type Materia,
+} from "@/lib/materias";
 
 type StatusMessage = {
   type: "success" | "error" | "info";
   text: string;
-};
-
-type Materia = {
-  id: number;
-  nombre: string;
-  codigo: string | null;
-};
-
-type MateriaDocente = {
-  id: number;
-  materia_id: number;
-  comision: string | null;
-  materias?: Materia | Materia[] | null;
 };
 
 type EditableProfile = {
@@ -34,9 +25,8 @@ type EditableProfile = {
 };
 
 export default function PerfilPage() {
-  const { user } = useAuth();
+  const { user, role, isLoadingProfile } = useAuth();
   const hydratedUserIdRef = useRef<string | null>(null);
-  const [rolActual, setRolActual] = useState<Rol>(null);
   const [statusMessage, setStatusMessage] = useState<StatusMessage | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [assignedSubjects, setAssignedSubjects] = useState<Materia[]>([]);
@@ -106,6 +96,7 @@ export default function PerfilPage() {
   useEffect(() => {
     const loadProfileData = async () => {
       const userId = user?.id;
+      if (isLoadingProfile) return;
       if (!userId) {
         setStatusMessage({
           type: "info",
@@ -114,49 +105,26 @@ export default function PerfilPage() {
         return;
       }
 
-      const { data, error } = await supabase
-        .from("perfiles")
-        .select("rol")
-        .eq("id", userId)
-        .maybeSingle();
-
-      if (error) {
+      try {
+        const assignments = await getMateriaAssignmentsForUser(userId);
+        setAssignedSubjects(extractMateriasFromAssignments(assignments));
+      } catch (error: unknown) {
+        const message =
+          typeof error === "object" && error !== null && "message" in error
+            ? String((error as { message: unknown }).message)
+            : "Error desconocido";
         setStatusMessage({
           type: "error",
-          text: `No se pudo cargar el rol: ${error.message}`,
+          text: `No se pudieron cargar las materias asignadas: ${message}`,
         });
-        return;
       }
-
-      setRolActual((data?.rol as Rol) ?? null);
-
-      const { data: assignedData, error: assignedError } = await supabase
-        .from("materias_docentes")
-        .select("id, materia_id, comision, materias(id, nombre, codigo)")
-        .eq("user_id", userId);
-
-      if (assignedError) {
-        setStatusMessage({
-          type: "error",
-          text: `No se pudieron cargar las materias asignadas: ${assignedError.message}`,
-        });
-        return;
-      }
-
-      const materiasList = ((assignedData ?? []) as MateriaDocente[]).flatMap(({ materias }) =>
-        Array.isArray(materias) ? materias : materias ? [materias] : []
-      );
-      const uniqueMaterias = Array.from(
-        new Map(materiasList.map((materia) => [materia.id, materia])).values()
-      );
-      setAssignedSubjects(uniqueMaterias);
     };
 
     void loadProfileData();
-  }, [user?.id]);
+  }, [isLoadingProfile, user?.id]);
 
   const shortcuts =
-    rolActual === "docente"
+    role === "docente"
       ? [
           { href: "/admin/mis-materias", label: "Mis materias" },
           { href: "/admin/notas", label: "Notas" },
@@ -269,7 +237,7 @@ export default function PerfilPage() {
                 Rol activo
               </div>
               <div className="mt-2 text-xl font-black capitalize text-slate-900">
-                {rolActual ?? "Pendiente"}
+                {role ?? "Pendiente"}
               </div>
             </div>
             <div className="rounded-3xl bg-slate-50 p-4">

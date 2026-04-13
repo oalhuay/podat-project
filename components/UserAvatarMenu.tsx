@@ -4,9 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/hooks/useAuth";
-import { supabase } from "@/lib/supabase";
 import ThemeToggle from "@/components/theme/ThemeToggle";
-import type { Rol } from "@/types/database";
 
 type UserAvatarMenuProps = {
   compact?: boolean;
@@ -14,9 +12,8 @@ type UserAvatarMenuProps = {
 
 export default function UserAvatarMenu({ compact = false }: UserAvatarMenuProps) {
   const router = useRouter();
-  const { user, signOut } = useAuth();
+  const { user, role, signOut } = useAuth();
   const menuRef = useRef<HTMLDivElement | null>(null);
-  const [rolActual, setRolActual] = useState<Rol>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const profileName = useMemo<string>(() => {
@@ -33,28 +30,6 @@ export default function UserAvatarMenu({ compact = false }: UserAvatarMenuProps)
     .slice(0, 2)
     .map((word) => word[0]?.toUpperCase() ?? "")
     .join("");
-
-  useEffect(() => {
-    const loadRol = async () => {
-      const userId = user?.id;
-      if (!userId) {
-        setRolActual(null);
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from("perfiles")
-        .select("rol")
-        .eq("id", userId)
-        .maybeSingle();
-
-      if (!error) {
-        setRolActual((data?.rol as Rol) ?? null);
-      }
-    };
-
-    void loadRol();
-  }, [user?.id]);
 
   useEffect(() => {
     if (!isMenuOpen) return;
@@ -117,7 +92,7 @@ export default function UserAvatarMenu({ compact = false }: UserAvatarMenuProps)
           <div className="hidden text-left sm:block">
             <div className="max-w-36 truncate text-sm font-bold text-slate-900">{profileName}</div>
             <div className="text-xs font-medium uppercase tracking-wider text-slate-400">
-              {rolActual ?? "sin rol"}
+              {role ?? "sin rol"}
             </div>
           </div>
         )}
@@ -157,7 +132,7 @@ export default function UserAvatarMenu({ compact = false }: UserAvatarMenuProps)
                 Rol activo
               </div>
               <div className="mt-1 text-sm font-semibold capitalize text-slate-800">
-                {rolActual ?? "Pendiente"}
+                {role ?? "Pendiente"}
               </div>
             </div>
 

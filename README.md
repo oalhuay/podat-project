@@ -1,36 +1,92 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# PODAT
 
-## Getting Started
+Plataforma académica construida con Next.js y Supabase para gestionar usuarios, materias, alumnos, notas, asistencias e importación de estadísticas desde Excel.
 
-First, run the development server:
+## Stack
+
+- Next.js 16 con App Router
+- React 19
+- TypeScript
+- Tailwind CSS 4
+- Supabase Auth + Postgres + RLS
+- ExcelJS para lectura de archivos `.xlsx`
+- Chart.js + react-chartjs-2 para dashboards
+- Vitest para tests unitarios
+
+## Módulos principales
+
+- Inicio y autenticación con Google por rol (`admin` o `docente`)
+- Panel administrativo con navegación lateral y tema visual
+- Gestión de usuarios y cambio de roles
+- Gestión de materias y asignación a docentes
+- Importación de padrón de alumnos desde Excel o carga manual
+- Carga de notas con reglas para parcial y recuperatorio
+- Carga de asistencias con cálculo de condición académica
+- Importación y visualización de estadísticas académicas
+- Dashboard gráfico por materia e indicador
+
+## Estructura relevante
+
+- `app/`: rutas y páginas de la aplicación
+- `components/`: UI reutilizable
+- `lib/`: reglas de negocio, helpers de datos e importadores
+- `supabase/`: scripts SQL de apoyo para tablas, RLS y cambios de esquema
+- `types/`: tipos compartidos
+
+## Variables de entorno
+
+Crea un archivo `.env.local` con:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+```
+
+La app usa esas variables tanto en cliente como en callback de autenticación.
+
+## Puesta en marcha
+
+```bash
+npm install
+npm run dev
+```
+
+Abre `http://localhost:3000`.
+
+## Scripts
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run build
+npm run start
+npm run lint
+npm run test
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Base de datos y SQL
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Los archivos dentro de `supabase/` documentan parte de la evolución del esquema y políticas:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `rls_podat.sql`
+- `estadisticas.sql`
+- `materias_docentes.sql`
+- `materias_add_codigo.sql`
+- `remove_comisiones_model.sql`
 
-## Learn More
+Conviene revisar y consolidar estos scripts antes de desplegar en un entorno nuevo.
 
-To learn more about Next.js, take a look at the following resources:
+## Estado actual del proyecto
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+La app ya incluye:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- auth centralizada en cliente
+- control de acceso por rol para rutas `/admin`
+- helpers compartidos para resolver materias accesibles según rol
+- tests para importación de alumnos, parseo de Excel y reglas de notas
 
-## Deploy on Vercel
+## Recomendaciones siguientes
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Consolidar migraciones SQL en una historia única y reproducible
+- Seguir partiendo páginas grandes como `app/admin/alumnos/page.tsx`
+- Agregar tests para flujos de páginas y acceso a datos
+- Tipar con más precisión la respuesta real de Supabase

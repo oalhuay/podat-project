@@ -11,6 +11,7 @@ import {
   Legend,
 } from "chart.js";
 import { Line } from "react-chartjs-2";
+import { useAuth } from "@/app/hooks/useAuth";
 import { useTheme } from "@/app/hooks/useTheme";
 import { supabase } from "@/lib/supabase";
 import StatusBanner from "@/components/admin/StatusBanner";
@@ -28,19 +29,9 @@ import {
   getIndicatorFromLabel,
   type IndicatorCode,
 } from "@/lib/estadisticas/catalog";
-import type { Rol } from "@/types/database";
+import { getAccessibleMaterias, type Materia } from "@/lib/materias";
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend);
-
-type Materia = {
-  id: number;
-  nombre: string;
-  codigo?: string | null;
-};
-
-type MateriaDocenteRow = {
-  materias: Materia | Materia[] | null;
-};
 
 type StatusMessage = {
   type: "success" | "error" | "info";
@@ -178,6 +169,7 @@ const buildSeries = (
 };
 
 export default function EstadisticasPage() {
+  const { user, role, isLoadingProfile } = useAuth();
   const { resolvedTheme } = useTheme();
   const [materias, setMaterias] = useState<Materia[]>([]);
   const [archivo, setArchivo] = useState<File | null>(null);
@@ -202,32 +194,10 @@ export default function EstadisticasPage() {
 
   useEffect(() => {
     const loadMaterias = async () => {
-      const { data: userData } = await supabase.auth.getUser();
-      const userId = userData.user?.id ?? null;
-      let rol: Rol | null = null;
+      if (isLoadingProfile) return;
+      setCurrentRole(role);
 
-      if (userId) {
-        const { data: perfilData } = await supabase
-          .from("perfiles")
-          .select("rol")
-          .eq("id", userId)
-          .maybeSingle();
-        rol = (perfilData?.rol as Rol) ?? null;
-      }
-
-      setCurrentRole(rol);
-
-      const query =
-        rol === "admin"
-          ? supabase.from("materias").select("id, nombre, codigo")
-          : userId
-          ? supabase
-              .from("materias_docentes")
-              .select("materias(id, nombre, codigo)")
-              .eq("user_id", userId)
-          : null;
-
-      if (!query) {
+      if (!user?.id || !role) {
         setStatusMessage({
           type: "info",
           text: "No se pudo identificar el usuario actual.",
@@ -235,33 +205,29 @@ export default function EstadisticasPage() {
         return;
       }
 
-      const { data, error } = await query;
-
-      if (error) {
+      try {
+        const materiasList = await getAccessibleMaterias(user.id, role);
+        setMaterias(materiasList);
+        if (materiasList.length === 0) {
+          setStatusMessage({
+            type: "info",
+            text: "No hay materias disponibles. Crea o asigna materias para mapear el Excel.",
+          });
+        }
+      } catch (error: unknown) {
+        const message =
+          typeof error === "object" && error !== null && "message" in error
+            ? String((error as { message: unknown }).message)
+            : "Error desconocido";
         setStatusMessage({
           type: "error",
-          text: `No se pudieron cargar materias: ${error.message}`,
-        });
-        return;
-      }
-
-      const materiasList =
-        rol === "admin"
-          ? ((data ?? []) as Materia[])
-          : ((data ?? []) as MateriaDocenteRow[]).flatMap(({ materias }) =>
-              Array.isArray(materias) ? materias : materias ? [materias] : []
-            );
-      setMaterias(materiasList);
-      if (materiasList.length === 0) {
-        setStatusMessage({
-          type: "info",
-          text: "No hay materias disponibles. Crea o asigna materias para mapear el Excel.",
+          text: `No se pudieron cargar materias: ${message}`,
         });
       }
     };
 
     void loadMaterias();
-  }, []);
+  }, [isLoadingProfile, role, user?.id]);
 
   const buildPreview = (
     parsed: ParsedEstadisticaRow[],

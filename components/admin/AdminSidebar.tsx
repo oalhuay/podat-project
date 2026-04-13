@@ -1,13 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/app/hooks/useAuth";
-import { supabase } from "@/lib/supabase";
 import ThemeToggle from "@/components/theme/ThemeToggle";
 import BrandLogo from "@/components/brand/BrandLogo";
-import type { Rol } from "@/types/database";
 
 type NavItem = {
   href: string;
@@ -87,8 +85,7 @@ export default function AdminSidebar({
 }: AdminSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, signOut } = useAuth();
-  const [rolActual, setRolActual] = useState<Rol>(null);
+  const { user, role, signOut } = useAuth();
 
   const profileName = useMemo<string>(() => {
     const metadata = user?.user_metadata;
@@ -110,31 +107,9 @@ export default function AdminSidebar({
     .map((word) => word[0]?.toUpperCase() ?? "")
     .join("");
 
-  useEffect(() => {
-    const loadRol = async () => {
-      const userId = user?.id;
-      if (!userId) {
-        setRolActual(null);
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from("perfiles")
-        .select("rol")
-        .eq("id", userId)
-        .maybeSingle();
-
-      if (!error) {
-        setRolActual((data?.rol as Rol) ?? null);
-      }
-    };
-
-    void loadRol();
-  }, [user?.id]);
-
-  const navItems = rolActual === "docente" ? docenteNavItems : adminNavItems;
+  const navItems = role === "docente" ? docenteNavItems : adminNavItems;
   const panelLabel =
-    rolActual === "docente" ? "Panel docente" : "Panel de gestión";
+    role === "docente" ? "Panel docente" : "Panel de gestión";
 
   const handleSignOut = async () => {
     await signOut();
@@ -193,7 +168,7 @@ export default function AdminSidebar({
             </div>
             <div className="truncate text-xs text-slate-600">{profileEmail}</div>
             <div className="mt-2 inline-flex rounded-full bg-white/80 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-slate-600">
-              {rolActual ?? "sin rol"}
+              {role ?? "sin rol"}
             </div>
           </div>
         </div>

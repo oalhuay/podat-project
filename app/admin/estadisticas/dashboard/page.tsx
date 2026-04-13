@@ -16,6 +16,7 @@ import {
   Filler,
 } from "chart.js";
 import { Bar, Chart, Doughnut, Line, Radar, Scatter } from "react-chartjs-2";
+import { useAuth } from "@/app/hooks/useAuth";
 import { useTheme } from "@/app/hooks/useTheme";
 import { supabase } from "@/lib/supabase";
 import StatusBanner from "@/components/admin/StatusBanner";
@@ -24,7 +25,7 @@ import {
   INDICATOR_BY_CODE,
   type IndicatorCode,
 } from "@/lib/estadisticas/catalog";
-import type { Rol } from "@/types/database";
+import { getAccessibleMaterias, type Materia } from "@/lib/materias";
 
 ChartJS.register(
   CategoryScale,
@@ -38,16 +39,6 @@ ChartJS.register(
   Legend,
   Filler
 );
-
-type Materia = {
-  id: number;
-  nombre: string;
-  codigo?: string | null;
-};
-
-type MateriaDocenteRow = {
-  materias: Materia | Materia[] | null;
-};
 
 type StatusMessage = {
   type: "success" | "error" | "info";
@@ -187,6 +178,7 @@ function EmptyChartState({ text }: { text: string }) {
 }
 
 export default function EstadisticasDashboardPage() {
+  const { user, role, isLoadingProfile } = useAuth();
   const { resolvedTheme } = useTheme();
   const [materias, setMaterias] = useState<Materia[]>([]);
   const [selectedYear, setSelectedYear] = useState(String(CURRENT_YEAR));
@@ -199,33 +191,8 @@ export default function EstadisticasDashboardPage() {
 
   useEffect(() => {
     const loadMaterias = async () => {
-      const { data: userData } = await supabase.auth.getUser();
-      const userId = userData.user?.id ?? null;
-      let rol: Rol | null = null;
-
-      if (userId) {
-        const { data: perfilData } = await supabase
-          .from("perfiles")
-          .select("rol")
-          .eq("id", userId)
-          .maybeSingle();
-        rol = (perfilData?.rol as Rol) ?? null;
-      }
-
-      const query =
-        rol === "admin"
-          ? supabase
-              .from("materias")
-              .select("id, nombre, codigo")
-              .order("nombre", { ascending: true })
-          : userId
-            ? supabase
-                .from("materias_docentes")
-                .select("materias(id, nombre, codigo)")
-                .eq("user_id", userId)
-            : null;
-
-      if (!query) {
+      if (isLoadingProfile) return;
+      if (!user?.id || !role) {
         setStatusMessage({
           type: "info",
           text: "No se pudo identificar el usuario actual.",
@@ -233,59 +200,50 @@ export default function EstadisticasDashboardPage() {
         return;
       }
 
-      const { data, error } = await query;
+      try {
+        const uniqueMaterias = await getAccessibleMaterias(user.id, role);
+        setMaterias(uniqueMaterias);
 
-      if (error) {
-        setStatusMessage({
-          type: "error",
-          text: `No se pudieron cargar materias: ${error.message}`,
-        });
-        return;
-      }
-
-      const materiasList =
-        rol === "admin"
-          ? ((data ?? []) as Materia[])
-          : ((data ?? []) as MateriaDocenteRow[]).flatMap(({ materias: materia }) =>
-              Array.isArray(materia) ? materia : materia ? [materia] : []
-            );
-
-      const uniqueMaterias = Array.from(
-        new Map(materiasList.map((materia) => [materia.id, materia])).values()
-      );
-
-      setMaterias(uniqueMaterias);
-
-      if (uniqueMaterias.length === 0) {
-        setStatusMessage({
-          type: "info",
-          text: "No hay materias asignadas para mostrar.",
-        });
-        setChartSelections(createInitialSelections(""));
-        return;
-      }
-
-      const defaultMateriaId = uniqueMaterias[0]?.id ?? "";
-      setChartSelections((current) => {
-        const hasExistingSelection = CHART_KEYS.some((key) => current[key] !== "");
-        if (!hasExistingSelection) {
-          return createInitialSelections(defaultMateriaId);
+        if (uniqueMaterias.length === 0) {
+          setStatusMessage({
+            type: "info",
+            text: "No hay materias asignadas para mostrar.",
+          });
+          setChartSelections(createInitialSelections(""));
+          return;
         }
 
-        const availableIds = new Set(uniqueMaterias.map((materia) => materia.id));
-        return CHART_KEYS.reduce((acc, key) => {
-          const currentValue = current[key];
-          acc[key] =
-            currentValue !== "" && availableIds.has(currentValue)
-              ? currentValue
-              : defaultMateriaId;
-          return acc;
-        }, {} as ChartSelections);
-      });
+        const defaultMateriaId = uniqueMaterias[0]?.id ?? "";
+        setChartSelections((current) => {
+          const hasExistingSelection = CHART_KEYS.some((key) => current[key] !== "");
+          if (!hasExistingSelection) {
+            return createInitialSelections(defaultMateriaId);
+          }
+
+          const availableIds = new Set(uniqueMaterias.map((materia) => materia.id));
+          return CHART_KEYS.reduce((acc, key) => {
+            const currentValue = current[key];
+            acc[key] =
+              currentValue !== "" && availableIds.has(currentValue)
+                ? currentValue
+                : defaultMateriaId;
+            return acc;
+          }, {} as ChartSelections);
+        });
+      } catch (error: unknown) {
+        const message =
+          typeof error === "object" && error !== null && "message" in error
+            ? String((error as { message: unknown }).message)
+            : "Error desconocido";
+        setStatusMessage({
+          type: "error",
+          text: `No se pudieron cargar materias: ${message}`,
+        });
+      }
     };
 
     void loadMaterias();
-  }, []);
+  }, [isLoadingProfile, role, user?.id]);
 
   const distinctMateriaIds = useMemo(
     () =>

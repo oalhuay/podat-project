@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useAuth } from "@/app/hooks/useAuth";
 import StatusBanner from "@/components/admin/StatusBanner";
 import ImportResults from "@/components/admin/ImportResults";
 import { supabase } from "@/lib/supabase";
@@ -25,12 +26,8 @@ import {
   type CondicionAsistencia,
   type EstadoAsistencia,
 } from "@/lib/asistencia/rules";
+import { getAccessibleMaterias, type Materia } from "@/lib/materias";
 import type { Rol } from "@/types/database";
-
-type Materia = { id: number; nombre: string };
-type MateriaDocenteRow = {
-  materias: Materia | Materia[] | null;
-};
 type StatusMessage = { type: "success" | "error" | "info"; text: string };
 type ManualRow = { id: string; legajo: string; alumno: string; genero: string; condicion: string };
 type NotaAlumnoRow = {
@@ -146,6 +143,7 @@ const parseNotaInput = (value: string): number | null => {
 };
 
 export default function AlumnosPage() {
+  const { user, role, isLoadingProfile } = useAuth();
   const today = getToday();
   const [rol, setRol] = useState<Rol>(null);
   const [materias, setMaterias] = useState<Materia[]>([]);
@@ -181,57 +179,31 @@ export default function AlumnosPage() {
 
   useEffect(() => {
     const load = async () => {
-      const { data: userData } = await supabase.auth.getUser();
-      const userId = userData.user?.id ?? null;
-      if (!userId) {
+      if (isLoadingProfile) return;
+      if (!user?.id || !role) {
         setStatusMessage({ type: "error", text: "No se pudo identificar al usuario actual." });
         return;
       }
 
-      const { data: perfilData } = await supabase
-        .from("perfiles")
-        .select("rol")
-        .eq("id", userId)
-        .maybeSingle();
-      const userRol = (perfilData?.rol as Rol) ?? null;
-      setRol(userRol);
+      setRol(role);
 
-      if (userRol === "admin") {
-        const { data, error } = await supabase.from("materias").select("id, nombre").order("nombre");
-        if (error) {
-          setStatusMessage({ type: "error", text: `No se pudieron cargar materias: ${error.message}` });
-          return;
+      try {
+        const accessibleMaterias = await getAccessibleMaterias(user.id, role);
+        setMaterias(accessibleMaterias.map((materia) => ({ id: materia.id, nombre: materia.nombre })));
+        if (accessibleMaterias.length === 0) {
+          setStatusMessage({ type: "info", text: "No hay materias asignadas para este docente." });
         }
-        setMaterias((data ?? []) as Materia[]);
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from("materias_docentes")
-        .select("materia_id, materias(id, nombre)")
-        .eq("user_id", userId);
-      if (error) {
-        setStatusMessage({ type: "error", text: `No se pudieron cargar materias: ${error.message}` });
-        return;
-      }
-
-      const rows = (data ?? []) as MateriaDocenteRow[];
-      const uniqueMaterias = Array.from(
-        new Map(
-          rows.flatMap((row) => {
-            const materia = Array.isArray(row.materias) ? row.materias[0] : row.materias;
-            return materia ? [[materia.id, materia] as const] : [];
-          })
-        ).values()
-      );
-      setMaterias(uniqueMaterias);
-      if (uniqueMaterias.length === 0) {
-        setStatusMessage({ type: "info", text: "No hay materias asignadas para este docente." });
+      } catch (error: unknown) {
+        const message =
+          typeof error === "object" && error !== null && "message" in error
+            ? String((error as { message: unknown }).message)
+            : "Error desconocido";
+        setStatusMessage({ type: "error", text: `No se pudieron cargar materias: ${message}` });
       }
     };
 
     void load();
-  }, []);
+  }, [isLoadingProfile, role, user?.id]);
 
   useEffect(() => {
     resetNotasState();

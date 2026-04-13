@@ -6,35 +6,10 @@ import type { ReactNode } from "react";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import BrandLogo from "@/components/brand/BrandLogo";
 import { useAuth } from "@/app/hooks/useAuth";
-import { supabase } from "@/lib/supabase";
-import type { Rol } from "@/types/database";
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
+  const { role } = useAuth();
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
-  const [rolActual, setRolActual] = useState<Rol>(null);
-
-  useEffect(() => {
-    const loadRol = async () => {
-      const userId = user?.id;
-      if (!userId) {
-        setRolActual(null);
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from("perfiles")
-        .select("rol")
-        .eq("id", userId)
-        .maybeSingle();
-
-      if (!error) {
-        setRolActual((data?.rol as Rol) ?? null);
-      }
-    };
-
-    void loadRol();
-  }, [user?.id]);
 
   useEffect(() => {
     if (!isMobileSidebarOpen) return;
@@ -48,7 +23,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   }, [isMobileSidebarOpen]);
 
   const panelLabel =
-    rolActual === "docente" ? "Panel docente" : "Panel de gestión";
+    role === "docente" ? "Panel docente" : "Panel de gestión";
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(93,154,212,0.12),_transparent_30%),linear-gradient(180deg,_#f8fafc_0%,_#eef4ff_100%)]">

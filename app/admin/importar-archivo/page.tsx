@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useAuth } from "@/app/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
 import StatusBanner from "@/components/admin/StatusBanner";
 import { parseEstadisticasFromFile } from "@/lib/import/estadisticas/parseExcel";
@@ -11,17 +12,7 @@ import type {
   EstadisticaPreviewRow,
 } from "@/lib/import/estadisticas/types";
 import { getIndicatorFromLabel } from "@/lib/estadisticas/catalog";
-import type { Rol } from "@/types/database";
-
-type Materia = {
-  id: number;
-  nombre: string;
-  codigo?: string | null;
-};
-
-type MateriaDocenteRow = {
-  materias: Materia | Materia[] | null;
-};
+import { getAccessibleMaterias, type Materia } from "@/lib/materias";
 
 type StatusMessage = {
   type: "success" | "error" | "info";
@@ -107,6 +98,7 @@ const statusClasses: Record<EstadisticaImportStatus, string> = {
 };
 
 export default function ImportarArchivoDocentePage() {
+  const { user, role, isLoadingProfile } = useAuth();
   const [materias, setMaterias] = useState<Materia[]>([]);
   const [archivo, setArchivo] = useState<File | null>(null);
   const [parsedRows, setParsedRows] = useState<ParsedEstadisticaRow[]>([]);
@@ -121,30 +113,8 @@ export default function ImportarArchivoDocentePage() {
 
   useEffect(() => {
     const loadMaterias = async () => {
-      const { data: userData } = await supabase.auth.getUser();
-      const userId = userData.user?.id ?? null;
-      let rol: Rol | null = null;
-
-      if (userId) {
-        const { data: perfilData } = await supabase
-          .from("perfiles")
-          .select("rol")
-          .eq("id", userId)
-          .maybeSingle();
-        rol = (perfilData?.rol as Rol) ?? null;
-      }
-
-      const query =
-        rol === "admin"
-          ? supabase.from("materias").select("id, nombre, codigo")
-          : userId
-            ? supabase
-                .from("materias_docentes")
-                .select("materias(id, nombre, codigo)")
-                .eq("user_id", userId)
-            : null;
-
-      if (!query) {
+      if (isLoadingProfile) return;
+      if (!user?.id || !role) {
         setStatusMessage({
           type: "info",
           text: "No se pudo identificar el usuario actual.",
@@ -152,34 +122,29 @@ export default function ImportarArchivoDocentePage() {
         return;
       }
 
-      const { data, error } = await query;
-
-      if (error) {
+      try {
+        const materiasList = await getAccessibleMaterias(user.id, role);
+        setMaterias(materiasList);
+        if (materiasList.length === 0) {
+          setStatusMessage({
+            type: "info",
+            text: "No hay materias disponibles para importar.",
+          });
+        }
+      } catch (error: unknown) {
+        const message =
+          typeof error === "object" && error !== null && "message" in error
+            ? String((error as { message: unknown }).message)
+            : "Error desconocido";
         setStatusMessage({
           type: "error",
-          text: `No se pudieron cargar materias: ${error.message}`,
-        });
-        return;
-      }
-
-      const materiasList =
-        rol === "admin"
-          ? ((data ?? []) as Materia[])
-          : ((data ?? []) as MateriaDocenteRow[]).flatMap(({ materias }) =>
-              Array.isArray(materias) ? materias : materias ? [materias] : []
-            );
-
-      setMaterias(materiasList);
-      if (materiasList.length === 0) {
-        setStatusMessage({
-          type: "info",
-          text: "No hay materias disponibles para importar.",
+          text: `No se pudieron cargar materias: ${message}`,
         });
       }
     };
 
     void loadMaterias();
-  }, []);
+  }, [isLoadingProfile, role, user?.id]);
 
   const buildPreview = (
     parsed: ParsedEstadisticaRow[],

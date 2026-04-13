@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useAuth } from "@/app/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
 import StatusBanner from "@/components/admin/StatusBanner";
 import {
@@ -8,17 +9,7 @@ import {
   EstadoAsistencia,
   getCondicionAsistencia,
 } from "@/lib/asistencia/rules";
-import type { Rol } from "@/types/database";
-
-type Materia = {
-  id: number;
-  nombre: string;
-  codigo?: string | null;
-};
-
-type MateriaDocenteRow = {
-  materias: Materia | Materia[] | null;
-};
+import { getAccessibleMaterias, type Materia } from "@/lib/materias";
 
 type AlumnoFila = {
   alumnoId: number;
@@ -48,6 +39,7 @@ const getToday = (): string => {
 };
 
 export default function CargarAsistenciaPage() {
+  const { user, role, isLoadingProfile } = useAuth();
   const today = getToday();
   const [materias, setMaterias] = useState<Materia[]>([]);
   const [materiaId, setMateriaId] = useState("");
@@ -75,30 +67,8 @@ export default function CargarAsistenciaPage() {
 
   useEffect(() => {
     const loadMaterias = async () => {
-      const { data: userData } = await supabase.auth.getUser();
-      const userId = userData.user?.id ?? null;
-      let rol: Rol | null = null;
-
-      if (userId) {
-        const { data: perfilData } = await supabase
-          .from("perfiles")
-          .select("rol")
-          .eq("id", userId)
-          .maybeSingle();
-        rol = (perfilData?.rol as Rol) ?? null;
-      }
-
-      const query =
-        rol === "admin"
-          ? supabase.from("materias").select("id, nombre, codigo")
-          : userId
-          ? supabase
-              .from("materias_docentes")
-              .select("materias(id, nombre, codigo)")
-              .eq("user_id", userId)
-          : null;
-
-      if (!query) {
+      if (isLoadingProfile) return;
+      if (!user?.id || !role) {
         setStatusMessage({
           type: "info",
           text: "No se pudo identificar el usuario actual.",
@@ -106,34 +76,29 @@ export default function CargarAsistenciaPage() {
         return;
       }
 
-      const { data, error } = await query;
-
-      if (error) {
+      try {
+        const materiasList = await getAccessibleMaterias(user.id, role);
+        setMaterias(materiasList);
+        if (materiasList.length === 0) {
+          setStatusMessage({
+            type: "info",
+            text: "No hay materias cargadas en base de datos.",
+          });
+        }
+      } catch (error: unknown) {
+        const message =
+          typeof error === "object" && error !== null && "message" in error
+            ? String((error as { message: unknown }).message)
+            : "Error desconocido";
         setStatusMessage({
           type: "error",
-          text: `No se pudieron cargar materias: ${error.message}`,
-        });
-        return;
-      }
-
-      const materiasList =
-        rol === "admin"
-          ? ((data ?? []) as Materia[])
-          : ((data ?? []) as MateriaDocenteRow[]).flatMap(({ materias }) =>
-              Array.isArray(materias) ? materias : materias ? [materias] : []
-            );
-
-      setMaterias(materiasList);
-      if (materiasList.length === 0) {
-        setStatusMessage({
-          type: "info",
-          text: "No hay materias cargadas en base de datos.",
+          text: `No se pudieron cargar materias: ${message}`,
         });
       }
     };
 
     void loadMaterias();
-  }, []);
+  }, [isLoadingProfile, role, user?.id]);
 
   const resetToStart = (message?: StatusMessage) => {
     setStep("seleccion");

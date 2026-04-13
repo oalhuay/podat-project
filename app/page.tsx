@@ -5,7 +5,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/hooks/useAuth";
-import { supabase } from "@/lib/supabase";
 import ThemeToggle from "@/components/theme/ThemeToggle";
 import SplashScreen from "@/components/system/SplashScreen";
 import type { Rol } from "@/types/database";
@@ -13,7 +12,7 @@ import { useSearchParams } from "next/navigation";
 
 function HomeContent() {
   const router = useRouter();
-  const { user, signInWithGoogle, signOut } = useAuth();
+  const { user, role, isLoadingProfile, signInWithGoogle, signOut } = useAuth();
   const searchParams = useSearchParams();
   const authStatus = searchParams.get("auth_status");
   const authError = searchParams.get("auth_error");
@@ -22,7 +21,6 @@ function HomeContent() {
   const [rolActual, setRolActual] = useState<Rol>(
     rolParam === "admin" || rolParam === "docente" ? rolParam : null
   );
-  const [isLoadingRol, setIsLoadingRol] = useState(false);
   const [view, setView] = useState<"rol" | "accesos">("rol");
   const [autoViewEnabled, setAutoViewEnabled] = useState(true);
   const [isAvatarMenuOpen, setIsAvatarMenuOpen] = useState(false);
@@ -48,30 +46,8 @@ function HomeContent() {
     .join("");
 
   useEffect(() => {
-    const loadRol = async () => {
-      if (!user?.id) {
-        setRolActual(null);
-        setIsLoadingRol(false);
-        return;
-      }
-
-      setIsLoadingRol(true);
-
-      const { data, error } = await supabase
-        .from("perfiles")
-        .select("rol")
-        .eq("id", user.id)
-        .maybeSingle();
-
-      if (!error) {
-        setRolActual((data?.rol as Rol) ?? null);
-      }
-
-      setIsLoadingRol(false);
-    };
-
-    void loadRol();
-  }, [user?.id]);
+    setRolActual(role);
+  }, [role]);
 
   useEffect(() => {
     if (!isAvatarMenuOpen) return;
@@ -114,15 +90,15 @@ function HomeContent() {
     : "Completa tu ingreso eligiendo cómo deseas registrarte en la plataforma.";
 
   useEffect(() => {
-    if (!isRegisteredUser || isLoadingRol) return;
+    if (!isRegisteredUser || isLoadingProfile) return;
     if (effectiveView !== "accesos") return;
 
     const targetRoute = "/admin/estadisticas/dashboard";
 
     router.replace(targetRoute);
-  }, [effectiveView, isLoadingRol, isRegisteredUser, rolActual, router]);
+  }, [effectiveView, isLoadingProfile, isRegisteredUser, router]);
 
-  if (isLoadingRol || (isRegisteredUser && effectiveView === "accesos")) {
+  if (isLoadingProfile || (isRegisteredUser && effectiveView === "accesos")) {
     return <SplashScreen message="Entrando al panel principal" />;
   }
 
@@ -369,7 +345,7 @@ function HomeContent() {
                 <div className="text-sm text-slate-500 mt-2">{card.description}</div>
               </Link>
             ))}
-            {isLoadingRol && (
+            {isLoadingProfile && (
               <div className="col-span-full text-center text-sm text-slate-400">
                 Cargando accesos...
               </div>
