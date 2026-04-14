@@ -69,7 +69,7 @@ export default function ImportarAlumnos() {
   const [isImporting, setIsImporting] = useState(false);
   const [statusMessage, setStatusMessage] = useState<StatusMessage | null>(null);
   const [statusFilter, setStatusFilter] = useState<"todos" | ImportStatus>("todos");
-  const importDbClient = toImportAlumnosDbClient(supabase);
+  const importDbClient = toImportAlumnosDbClient(supabase, { supportsGenero: true });
 
   const puedeSubir = materia && anio && comision && archivo;
 

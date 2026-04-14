@@ -74,14 +74,28 @@ export const toImportAlumnosDbClient = (
       }),
       insert: async (rows) => {
         const payload = rows.map((row) =>
-          supportsGenero ? row : { legajo: row.legajo, nombre: row.nombre, apellido: row.apellido }
+          supportsGenero
+            ? {
+                legajo: row.legajo,
+                nombre: row.nombre,
+                apellido: row.apellido,
+                genero: row.genero ?? null,
+              }
+            : { legajo: row.legajo, nombre: row.nombre, apellido: row.apellido }
         );
         const result = (await raw.insert(payload)) as { error: unknown };
         return { error: result.error };
       },
       upsert: async (rows, options) => {
         const payload = rows.map((row) =>
-          supportsGenero ? row : { legajo: row.legajo, nombre: row.nombre, apellido: row.apellido }
+          supportsGenero
+            ? {
+                legajo: row.legajo,
+                nombre: row.nombre,
+                apellido: row.apellido,
+                genero: row.genero ?? null,
+              }
+            : { legajo: row.legajo, nombre: row.nombre, apellido: row.apellido }
         );
         const result = (await raw.upsert(payload, options)) as { error: unknown };
         return { error: result.error };

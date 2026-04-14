@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/app/hooks/useAuth";
+import InlineSelect from "@/components/admin/InlineSelect";
 import { supabase } from "@/lib/supabase";
 import StatusBanner from "@/components/admin/StatusBanner";
 import {
@@ -41,6 +42,8 @@ type StatusMessage = {
 const EVALUACIONES: EvaluacionNombre[] = ["Parcial1", "Parcial2", "Integrador"];
 const TIPOS: TipoEvaluacion[] = ["Parcial", "Recuperatorio"];
 const CURRENT_YEAR = new Date().getFullYear();
+const EVALUACION_OPTIONS = EVALUACIONES.map((value) => ({ value, label: value }));
+const TIPO_OPTIONS = TIPOS.map((value) => ({ value, label: value }));
 
 const parseNotaInput = (value: string): number | null => {
   if (value.trim() === "") return null;
@@ -497,35 +500,22 @@ export default function CargarNotasPage() {
               <label className="text-xs uppercase tracking-widest font-bold text-slate-400">
                 Nombre de la evaluación
               </label>
-              <select
-                className="w-full p-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-slate-900 focus:border-[#5D9AD4] outline-none transition-all"
+              <InlineSelect
                 value={evaluacionNombre}
-                onChange={(e) => setEvaluacionNombre(e.target.value as EvaluacionNombre)}
-              >
-                  <option value="">Seleccionar...</option>
-                {EVALUACIONES.map((e) => (
-                  <option key={e} value={e}>
-                    {e}
-                  </option>
-                ))}
-              </select>
+                onChange={setEvaluacionNombre}
+                options={EVALUACION_OPTIONS}
+              />
             </div>
 
             <div className="space-y-2 md:col-span-2">
               <label className="text-xs uppercase tracking-widest font-bold text-slate-400">
                 Tipo
               </label>
-              <select
-                className="w-full p-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-slate-900 focus:border-[#5D9AD4] outline-none transition-all"
+              <InlineSelect
                 value={tipo}
-                onChange={(e) => setTipo(e.target.value as TipoEvaluacion)}
-              >
-                {TIPOS.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </select>
+                onChange={setTipo}
+                options={TIPO_OPTIONS}
+              />
             </div>
           </div>
 

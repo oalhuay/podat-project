@@ -31,7 +31,7 @@ const adminNavItems: NavItem[] = [
   },
   {
     href: "/admin/importar-archivo",
-    label: "Importación",
+    label: "Importar",
     description: "Estadísticas e importación",
   },
   {
@@ -59,7 +59,7 @@ const docenteNavItems: NavItem[] = [
   },
   {
     href: "/admin/importar-archivo",
-    label: "Importación",
+    label: "Importar",
     description: "Estadísticas de tus materias",
   },
   {

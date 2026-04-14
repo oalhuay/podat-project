@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/app/hooks/useAuth";
 import StatusBanner from "@/components/admin/StatusBanner";
 import ImportResults from "@/components/admin/ImportResults";
+import InlineSelect from "@/components/admin/InlineSelect";
 import { supabase } from "@/lib/supabase";
 import { parseAlumnoDisplay, parseAlumnosFromFile } from "@/lib/import/alumnos/parseExcel";
 import type { ImportResult, ImportStatus, ParsedAlumnoRow } from "@/lib/import/alumnos/types";
@@ -58,6 +59,11 @@ const EVALUACIONES: EvaluacionNombre[] = ["Parcial1", "Parcial2", "Integrador"];
 const UMBRAL_PORCENTAJE = 75;
 const MIN_CLASES_PARA_LIBRE = 3;
 const JUSTIFICADO_CUENTA_COMO_PRESENTE = true;
+const EVALUACION_OPTIONS = EVALUACIONES.map((value) => ({ value, label: value }));
+const TIPO_EVALUACION_OPTIONS: Array<{ value: TipoEvaluacion; label: string }> = [
+  { value: "Parcial", label: "Parcial" },
+  { value: "Recuperatorio", label: "Recuperatorio" },
+];
 const SECTION_META: Record<
   ActiveSection,
   { label: string; description: string; readyLabel: string }
@@ -175,7 +181,10 @@ export default function AlumnosPage() {
   const [presentesBaseMapAsistencia, setPresentesBaseMapAsistencia] = useState<Map<number, number>>(
     new Map()
   );
-  const importDbClient = useMemo(() => toImportAlumnosDbClient(supabase), []);
+  const importDbClient = useMemo(
+    () => toImportAlumnosDbClient(supabase, { supportsGenero: true }),
+    []
+  );
 
   useEffect(() => {
     const load = async () => {
@@ -1186,32 +1195,21 @@ export default function AlumnosPage() {
                   <label className="text-xs font-black uppercase tracking-[0.22em] text-slate-400">
                     Evaluación
                   </label>
-                  <select
+                  <InlineSelect
                     value={evaluacionNombre}
-                    onChange={(event) =>
-                      setEvaluacionNombre(event.target.value as EvaluacionNombre)
-                    }
-                    className="mt-2 w-full rounded-xl border border-slate-200 p-3"
-                  >
-                    {EVALUACIONES.map((evalName) => (
-                      <option key={evalName} value={evalName}>
-                        {evalName}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={setEvaluacionNombre}
+                    options={EVALUACION_OPTIONS}
+                  />
                 </div>
                 <div>
                   <label className="text-xs font-black uppercase tracking-[0.22em] text-slate-400">
                     Tipo
                   </label>
-                  <select
+                  <InlineSelect
                     value={tipoEvaluacion}
-                    onChange={(event) => setTipoEvaluacion(event.target.value as TipoEvaluacion)}
-                    className="mt-2 w-full rounded-xl border border-slate-200 p-3"
-                  >
-                    <option value="Parcial">Parcial</option>
-                    <option value="Recuperatorio">Recuperatorio</option>
-                  </select>
+                    onChange={setTipoEvaluacion}
+                    options={TIPO_EVALUACION_OPTIONS}
+                  />
                 </div>
                 <div className="flex items-end">
                   <button
