@@ -198,7 +198,7 @@ export default function AlumnosPage() {
 
       try {
         const accessibleMaterias = await getAccessibleMaterias(user.id, role);
-        setMaterias(accessibleMaterias.map((materia) => ({ id: materia.id, nombre: materia.nombre })));
+        setMaterias(accessibleMaterias);
         if (accessibleMaterias.length === 0) {
           setStatusMessage({ type: "info", text: "No hay materias asignadas para este docente." });
         }

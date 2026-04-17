@@ -30,6 +30,7 @@ import {
   type IndicatorCode,
 } from "@/lib/estadisticas/catalog";
 import { getAccessibleMaterias, type Materia } from "@/lib/materias";
+import type { Rol } from "@/types/database";
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend);
 
