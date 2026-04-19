@@ -12,44 +12,27 @@ import {
 } from "chart.js";
 import { Line } from "react-chartjs-2";
 import { useAuth } from "@/app/hooks/useAuth";
+import { useEstadisticasImport } from "@/app/hooks/useEstadisticasImport";
 import { useTheme } from "@/app/hooks/useTheme";
 import { supabase } from "@/lib/supabase";
 import StatusBanner from "@/components/admin/StatusBanner";
 import { getChartPalette } from "@/lib/charts/theme";
-import { parseEstadisticasFromFile } from "@/lib/import/estadisticas/parseExcel";
-import type {
-  EstadisticaImportSummary,
-  EstadisticaPreviewRow,
-  EstadisticaImportStatus,
-} from "@/lib/import/estadisticas/types";
-import type { ParsedEstadisticaRow } from "@/lib/import/estadisticas/parseExcel";
 import {
   ALL_INDICATORS,
   INDICATOR_BY_CODE,
-  getIndicatorFromLabel,
   type IndicatorCode,
 } from "@/lib/estadisticas/catalog";
 import { getAccessibleMaterias, type Materia } from "@/lib/materias";
 import type { Rol } from "@/types/database";
+import {
+  ESTADISTICA_STATUS_CLASSES,
+  ESTADISTICA_STATUS_LABELS,
+  getMissingMateriaNames,
+  type ImportDefaults,
+  type StatusMessage,
+} from "@/lib/import/estadisticas/workflow";
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend);
-
-type StatusMessage = {
-  type: "success" | "error" | "info";
-  text: string;
-};
-
-type ChangeSummary = {
-  revisados: number;
-  nuevos: number;
-  actualizados: number;
-  sinCambios: number;
-};
-
-type ImportDefaults = {
-  materiaId: number | null;
-  anio: number | null;
-};
 
 type StatRow = {
   anio: number;
@@ -58,77 +41,6 @@ type StatRow = {
 };
 
 const CURRENT_YEAR = new Date().getFullYear();
-
-const normalizeText = (value: string): string =>
-  value
-    .trim()
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "");
-
-const buildSummary = (rows: EstadisticaPreviewRow[]): EstadisticaImportSummary => {
-  const summary = {
-    total: rows.length,
-    validos: 0,
-    calculados: 0,
-    materiaFaltante: 0,
-    materiaDesconocida: 0,
-    anioFaltante: 0,
-    indicadorDesconocido: 0,
-    valorInvalido: 0,
-  };
-
-  rows.forEach((row) => {
-    switch (row.status) {
-      case "valido":
-        summary.validos += 1;
-        break;
-      case "calculado_ignorado":
-        summary.calculados += 1;
-        break;
-      case "materia_faltante":
-        summary.materiaFaltante += 1;
-        break;
-      case "materia_desconocida":
-        summary.materiaDesconocida += 1;
-        break;
-      case "anio_faltante":
-        summary.anioFaltante += 1;
-        break;
-      case "indicador_desconocido":
-        summary.indicadorDesconocido += 1;
-        break;
-      case "valor_invalido":
-        summary.valorInvalido += 1;
-        break;
-      default:
-        break;
-    }
-  });
-
-  return summary;
-};
-
-const statusLabels: Record<EstadisticaImportStatus, string> = {
-  valido: "Válido",
-  calculado_ignorado: "Calculado (no se guarda)",
-  materia_faltante: "Materia faltante",
-  materia_desconocida: "Materia desconocida",
-  anio_faltante: "Año faltante",
-  indicador_desconocido: "Indicador desconocido",
-  valor_invalido: "Valor inválido",
-};
-
-const statusClasses: Record<EstadisticaImportStatus, string> = {
-  valido: "bg-emerald-50 text-emerald-700",
-  calculado_ignorado: "bg-amber-50 text-amber-700",
-  materia_faltante: "bg-rose-50 text-rose-700",
-  materia_desconocida: "bg-rose-50 text-rose-700",
-  anio_faltante: "bg-rose-50 text-rose-700",
-  indicador_desconocido: "bg-rose-50 text-rose-700",
-  valor_invalido: "bg-rose-50 text-rose-700",
-};
 
 const buildSeries = (
   rows: StatRow[],
@@ -173,13 +85,7 @@ export default function EstadisticasPage() {
   const { user, role, isLoadingProfile } = useAuth();
   const { resolvedTheme } = useTheme();
   const [materias, setMaterias] = useState<Materia[]>([]);
-  const [archivo, setArchivo] = useState<File | null>(null);
-  const [parsedRows, setParsedRows] = useState<ParsedEstadisticaRow[]>([]);
-  const [changeSummary, setChangeSummary] = useState<ChangeSummary | null>(null);
   const [statusMessage, setStatusMessage] = useState<StatusMessage | null>(null);
-  const [isImporting, setIsImporting] = useState(false);
-  const [isCheckingChanges, setIsCheckingChanges] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<EstadisticaImportStatus | "todos">("todos");
   const [currentRole, setCurrentRole] = useState<Rol | null>(null);
   const [fallbackMateriaId, setFallbackMateriaId] = useState<number | "">("");
   const [fallbackYear, setFallbackYear] = useState("");
@@ -190,6 +96,38 @@ export default function EstadisticasPage() {
   const [yearTo, setYearTo] = useState(String(CURRENT_YEAR));
   const [statsRows, setStatsRows] = useState<StatRow[]>([]);
   const [isLoadingStats, setIsLoadingStats] = useState(false);
+  const [isCreatingMaterias, setIsCreatingMaterias] = useState(false);
+  const importDefaults = useMemo<ImportDefaults>(() => {
+    const parsedYear = Number(fallbackYear);
+    const normalizedYear =
+      fallbackYear.trim() !== "" && Number.isFinite(parsedYear)
+        ? Math.trunc(parsedYear)
+        : null;
+
+    return {
+      materiaId: fallbackMateriaId === "" ? null : Number(fallbackMateriaId),
+      anio: normalizedYear,
+    };
+  }, [fallbackMateriaId, fallbackYear]);
+  const {
+    archivo,
+    parsedRows,
+    previewRows,
+    summary,
+    rowsFiltradas,
+    changeSummary,
+    isImporting,
+    isCheckingChanges,
+    statusFilter,
+    setStatusFilter,
+    processFile,
+    clearPreview: clearImportPreview,
+    aceptarImportacion,
+  } = useEstadisticasImport({
+    materias,
+    importDefaults,
+    onStatusMessage: setStatusMessage,
+  });
 
   useEffect(() => {
     const loadMaterias = async () => {
@@ -232,224 +170,13 @@ export default function EstadisticasPage() {
     return () => window.clearTimeout(timeoutId);
   }, [isLoadingProfile, role, user?.id]);
 
-  const buildPreview = (
-    parsed: ParsedEstadisticaRow[],
-    materiasList: Materia[],
-    defaults: ImportDefaults
-  ): EstadisticaPreviewRow[] => {
-    const materiaMap = new Map(
-      materiasList.map((m) => [normalizeText(m.nombre), m])
-    );
-    const fallbackMateria =
-      defaults.materiaId === null
-        ? null
-        : materiasList.find((m) => m.id === defaults.materiaId) ?? null;
-
-    const preview = parsed.map((row) => {
-      const materiaName = row.materia?.trim() || fallbackMateria?.nombre || "";
-      const materiaKey = materiaName ? normalizeText(materiaName) : "";
-      const materia = materiaKey ? materiaMap.get(materiaKey) : fallbackMateria;
-      const indicator = getIndicatorFromLabel(row.indicador);
-      const anio = row.anio ?? defaults.anio;
-
-      let status: EstadisticaImportStatus = "valido";
-      let mensaje = "OK";
-
-      if (!materiaName) {
-        status = "materia_faltante";
-        mensaje = "Completa la materia en el formulario o dentro del archivo.";
-      } else if (!materia) {
-        status = "materia_desconocida";
-        mensaje = "Materia no encontrada en la base.";
-      } else if (anio === null) {
-        status = "anio_faltante";
-        mensaje = "Completa el año en el formulario o dentro del archivo.";
-      } else if (!indicator) {
-        status = "indicador_desconocido";
-        mensaje = "Indicador no reconocido en el catálogo.";
-      } else if (indicator.isCalculated) {
-        status = "calculado_ignorado";
-        mensaje = "Indicador calculado. Se calcula en el dashboard.";
-      } else if (!Number.isFinite(row.valor)) {
-        status = "valor_invalido";
-        mensaje = "Valor inválido.";
-      }
-
-      return {
-        materia: materiaName || "—",
-        materiaId: materia?.id ?? null,
-        indicadorRaw: row.indicador,
-        indicadorCode: indicator?.code ?? null,
-        anio,
-        valor: Number.isFinite(row.valor) ? row.valor : null,
-        status,
-        mensaje,
-      };
-    });
-
-    return preview;
-  };
-
-  const importDefaults = useMemo<ImportDefaults>(() => {
-    const parsedYear = Number(fallbackYear);
-    const normalizedYear =
-      fallbackYear.trim() !== "" && Number.isFinite(parsedYear)
-        ? Math.trunc(parsedYear)
-        : null;
-
-    return {
-      materiaId: fallbackMateriaId === "" ? null : Number(fallbackMateriaId),
-      anio: normalizedYear,
-    };
-  }, [fallbackMateriaId, fallbackYear]);
-
-  const computeChangeSummary = async (preview: EstadisticaPreviewRow[]) => {
-    const validRows = preview.filter(
-      (row) =>
-        row.status === "valido" &&
-        row.materiaId &&
-        row.indicadorCode &&
-        row.anio !== null &&
-        row.valor !== null
-    );
-
-    if (validRows.length === 0) {
-      setChangeSummary(null);
-      return;
-    }
-
-    setIsCheckingChanges(true);
-    try {
-      const materiaIds = Array.from(new Set(validRows.map((r) => r.materiaId as number)));
-      const years = Array.from(new Set(validRows.map((r) => r.anio)));
-      const indicators = Array.from(new Set(validRows.map((r) => r.indicadorCode as string)));
-
-      const { data, error } = await supabase
-        .from("estadisticas")
-        .select("materia_id, anio, indicador, valor")
-        .in("materia_id", materiaIds)
-        .in("anio", years)
-        .in("indicador", indicators);
-
-      if (error) throw error;
-
-      const existingMap = new Map<string, number>();
-      (data ?? []).forEach((row) => {
-        const key = `${row.materia_id}|${row.anio}|${row.indicador}`;
-        existingMap.set(key, Number(row.valor));
-      });
-
-      let nuevos = 0;
-      let actualizados = 0;
-      let sinCambios = 0;
-
-      validRows.forEach((row) => {
-        const key = `${row.materiaId}|${row.anio}|${row.indicadorCode}`;
-        const existing = existingMap.get(key);
-        if (existing === undefined) {
-          nuevos += 1;
-          return;
-        }
-
-        const diff = Math.abs(existing - (row.valor ?? 0));
-        if (diff > 1e-6) {
-          actualizados += 1;
-        } else {
-          sinCambios += 1;
-        }
-      });
-
-      setChangeSummary({
-        revisados: validRows.length,
-        nuevos,
-        actualizados,
-        sinCambios,
-      });
-    } catch (error: unknown) {
-      const message =
-        typeof error === "object" && error !== null && "message" in error
-          ? String((error as { message: unknown }).message)
-          : "Error desconocido";
-      setStatusMessage({
-        type: "error",
-        text: `No se pudo analizar cambios: ${message}`,
-      });
-      setChangeSummary(null);
-    } finally {
-      setIsCheckingChanges(false);
-    }
-  };
-
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    setArchivo(file);
-
-    setIsImporting(true);
-    try {
-      const parsed = await parseEstadisticasFromFile(file);
-      setParsedRows(parsed);
-      if (parsed.length === 0) {
-        setChangeSummary(null);
-        setStatusMessage({
-          type: "info",
-          text: "No se encontraron datos válidos en el Excel.",
-        });
-      } else {
-        setStatusMessage({
-          type: "info",
-          text: `Archivo listo. Filas detectadas: ${parsed.length}.`,
-        });
-      }
-    } catch {
-      setParsedRows([]);
-      setChangeSummary(null);
-      setStatusMessage({
-        type: "error",
-        text: "No se pudo leer el archivo. Verifica que sea un Excel .xlsx válido.",
-      });
-    } finally {
-      setIsImporting(false);
-    }
-  };
-
-  const previewRows = useMemo(
-    () => buildPreview(parsedRows, materias, importDefaults),
-    [importDefaults, materias, parsedRows]
-  );
-
-  const summary = useMemo<EstadisticaImportSummary | null>(
-    () => (previewRows.length > 0 ? buildSummary(previewRows) : null),
-    [previewRows]
-  );
-
-  useEffect(() => {
-    const timeoutId = window.setTimeout(() => {
-      void computeChangeSummary(previewRows);
-    }, 0);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [previewRows]);
-
   const crearMateriasFaltantes = async () => {
     if (parsedRows.length === 0) return;
-    setIsImporting(true);
+    setIsCreatingMaterias(true);
     try {
-      const existentes = new Set(materias.map((m) => normalizeText(m.nombre)));
-      const faltantes = new Set<string>();
+      const faltantes = getMissingMateriaNames(parsedRows, materias);
 
-      parsedRows.forEach((row) => {
-        const indicator = getIndicatorFromLabel(row.indicador);
-        if (!indicator || indicator.isCalculated) return;
-        const materiaName = row.materia?.trim();
-        if (!materiaName) return;
-        const key = normalizeText(materiaName);
-        if (!existentes.has(key)) {
-          faltantes.add(materiaName);
-        }
-      });
-
-      if (faltantes.size === 0) {
+      if (faltantes.length === 0) {
         setStatusMessage({
           type: "info",
           text: "No hay materias nuevas para crear.",
@@ -457,7 +184,7 @@ export default function EstadisticasPage() {
         return;
       }
 
-      const payload = Array.from(faltantes).map((nombre) => ({ nombre }));
+      const payload = faltantes.map((nombre) => ({ nombre }));
       const { error } = await supabase.from("materias").insert(payload);
       if (error) throw error;
 
@@ -469,11 +196,9 @@ export default function EstadisticasPage() {
 
       const materiasList = (refreshed ?? []) as Materia[];
       setMaterias(materiasList);
-      const preview = buildPreview(parsedRows, materiasList, importDefaults);
-      await computeChangeSummary(preview);
       setStatusMessage({
         type: "success",
-        text: `Materias creadas: ${faltantes.size}.`,
+        text: `Materias creadas: ${faltantes.length}.`,
       });
     } catch (error: unknown) {
       const message =
@@ -485,80 +210,16 @@ export default function EstadisticasPage() {
         text: `Error creando materias: ${message}`,
       });
     } finally {
-      setIsImporting(false);
+      setIsCreatingMaterias(false);
     }
   };
 
-  const rowsFiltradas = useMemo(() => {
-    if (statusFilter === "todos") return previewRows;
-    return previewRows.filter((row) => row.status === statusFilter);
-  }, [previewRows, statusFilter]);
   const selectedDashboardMateria =
     selectedMateriaId === ""
       ? null
       : materias.find((materia) => materia.id === selectedMateriaId) ?? null;
   const importReady = previewRows.length > 0;
   const dashboardReady = selectedMateriaId !== "";
-
-  const clearPreview = () => {
-    setArchivo(null);
-    setParsedRows([]);
-    setChangeSummary(null);
-    setStatusFilter("todos");
-  };
-
-  const aceptarImportacion = async () => {
-    if (previewRows.length === 0) {
-      setStatusMessage({
-        type: "error",
-        text: "No hay filas para importar.",
-      });
-      return;
-    }
-
-    const payload = previewRows
-      .filter((row) => row.status === "valido" && row.materiaId && row.indicadorCode)
-      .filter((row) => row.anio !== null)
-      .map((row) => ({
-        materia_id: row.materiaId,
-        anio: row.anio as number,
-        indicador: row.indicadorCode,
-        valor: row.valor,
-      }));
-
-    if (payload.length === 0) {
-      setStatusMessage({
-        type: "error",
-        text: "No hay filas válidas para guardar.",
-      });
-      return;
-    }
-
-    setIsImporting(true);
-    try {
-      const { error } = await supabase
-        .from("estadisticas")
-        .upsert(payload, { onConflict: "materia_id,anio,indicador" });
-
-      if (error) throw error;
-
-      setStatusMessage({
-        type: "success",
-        text: `Importación lista. Filas guardadas: ${payload.length}.`,
-      });
-    } catch (error: unknown) {
-      const message =
-        typeof error === "object" && error !== null && "message" in error
-          ? String((error as { message: unknown }).message)
-          : "Error desconocido";
-      setStatusMessage({
-        type: "error",
-        text: `Error al guardar estadísticas: ${message}`,
-      });
-    } finally {
-      setIsImporting(false);
-    }
-  };
 
   const cargarEstadisticas = useCallback(async () => {
     if (!selectedMateriaId) return;
@@ -741,7 +402,12 @@ export default function EstadisticasPage() {
               <input
                 type="file"
                 accept=".xlsx"
-                onChange={handleFileChange}
+                onChange={async (event) => {
+                  const file = event.target.files?.[0];
+                  if (!file) return;
+                  await processFile(file);
+                  event.target.value = "";
+                }}
                 className="block w-full text-sm text-slate-500"
               />
               <p className="mt-4 text-slate-600 font-medium">
@@ -913,10 +579,10 @@ export default function EstadisticasPage() {
           <div className="flex flex-wrap gap-3">
             <button
               onClick={crearMateriasFaltantes}
-              disabled={isImporting}
+              disabled={isCreatingMaterias}
               className="px-4 py-2 rounded-2xl bg-slate-900 text-white font-bold text-sm hover:bg-slate-800 transition-colors disabled:opacity-70"
             >
-              {isImporting ? "CREANDO..." : "CREAR MATERIAS FALTANTES"}
+              {isCreatingMaterias ? "CREANDO..." : "CREAR MATERIAS FALTANTES"}
             </button>
             <span className="text-sm text-slate-500 self-center">
               Esto toma las materias del Excel y las agrega a la base.
@@ -960,7 +626,7 @@ export default function EstadisticasPage() {
                       : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
                   }`}
                 >
-                  {status === "todos" ? "Todos" : statusLabels[status]}
+                  {status === "todos" ? "Todos" : ESTADISTICA_STATUS_LABELS[status]}
                 </button>
               ))}
             </div>
@@ -988,10 +654,10 @@ export default function EstadisticasPage() {
                         <td className="p-3">
                           <span
                             className={`inline-flex px-2.5 py-1 rounded-full text-xs font-bold ${
-                              statusClasses[row.status]
+                              ESTADISTICA_STATUS_CLASSES[row.status]
                             }`}
                           >
-                            {statusLabels[row.status]}
+                            {ESTADISTICA_STATUS_LABELS[row.status]}
                           </span>
                         </td>
                         <td className="p-3 text-slate-600">{row.mensaje}</td>
@@ -1011,14 +677,14 @@ export default function EstadisticasPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <button
-                onClick={aceptarImportacion}
+                onClick={() => void aceptarImportacion()}
                 disabled={isImporting}
                 className="w-full p-4 bg-green-600 text-white font-black text-lg rounded-2xl hover:bg-green-700 transition-colors disabled:opacity-70"
               >
                 {isImporting ? "GUARDANDO..." : "GUARDAR ESTADÍSTICAS"}
               </button>
               <button
-                onClick={clearPreview}
+                onClick={clearImportPreview}
                 disabled={isImporting}
                 className="w-full p-4 bg-slate-200 text-slate-800 font-black text-lg rounded-2xl hover:bg-slate-300 transition-colors disabled:opacity-70"
               >

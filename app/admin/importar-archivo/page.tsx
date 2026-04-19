@@ -1,113 +1,43 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/app/hooks/useAuth";
-import { supabase } from "@/lib/supabase";
+import { useEstadisticasImport } from "@/app/hooks/useEstadisticasImport";
 import StatusBanner from "@/components/admin/StatusBanner";
-import { parseEstadisticasFromFile } from "@/lib/import/estadisticas/parseExcel";
-import type { ParsedEstadisticaRow } from "@/lib/import/estadisticas/parseExcel";
-import type {
-  EstadisticaImportStatus,
-  EstadisticaImportSummary,
-  EstadisticaPreviewRow,
-} from "@/lib/import/estadisticas/types";
-import { getIndicatorFromLabel } from "@/lib/estadisticas/catalog";
 import { getAccessibleMaterias, type Materia } from "@/lib/materias";
-
-type StatusMessage = {
-  type: "success" | "error" | "info";
-  text: string;
-};
-
-type ChangeSummary = {
-  revisados: number;
-  nuevos: number;
-  actualizados: number;
-  sinCambios: number;
-};
-
-const normalizeText = (value: string): string =>
-  value
-    .trim()
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "");
-
-const buildSummary = (rows: EstadisticaPreviewRow[]): EstadisticaImportSummary => {
-  const summary = {
-    total: rows.length,
-    validos: 0,
-    calculados: 0,
-    materiaFaltante: 0,
-    materiaDesconocida: 0,
-    anioFaltante: 0,
-    indicadorDesconocido: 0,
-    valorInvalido: 0,
-  };
-
-  rows.forEach((row) => {
-    switch (row.status) {
-      case "valido":
-        summary.validos += 1;
-        break;
-      case "calculado_ignorado":
-        summary.calculados += 1;
-        break;
-      case "materia_faltante":
-        summary.materiaFaltante += 1;
-        break;
-      case "materia_desconocida":
-        summary.materiaDesconocida += 1;
-        break;
-      case "anio_faltante":
-        summary.anioFaltante += 1;
-        break;
-      case "indicador_desconocido":
-        summary.indicadorDesconocido += 1;
-        break;
-      case "valor_invalido":
-        summary.valorInvalido += 1;
-        break;
-      default:
-        break;
-    }
-  });
-
-  return summary;
-};
-
-const statusLabels: Record<EstadisticaImportStatus, string> = {
-  valido: "Válido",
-  calculado_ignorado: "Calculado (no se guarda)",
-  materia_faltante: "Materia faltante",
-  materia_desconocida: "Materia desconocida",
-  anio_faltante: "Año faltante",
-  indicador_desconocido: "Indicador desconocido",
-  valor_invalido: "Valor inválido",
-};
-
-const statusClasses: Record<EstadisticaImportStatus, string> = {
-  valido: "bg-emerald-50 text-emerald-700",
-  calculado_ignorado: "bg-amber-50 text-amber-700",
-  materia_faltante: "bg-rose-50 text-rose-700",
-  materia_desconocida: "bg-rose-50 text-rose-700",
-  anio_faltante: "bg-rose-50 text-rose-700",
-  indicador_desconocido: "bg-rose-50 text-rose-700",
-  valor_invalido: "bg-rose-50 text-rose-700",
-};
+import {
+  ESTADISTICA_STATUS_CLASSES,
+  ESTADISTICA_STATUS_LABELS,
+  type StatusMessage,
+} from "@/lib/import/estadisticas/workflow";
 
 export default function ImportarArchivoDocentePage() {
   const { user, role, isLoadingProfile } = useAuth();
   const [materias, setMaterias] = useState<Materia[]>([]);
-  const [archivo, setArchivo] = useState<File | null>(null);
-  const [parsedRows, setParsedRows] = useState<ParsedEstadisticaRow[]>([]);
-  const [changeSummary, setChangeSummary] = useState<ChangeSummary | null>(null);
   const [statusMessage, setStatusMessage] = useState<StatusMessage | null>(null);
-  const [isImporting, setIsImporting] = useState(false);
-  const [isCheckingChanges, setIsCheckingChanges] = useState(false);
   const [isDragActive, setIsDragActive] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<EstadisticaImportStatus | "todos">("todos");
+  const {
+    archivo,
+    previewRows,
+    summary,
+    rowsFiltradas,
+    changeSummary,
+    isImporting,
+    isCheckingChanges,
+    statusFilter,
+    setStatusFilter,
+    processFile,
+    clearPreview,
+    aceptarImportacion,
+  } = useEstadisticasImport({
+    materias,
+    messages: {
+      missingMateria:
+        "El archivo debe incluir la materia en la columna o encabezado del bloque.",
+      missingYear: "El archivo debe incluir el ano para cada fila o columna de datos.",
+    },
+    onStatusMessage: setStatusMessage,
+  });
 
   useEffect(() => {
     const loadMaterias = async () => {
@@ -148,184 +78,6 @@ export default function ImportarArchivoDocentePage() {
     return () => window.clearTimeout(timeoutId);
   }, [isLoadingProfile, role, user?.id]);
 
-  const buildPreview = (
-    parsed: ParsedEstadisticaRow[],
-    materiasList: Materia[]
-  ): EstadisticaPreviewRow[] => {
-    const materiaMap = new Map(materiasList.map((m) => [normalizeText(m.nombre), m]));
-
-    return parsed.map((row) => {
-      const materiaName = row.materia?.trim() || "";
-      const materiaKey = materiaName ? normalizeText(materiaName) : "";
-      const materia = materiaKey ? materiaMap.get(materiaKey) : null;
-      const indicator = getIndicatorFromLabel(row.indicador);
-      const anio = row.anio;
-
-      let status: EstadisticaImportStatus = "valido";
-      let mensaje = "OK";
-
-      if (!materiaName) {
-        status = "materia_faltante";
-        mensaje = "El archivo debe incluir la materia en la columna o encabezado del bloque.";
-      } else if (!materia) {
-        status = "materia_desconocida";
-        mensaje = "Materia no encontrada en la base.";
-      } else if (anio === null) {
-        status = "anio_faltante";
-        mensaje = "El archivo debe incluir el año para cada fila o columna de datos.";
-      } else if (!indicator) {
-        status = "indicador_desconocido";
-        mensaje = "Indicador no reconocido en el catálogo.";
-      } else if (indicator.isCalculated) {
-        status = "calculado_ignorado";
-        mensaje = "Indicador calculado. Se calcula en el dashboard.";
-      } else if (!Number.isFinite(row.valor)) {
-        status = "valor_invalido";
-        mensaje = "Valor inválido.";
-      }
-
-      return {
-        materia: materiaName || "—",
-        materiaId: materia?.id ?? null,
-        indicadorRaw: row.indicador,
-        indicadorCode: indicator?.code ?? null,
-        anio,
-        valor: Number.isFinite(row.valor) ? row.valor : null,
-        status,
-        mensaje,
-      };
-    });
-  };
-
-  const computeChangeSummary = async (preview: EstadisticaPreviewRow[]) => {
-    const validRows = preview.filter(
-      (row) =>
-        row.status === "valido" &&
-        row.materiaId &&
-        row.indicadorCode &&
-        row.anio !== null &&
-        row.valor !== null
-    );
-
-    if (validRows.length === 0) {
-      setChangeSummary(null);
-      return;
-    }
-
-    setIsCheckingChanges(true);
-    try {
-      const materiaIds = Array.from(new Set(validRows.map((r) => r.materiaId as number)));
-      const years = Array.from(new Set(validRows.map((r) => r.anio as number)));
-      const indicators = Array.from(new Set(validRows.map((r) => r.indicadorCode as string)));
-
-      const { data, error } = await supabase
-        .from("estadisticas")
-        .select("materia_id, anio, indicador, valor")
-        .in("materia_id", materiaIds)
-        .in("anio", years)
-        .in("indicador", indicators);
-
-      if (error) throw error;
-
-      const existingMap = new Map<string, number>();
-      (data ?? []).forEach((row) => {
-        const key = `${row.materia_id}|${row.anio}|${row.indicador}`;
-        existingMap.set(key, Number(row.valor));
-      });
-
-      let nuevos = 0;
-      let actualizados = 0;
-      let sinCambios = 0;
-
-      validRows.forEach((row) => {
-        const key = `${row.materiaId}|${row.anio}|${row.indicadorCode}`;
-        const existing = existingMap.get(key);
-        if (existing === undefined) {
-          nuevos += 1;
-          return;
-        }
-
-        const diff = Math.abs(existing - (row.valor ?? 0));
-        if (diff > 1e-6) {
-          actualizados += 1;
-        } else {
-          sinCambios += 1;
-        }
-      });
-
-      setChangeSummary({
-        revisados: validRows.length,
-        nuevos,
-        actualizados,
-        sinCambios,
-      });
-    } catch (error: unknown) {
-      const message =
-        typeof error === "object" && error !== null && "message" in error
-          ? String((error as { message: unknown }).message)
-          : "Error desconocido";
-      setStatusMessage({
-        type: "error",
-        text: `No se pudo analizar cambios: ${message}`,
-      });
-      setChangeSummary(null);
-    } finally {
-      setIsCheckingChanges(false);
-    }
-  };
-
-  const previewRows = useMemo(
-    () => buildPreview(parsedRows, materias),
-    [materias, parsedRows]
-  );
-
-  const summary = useMemo<EstadisticaImportSummary | null>(
-    () => (previewRows.length > 0 ? buildSummary(previewRows) : null),
-    [previewRows]
-  );
-
-  useEffect(() => {
-    const timeoutId = window.setTimeout(() => {
-      void computeChangeSummary(previewRows);
-    }, 0);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [previewRows]);
-
-  const processFile = async (file: File) => {
-    if (!file) return;
-
-    setArchivo(file);
-    setStatusMessage(null);
-
-    setIsImporting(true);
-    try {
-      const parsed = await parseEstadisticasFromFile(file);
-      setParsedRows(parsed);
-      if (parsed.length === 0) {
-        setChangeSummary(null);
-        setStatusMessage({
-          type: "info",
-          text: "No se encontraron datos válidos en el Excel.",
-        });
-      } else {
-        setStatusMessage({
-          type: "info",
-          text: `Archivo listo. Filas detectadas: ${parsed.length}.`,
-        });
-      }
-    } catch {
-      setParsedRows([]);
-      setChangeSummary(null);
-      setStatusMessage({
-        type: "error",
-        text: "No se pudo leer el archivo. Verifica que sea un Excel .xlsx válido.",
-      });
-    } finally {
-      setIsImporting(false);
-    }
-  };
-
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -351,72 +103,14 @@ export default function ImportarArchivoDocentePage() {
     await processFile(file);
   };
 
-  const rowsFiltradas = useMemo(() => {
-    if (statusFilter === "todos") return previewRows;
-    return previewRows.filter((row) => row.status === statusFilter);
-  }, [previewRows, statusFilter]);
-
-  const aceptarImportacion = async () => {
-    if (previewRows.length === 0) {
-      setStatusMessage({
-        type: "error",
-        text: "No hay filas para importar.",
-      });
-      return;
-    }
-
-    const payload = previewRows
-      .filter((row) => row.status === "valido" && row.materiaId && row.indicadorCode)
-      .filter((row) => row.anio !== null)
-      .map((row) => ({
-        materia_id: row.materiaId,
-        anio: row.anio as number,
-        indicador: row.indicadorCode,
-        valor: row.valor,
-      }));
-
-    if (payload.length === 0) {
-      setStatusMessage({
-        type: "error",
-        text: "No hay filas válidas para guardar.",
-      });
-      return;
-    }
-
-    setIsImporting(true);
-    try {
-      const { error } = await supabase
-        .from("estadisticas")
-        .upsert(payload, { onConflict: "materia_id,anio,indicador" });
-
-      if (error) throw error;
-
-      setStatusMessage({
-        type: "success",
-        text: `Importación lista. Filas guardadas: ${payload.length}.`,
-      });
-    } catch (error: unknown) {
-      const message =
-        typeof error === "object" && error !== null && "message" in error
-          ? String((error as { message: unknown }).message)
-          : "Error desconocido";
-      setStatusMessage({
-        type: "error",
-        text: `Error al guardar estadísticas: ${message}`,
-      });
-    } finally {
-      setIsImporting(false);
-    }
-  };
-
   return (
     <div className="min-h-screen max-w-5xl mx-auto bg-white p-8">
       <header className="mb-10">
         <h1 className="text-4xl font-black tracking-tight text-slate-900">
-          Importación de Estadísticas
+          Importacion de Estadisticas
         </h1>
         <p className="mt-2 font-medium text-slate-500">
-          Carga un archivo .xlsx con datos de tus materias y registra estadísticas en el sistema.
+          Carga un archivo .xlsx con datos de tus materias y registra estadisticas en el sistema.
         </p>
       </header>
 
@@ -446,11 +140,11 @@ export default function ImportarArchivoDocentePage() {
                 <span className="text-4xl font-black">+</span>
               </div>
               <p className="mt-6 text-2xl font-black tracking-tight text-slate-900">
-                Arrastra tu archivo o selecciónalo
+                Arrastra tu archivo o seleccionalo
               </p>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-500">
-                Sube un archivo de Excel `.xlsx` desde tu PC. El sistema leerá automáticamente la
-                hoja útil y te mostrará una previsualización antes de guardar.
+                Sube un archivo de Excel `.xlsx` desde tu PC. El sistema leera automaticamente la
+                hoja util y te mostrara una previsualizacion antes de guardar.
               </p>
               <div className="mt-6 inline-flex rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 shadow-sm">
                 Elegir archivo `.xlsx`
@@ -464,7 +158,7 @@ export default function ImportarArchivoDocentePage() {
 
             <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
               <p className="text-xs font-black uppercase tracking-[0.25em] text-slate-400">
-                Guía rápida
+                Guia rapida
               </p>
               <div className="mt-5 space-y-4 text-sm leading-6 text-slate-600">
                 <p>
@@ -472,19 +166,19 @@ export default function ImportarArchivoDocentePage() {
                 </p>
                 <p>
                   El archivo debe incluir <span className="font-black text-slate-900">materia</span>{" "}
-                  y <span className="font-black text-slate-900">año</span> dentro del propio Excel.
+                  y <span className="font-black text-slate-900">ano</span> dentro del propio Excel.
                 </p>
                 <p>
                   <span className="font-black text-slate-900">Formato docente PODAT:</span> bloque
-                  por materia con encabezado y luego una fila por año.
+                  por materia con encabezado y luego una fila por ano.
                 </p>
                 <p>
                   <span className="font-black text-slate-900">Formato simple:</span>{" "}
-                  `Materia | Año | Varones inscriptos | Mujeres inscriptas`.
+                  `Materia | Ano | Varones inscriptos | Mujeres inscriptas`.
                 </p>
                 <p>
                   <span className="font-black text-slate-900">Formato tipo SyO:</span> columna
-                  `Materia`, columna `Indicadores` y columnas por año.
+                  `Materia`, columna `Indicadores` y columnas por ano.
                 </p>
               </div>
             </div>
@@ -500,7 +194,7 @@ export default function ImportarArchivoDocentePage() {
               <p className="text-2xl font-black text-slate-800">{summary.total}</p>
             </div>
             <div className="rounded-2xl bg-emerald-50 p-4">
-              <p className="text-xs font-bold uppercase text-emerald-700">Válidos</p>
+              <p className="text-xs font-bold uppercase text-emerald-700">Validos</p>
               <p className="text-2xl font-black text-emerald-800">{summary.validos}</p>
             </div>
             <div className="rounded-2xl bg-amber-50 p-4">
@@ -512,11 +206,11 @@ export default function ImportarArchivoDocentePage() {
               <p className="text-2xl font-black text-rose-800">{summary.materiaFaltante}</p>
             </div>
             <div className="rounded-2xl bg-rose-50 p-4">
-              <p className="text-xs font-bold uppercase text-rose-700">Materia inválida</p>
+              <p className="text-xs font-bold uppercase text-rose-700">Materia invalida</p>
               <p className="text-2xl font-black text-rose-800">{summary.materiaDesconocida}</p>
             </div>
             <div className="rounded-2xl bg-rose-50 p-4">
-              <p className="text-xs font-bold uppercase text-rose-700">Año faltante</p>
+              <p className="text-xs font-bold uppercase text-rose-700">Ano faltante</p>
               <p className="text-2xl font-black text-rose-800">{summary.anioFaltante}</p>
             </div>
             <div className="rounded-2xl bg-rose-50 p-4">
@@ -583,7 +277,7 @@ export default function ImportarArchivoDocentePage() {
                       : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
                   }`}
                 >
-                  {status === "todos" ? "Todos" : statusLabels[status]}
+                  {status === "todos" ? "Todos" : ESTADISTICA_STATUS_LABELS[status]}
                 </button>
               ))}
             </div>
@@ -595,7 +289,7 @@ export default function ImportarArchivoDocentePage() {
                     <tr>
                       <th className="p-3 text-left">Materia</th>
                       <th className="p-3 text-left">Indicador</th>
-                      <th className="p-3 text-left">Año</th>
+                      <th className="p-3 text-left">Ano</th>
                       <th className="p-3 text-left">Valor</th>
                       <th className="p-3 text-left">Estado</th>
                       <th className="p-3 text-left">Detalle</th>
@@ -606,15 +300,15 @@ export default function ImportarArchivoDocentePage() {
                       <tr key={`${row.materia}-${row.anio}-${index}`} className="border-t">
                         <td className="p-3">{row.materia}</td>
                         <td className="p-3">{row.indicadorRaw}</td>
-                        <td className="p-3">{row.anio ?? "—"}</td>
-                        <td className="p-3">{row.valor ?? "—"}</td>
+                        <td className="p-3">{row.anio ?? "-"}</td>
+                        <td className="p-3">{row.valor ?? "-"}</td>
                         <td className="p-3">
                           <span
                             className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${
-                              statusClasses[row.status]
+                              ESTADISTICA_STATUS_CLASSES[row.status]
                             }`}
                           >
-                            {statusLabels[row.status]}
+                            {ESTADISTICA_STATUS_LABELS[row.status]}
                           </span>
                         </td>
                         <td className="p-3 text-slate-600">{row.mensaje}</td>
@@ -634,23 +328,18 @@ export default function ImportarArchivoDocentePage() {
 
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               <button
-                onClick={aceptarImportacion}
+                onClick={() => void aceptarImportacion()}
                 disabled={isImporting}
                 className="w-full rounded-2xl bg-green-600 p-4 text-lg font-black text-white transition-colors hover:bg-green-700 disabled:opacity-70"
               >
-                {isImporting ? "GUARDANDO..." : "GUARDAR ESTADÍSTICAS"}
+                {isImporting ? "GUARDANDO..." : "GUARDAR ESTADISTICAS"}
               </button>
               <button
-                onClick={() => {
-                  setArchivo(null);
-                  setParsedRows([]);
-                  setChangeSummary(null);
-                  setStatusFilter("todos");
-                }}
+                onClick={clearPreview}
                 disabled={isImporting}
                 className="w-full rounded-2xl bg-slate-200 p-4 text-lg font-black text-slate-800 transition-colors hover:bg-slate-300 disabled:opacity-70"
               >
-                LIMPIAR PREVISUALIZACIÓN
+                LIMPIAR PREVISUALIZACION
               </button>
             </div>
           </div>
