@@ -185,7 +185,7 @@ export default function EstadisticasDashboardPage() {
   const [chartSelections, setChartSelections] = useState<ChartSelections>(
     createInitialSelections("")
   );
-  const [statsRows, setStatsRows] = useState<StatRow[]>([]);
+  const [loadedStatsRows, setLoadedStatsRows] = useState<StatRow[]>([]);
   const [isLoadingStats, setIsLoadingStats] = useState(false);
   const [statusMessage, setStatusMessage] = useState<StatusMessage | null>(null);
 
@@ -242,7 +242,11 @@ export default function EstadisticasDashboardPage() {
       }
     };
 
-    void loadMaterias();
+    const timeoutId = window.setTimeout(() => {
+      void loadMaterias();
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
   }, [isLoadingProfile, role, user?.id]);
 
   const distinctMateriaIds = useMemo(
@@ -257,12 +261,15 @@ export default function EstadisticasDashboardPage() {
     [chartSelections]
   );
 
+  const shouldQueryStats =
+    Number.isFinite(Number(selectedYear)) && distinctMateriaIds.length > 0;
+
   useEffect(() => {
-    const yearLimit = Number(selectedYear);
-    if (!Number.isFinite(yearLimit) || distinctMateriaIds.length === 0) {
-      setStatsRows([]);
+    if (!shouldQueryStats) {
       return;
     }
+
+    const yearLimit = Number(selectedYear);
 
     const loadStats = async () => {
       setIsLoadingStats(true);
@@ -291,7 +298,7 @@ export default function EstadisticasDashboardPage() {
               Number.isFinite(row.valor)
           );
 
-        setStatsRows(cleaned);
+        setLoadedStatsRows(cleaned);
       } catch (error: unknown) {
         const message =
           typeof error === "object" && error !== null && "message" in error
@@ -306,8 +313,17 @@ export default function EstadisticasDashboardPage() {
       }
     };
 
-    void loadStats();
-  }, [distinctMateriaIds, selectedYear]);
+    const timeoutId = window.setTimeout(() => {
+      void loadStats();
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [distinctMateriaIds, selectedYear, shouldQueryStats]);
+
+  const statsRows = useMemo(
+    () => (shouldQueryStats ? loadedStatsRows : []),
+    [loadedStatsRows, shouldQueryStats]
+  );
 
   const statsByMateria = useMemo(() => {
     const map = new Map<number, StatRow[]>();

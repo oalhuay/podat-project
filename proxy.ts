@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { isAuthSessionMissingError } from "@/lib/auth/isAuthSessionMissingError";
 
 const adminOnlyPrefixes = ["/admin/usuarios", "/admin/importar", "/admin/materias"];
 const docenteAllowedPrefixes = [
@@ -38,7 +39,16 @@ export async function proxy(request: NextRequest) {
 
   const {
     data: { user },
+    error: authError,
   } = await supabase.auth.getUser();
+
+  if (authError && !isAuthSessionMissingError(authError)) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/";
+    url.searchParams.set("auth_status", "error");
+    url.searchParams.set("auth_error", "auth_check_failed");
+    return NextResponse.redirect(url);
+  }
 
   if (!user) {
     const url = request.nextUrl.clone();

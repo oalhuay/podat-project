@@ -18,11 +18,9 @@ function HomeContent() {
   const authError = searchParams.get("auth_error");
   const rolParam = searchParams.get("rol");
   const avatarMenuRef = useRef<HTMLDivElement | null>(null);
-  const [rolActual, setRolActual] = useState<Rol>(
+  const [rolPreferido, setRolPreferido] = useState<Rol>(
     rolParam === "admin" || rolParam === "docente" ? rolParam : null
   );
-  const [view, setView] = useState<"rol" | "accesos">("rol");
-  const [autoViewEnabled, setAutoViewEnabled] = useState(true);
   const [isAvatarMenuOpen, setIsAvatarMenuOpen] = useState(false);
 
   const profileName = useMemo<string>(() => {
@@ -44,10 +42,6 @@ function HomeContent() {
     .slice(0, 2)
     .map((word) => word[0]?.toUpperCase() ?? "")
     .join("");
-
-  useEffect(() => {
-    setRolActual(role);
-  }, [role]);
 
   useEffect(() => {
     if (!isAvatarMenuOpen) return;
@@ -73,46 +67,37 @@ function HomeContent() {
     };
   }, [isAvatarMenuOpen]);
 
-  const effectiveView =
-    autoViewEnabled && rolActual ? "accesos" : view;
+  const rolActual = role ?? rolPreferido;
   const isRegisteredUser = Boolean(user && rolActual);
+  const hasAuthenticatedUser = Boolean(user);
   const shouldShowWelcome = !user;
-  const shouldShowRoleSelection = effectiveView === "rol";
-  const titleText = effectiveView === "accesos"
-    ? "Accesos disponibles"
-    : shouldShowWelcome
+  const titleText = shouldShowWelcome
     ? "Bienvenido a PODAT"
-    : "Selecciona tu rol";
-  const subtitleText = effectiveView === "accesos"
-    ? "Entra a tus módulos disponibles según tu perfil."
-    : shouldShowWelcome
-    ? "Ingresa como Docente o Administrador para comenzar a trabajar en la plataforma."
-    : "Completa tu ingreso eligiendo cómo deseas registrarte en la plataforma.";
+    : "Elige cómo quieres continuar";
+  const subtitleText = shouldShowWelcome
+    ? "Ingresa con Google y entra a tu espacio de trabajo académico sin pasos extra."
+    : "Tu cuenta ya está autenticada. Solo falta definir el perfil con el que vas a usar la plataforma.";
 
   useEffect(() => {
     if (!isRegisteredUser || isLoadingProfile) return;
-    if (effectiveView !== "accesos") return;
 
     const targetRoute = "/admin/estadisticas/dashboard";
 
     router.replace(targetRoute);
-  }, [effectiveView, isLoadingProfile, isRegisteredUser, router]);
+  }, [isLoadingProfile, isRegisteredUser, router]);
 
-  if (isLoadingProfile || (isRegisteredUser && effectiveView === "accesos")) {
+  if (isLoadingProfile || isRegisteredUser) {
     return <SplashScreen message="Entrando al panel principal" />;
   }
 
   const handleLogin = async (rol: Exclude<Rol, null>) => {
-    setRolActual(null);
-    setAutoViewEnabled(true);
+    setRolPreferido(null);
     await signInWithGoogle(rol);
   };
 
   const handleSignOut = async () => {
     setIsAvatarMenuOpen(false);
-    setRolActual(null);
-    setAutoViewEnabled(true);
-    setView("rol");
+    setRolPreferido(null);
     await signOut();
   };
 
@@ -177,10 +162,9 @@ function HomeContent() {
       <div className="absolute right-4 top-4 z-30 w-full max-w-[260px]">
         <ThemeToggle />
       </div>
-      
-      {/* Tarjeta Central */}
+
       <div className="max-w-3xl w-full bg-white rounded-2xl shadow-xl p-8 border border-slate-100 relative">
-        {user && (
+        {hasAuthenticatedUser && (
           <div ref={avatarMenuRef} className="absolute right-4 top-4 z-20">
             <button
               type="button"
@@ -268,8 +252,7 @@ function HomeContent() {
             )}
           </div>
         )}
-        
-        {/* Logo y Lema */}
+
         <div className="text-center mb-8">
           <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-white shadow-sm">
             <Image src="/logo-podat.svg" alt="PODAT" width={80} height={80} priority />
@@ -280,7 +263,6 @@ function HomeContent() {
           </p>
         </div>
 
-        {/* Título de UX */}
         <div className="mb-6 text-center">
           <h2 className="text-lg font-semibold text-slate-700">{titleText}</h2>
           <p className="mt-2 text-sm text-slate-500">{subtitleText}</p>
@@ -298,40 +280,45 @@ function HomeContent() {
           </p>
         )}
 
-        {(shouldShowWelcome || shouldShowRoleSelection) && (
-          <div className="mb-8 space-y-4">
-            <div className="rounded-3xl border border-slate-200 bg-[linear-gradient(135deg,_rgba(93,154,212,0.08),_rgba(251,197,88,0.12))] p-5 text-left">
-              <p className="text-xs font-black uppercase tracking-[0.28em] text-slate-400">
-                Acceso guiado
-              </p>
-              <p className="mt-3 text-base font-semibold text-slate-800">
-                {shouldShowWelcome
-                  ? "Elige tu perfil para registrarte e ingresar con Google."
-                  : rolActual
-                  ? "Tu sesión ya está iniciada. Si quieres, puedes volver a ingresar con otro perfil."
-                  : "Tu sesión ya está iniciada. Solo falta definir el perfil con el que usarás PODAT."}
-              </p>
-            </div>
+        <div className="mb-8 space-y-4">
+          <div className="rounded-3xl border border-slate-200 bg-[linear-gradient(135deg,_rgba(93,154,212,0.08),_rgba(251,197,88,0.12))] p-5 text-left">
+            <p className="text-xs font-black uppercase tracking-[0.28em] text-slate-400">
+              Acceso guiado
+            </p>
+            <p className="mt-3 text-base font-semibold text-slate-800">
+              {shouldShowWelcome
+                ? "Elige tu perfil para registrarte e ingresar con Google."
+                : rolActual
+                ? "Tu sesión ya está iniciada. Si quieres, puedes volver a ingresar con otro perfil."
+                : "Tu sesión ya está iniciada. Solo falta definir el perfil con el que usarás PODAT."}
+            </p>
+          </div>
 
-            <button
-              onClick={() => void handleLogin("docente")}
-              className="w-full flex items-center justify-center gap-3 border-2 border-[#5D9AD4] text-[#5D9AD4] hover:bg-[#5D9AD4] hover:text-white font-bold py-4 px-4 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md"
-            >
-              <span className="text-xl">📊</span>
-              Registrarme como Docente
-            </button>
+          <button
+            onClick={() => void handleLogin("docente")}
+            className="w-full flex items-center justify-center gap-3 border-2 border-[#5D9AD4] text-[#5D9AD4] hover:bg-[#5D9AD4] hover:text-white font-bold py-4 px-4 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md"
+          >
+            <span className="text-xl">📊</span>
+            Registrarme como Docente
+          </button>
 
-            <button
-              onClick={() => void handleLogin("admin")}
-              className="w-full flex items-center justify-center gap-3 border-2 border-[#FBC558] text-[#FBC558] hover:bg-[#FBC558] hover:text-white font-bold py-4 px-4 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md"
-            >
-              <span className="text-xl">⚙️</span>
-              Registrarme como Administrador
-            </button>
+          <button
+            onClick={() => void handleLogin("admin")}
+            className="w-full flex items-center justify-center gap-3 border-2 border-[#FBC558] text-[#FBC558] hover:bg-[#FBC558] hover:text-white font-bold py-4 px-4 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md"
+          >
+            <span className="text-xl">⚙️</span>
+            Registrarme como Administrador
+          </button>
+        </div>
+
+        {hasAuthenticatedUser && !rolActual && (
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <div className="text-sm font-semibold text-slate-800">{profileName}</div>
+            <div className="mt-1 text-sm text-slate-500">{profileEmail}</div>
           </div>
         )}
 
-        {isRegisteredUser && effectiveView === "accesos" && (
+        {isRegisteredUser && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {(rolActual === "admin" ? cardsAdmin : cardsDocente).map((card) => (
               <Link
@@ -345,23 +332,8 @@ function HomeContent() {
                 <div className="text-sm text-slate-500 mt-2">{card.description}</div>
               </Link>
             ))}
-            {isLoadingProfile && (
-              <div className="col-span-full text-center text-sm text-slate-400">
-                Cargando accesos...
-              </div>
-            )}
-            <button
-              onClick={() => {
-                setAutoViewEnabled(false);
-                setView("rol");
-              }}
-              className="col-span-full w-full p-3 rounded-2xl border border-slate-200 text-slate-700 font-semibold hover:bg-slate-50 transition-colors"
-            >
-              Cambiar rol de ingreso
-            </button>
           </div>
         )}
-
       </div>
     </div>
   );

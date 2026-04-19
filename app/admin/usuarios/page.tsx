@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { isAuthSessionMissingError } from "@/lib/auth/isAuthSessionMissingError";
 import { supabase } from "@/lib/supabase";
 import StatusBanner from "@/components/admin/StatusBanner";
 import type { Rol } from "@/types/database";
@@ -43,7 +44,11 @@ export default function GestionUsuariosPage() {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const { data: userData } = await supabase.auth.getUser();
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError && !isAuthSessionMissingError(userError)) {
+        throw userError;
+      }
+
       const userId = userData.user?.id ?? null;
       setCurrentUserId(userId);
 
@@ -80,7 +85,11 @@ export default function GestionUsuariosPage() {
   };
 
   useEffect(() => {
-    void loadData();
+    const timeoutId = window.setTimeout(() => {
+      void loadData();
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
   }, []);
 
   const updateRol = async (perfilId: string, nuevoRol: Rol) => {

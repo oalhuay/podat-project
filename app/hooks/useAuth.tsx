@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import type { AuthChangeEvent, Session, User } from "@supabase/supabase-js";
+import { isAuthSessionMissingError } from "@/lib/auth/isAuthSessionMissingError";
 import { supabase } from "@/lib/supabase";
 import type { Perfil, Rol } from "@/types/database";
 
@@ -80,10 +81,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const { data, error } = await supabase.auth.getUser();
         if (error) {
+          if (isAuthSessionMissingError(error)) {
+            await syncUserState(null);
+            return;
+          }
           throw error;
         }
 
         await syncUserState(data.user);
+      } catch (error) {
+        if (isMounted) {
+          console.error("Error loading current auth user:", error);
+          await syncUserState(null);
+        }
       } finally {
         if (isMounted) {
           setIsLoadingAuth(false);

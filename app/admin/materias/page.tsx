@@ -164,7 +164,11 @@ export default function MateriasAdminPage() {
   };
 
   useEffect(() => {
-    void loadData();
+    const timeoutId = window.setTimeout(() => {
+      void loadData();
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
   }, []);
 
   const processExcelFile = async (file: File) => {

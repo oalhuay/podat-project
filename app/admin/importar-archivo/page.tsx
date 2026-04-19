@@ -102,8 +102,6 @@ export default function ImportarArchivoDocentePage() {
   const [materias, setMaterias] = useState<Materia[]>([]);
   const [archivo, setArchivo] = useState<File | null>(null);
   const [parsedRows, setParsedRows] = useState<ParsedEstadisticaRow[]>([]);
-  const [previewRows, setPreviewRows] = useState<EstadisticaPreviewRow[]>([]);
-  const [summary, setSummary] = useState<EstadisticaImportSummary | null>(null);
   const [changeSummary, setChangeSummary] = useState<ChangeSummary | null>(null);
   const [statusMessage, setStatusMessage] = useState<StatusMessage | null>(null);
   const [isImporting, setIsImporting] = useState(false);
@@ -143,7 +141,11 @@ export default function ImportarArchivoDocentePage() {
       }
     };
 
-    void loadMaterias();
+    const timeoutId = window.setTimeout(() => {
+      void loadMaterias();
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
   }, [isLoadingProfile, role, user?.id]);
 
   const buildPreview = (
@@ -272,13 +274,23 @@ export default function ImportarArchivoDocentePage() {
     }
   };
 
+  const previewRows = useMemo(
+    () => buildPreview(parsedRows, materias),
+    [materias, parsedRows]
+  );
+
+  const summary = useMemo<EstadisticaImportSummary | null>(
+    () => (previewRows.length > 0 ? buildSummary(previewRows) : null),
+    [previewRows]
+  );
+
   useEffect(() => {
-    if (parsedRows.length === 0) return;
-    const preview = buildPreview(parsedRows, materias);
-    setPreviewRows(preview);
-    setSummary(buildSummary(preview));
-    void computeChangeSummary(preview);
-  }, [parsedRows, materias]);
+    const timeoutId = window.setTimeout(() => {
+      void computeChangeSummary(previewRows);
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [previewRows]);
 
   const processFile = async (file: File) => {
     if (!file) return;
@@ -291,8 +303,6 @@ export default function ImportarArchivoDocentePage() {
       const parsed = await parseEstadisticasFromFile(file);
       setParsedRows(parsed);
       if (parsed.length === 0) {
-        setPreviewRows([]);
-        setSummary(null);
         setChangeSummary(null);
         setStatusMessage({
           type: "info",
@@ -306,8 +316,6 @@ export default function ImportarArchivoDocentePage() {
       }
     } catch {
       setParsedRows([]);
-      setPreviewRows([]);
-      setSummary(null);
       setChangeSummary(null);
       setStatusMessage({
         type: "error",
@@ -636,8 +644,6 @@ export default function ImportarArchivoDocentePage() {
                 onClick={() => {
                   setArchivo(null);
                   setParsedRows([]);
-                  setPreviewRows([]);
-                  setSummary(null);
                   setChangeSummary(null);
                   setStatusFilter("todos");
                 }}

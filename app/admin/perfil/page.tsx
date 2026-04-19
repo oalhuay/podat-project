@@ -62,14 +62,16 @@ export default function PerfilPage() {
   useEffect(() => {
     if (!user?.id) {
       hydratedUserIdRef.current = null;
-      setProfileForm({
-        displayName: "",
-        phone: "",
-        department: "",
-        bio: "",
-        declaredSubjects: "",
-      });
-      return;
+      const timeoutId = window.setTimeout(() => {
+        setProfileForm({
+          displayName: "",
+          phone: "",
+          department: "",
+          bio: "",
+          declaredSubjects: "",
+        });
+      }, 0);
+      return () => window.clearTimeout(timeoutId);
     }
 
     if (hydratedUserIdRef.current === user.id) {
@@ -83,14 +85,18 @@ export default function PerfilPage() {
         )
       : [];
 
-    setProfileForm({
-      displayName: String(metadata?.display_name ?? metadata?.full_name ?? metadata?.name ?? ""),
-      phone: String(metadata?.phone ?? ""),
-      department: String(metadata?.department ?? ""),
-      bio: String(metadata?.bio ?? ""),
-      declaredSubjects: declaredSubjects.join(", "),
-    });
-    hydratedUserIdRef.current = user.id;
+    const timeoutId = window.setTimeout(() => {
+      setProfileForm({
+        displayName: String(metadata?.display_name ?? metadata?.full_name ?? metadata?.name ?? ""),
+        phone: String(metadata?.phone ?? ""),
+        department: String(metadata?.department ?? ""),
+        bio: String(metadata?.bio ?? ""),
+        declaredSubjects: declaredSubjects.join(", "),
+      });
+      hydratedUserIdRef.current = user.id;
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
   }, [user?.id, user?.user_metadata]);
 
   useEffect(() => {
@@ -120,7 +126,11 @@ export default function PerfilPage() {
       }
     };
 
-    void loadProfileData();
+    const timeoutId = window.setTimeout(() => {
+      void loadProfileData();
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
   }, [isLoadingProfile, user?.id]);
 
   const shortcuts =
