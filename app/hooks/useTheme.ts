@@ -8,8 +8,13 @@ export type ResolvedTheme = "light" | "dark";
 export const THEME_STORAGE_KEY = "podat-theme-preference";
 export const THEME_EVENT = "podat-theme-change";
 
-const getSystemTheme = (): ResolvedTheme =>
-  window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+const getSystemTheme = (): ResolvedTheme => {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+    return "light";
+  }
+
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+};
 
 const readThemePreference = (): ThemePreference => {
   if (typeof document === "undefined") return "system";
@@ -34,12 +39,19 @@ export const applyThemePreference = (preference: ThemePreference) => {
   root.dataset.themeResolved = resolvedTheme;
   root.style.colorScheme = resolvedTheme;
 
-  window.localStorage.setItem(THEME_STORAGE_KEY, preference);
-  window.dispatchEvent(
-    new CustomEvent(THEME_EVENT, {
-      detail: { preference, resolvedTheme },
-    })
-  );
+  if (typeof window !== "undefined") {
+    try {
+      window.localStorage.setItem(THEME_STORAGE_KEY, preference);
+    } catch {
+      // Storage can be unavailable in private or restricted browser contexts.
+    }
+
+    window.dispatchEvent(
+      new CustomEvent(THEME_EVENT, {
+        detail: { preference, resolvedTheme },
+      })
+    );
+  }
 };
 
 export function useTheme() {

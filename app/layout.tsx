@@ -28,12 +28,17 @@ export default function RootLayout({
     (function () {
       var storageKey = "podat-theme-preference";
       var root = document.documentElement;
-      var stored = localStorage.getItem(storageKey);
+      var stored = null;
+      try {
+        stored = localStorage.getItem(storageKey);
+      } catch (error) {
+        stored = null;
+      }
       var preference = stored === "light" || stored === "dark" || stored === "system"
         ? stored
         : "system";
       var resolved = preference === "system"
-        ? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
+        ? (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
         : preference;
       root.dataset.themePreference = preference;
       root.dataset.themeResolved = resolved;
