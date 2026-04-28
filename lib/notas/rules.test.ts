@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   formatNota,
+  getAlertaCalificacion,
   getHabilitacionRecuperatorio,
   isNotaEnRango,
 } from "./rules";
@@ -38,5 +39,45 @@ describe("notas rules", () => {
     expect(formatNota(null)).toBe("");
     expect(formatNota(8)).toBe("8");
     expect(formatNota(7.5)).toBe("7.5");
+  });
+
+  it("genera alerta de riesgo para parcial desaprobado", () => {
+    expect(getAlertaCalificacion("Parcial", 3, false)).toEqual({
+      estado: "en_riesgo",
+      mensaje: "En riesgo de quedar libre",
+    });
+  });
+
+  it("genera alerta de condicion libre para recuperatorio desaprobado", () => {
+    expect(getAlertaCalificacion("Recuperatorio", 2, false)).toEqual({
+      estado: "libre",
+      mensaje: "Condición libre",
+    });
+  });
+
+  it("no genera alerta cuando el alumno esta ausente o sin nota valida", () => {
+    expect(getAlertaCalificacion("Parcial", 8, true)).toEqual({
+      estado: null,
+      mensaje: null,
+    });
+    expect(getAlertaCalificacion("Parcial", null, false)).toEqual({
+      estado: null,
+      mensaje: null,
+    });
+    expect(getAlertaCalificacion("Parcial", Number.NaN, false)).toEqual({
+      estado: null,
+      mensaje: null,
+    });
+  });
+
+  it("no genera alerta para calificaciones aprobadas", () => {
+    expect(getAlertaCalificacion("Parcial", 6, false)).toEqual({
+      estado: null,
+      mensaje: null,
+    });
+    expect(getAlertaCalificacion("Recuperatorio", 4, false)).toEqual({
+      estado: null,
+      mensaje: null,
+    });
   });
 });
