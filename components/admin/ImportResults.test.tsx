@@ -5,6 +5,8 @@ import { describe, expect, it, vi } from "vitest";
 import ImportResults from "./ImportResults";
 import { ImportResult } from "@/lib/import/alumnos/types";
 
+//CREAMOS LOS DATOS DE PRUEBA
+
 const sampleResult: ImportResult = {
   summary: {
     total: 3,
@@ -56,6 +58,8 @@ describe("ImportResults", () => {
     fireEvent.click(screen.getByRole("button", { name: "Duplicados" }));
     expect(onChangeStatusFilter).toHaveBeenCalledWith("duplicado");
 
+    // AQUI ESPECIFICAMOS AL COMPONENTE IMPORTAR
+    
     rerender(
       <ImportResults
         result={sampleResult}
@@ -63,6 +67,8 @@ describe("ImportResults", () => {
         onChangeStatusFilter={onChangeStatusFilter}
       />
     );
+
+    //ESTO VERIFICA EL RESULTADO VISIBLE
 
     expect(screen.getByText("Di Maria")).toBeTruthy();
     expect(screen.queryByText("Messi")).toBeNull();

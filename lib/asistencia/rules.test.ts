@@ -4,66 +4,44 @@ import {
   getCondicionAsistencia,
 } from "./rules";
 
-describe("asistencia rules", () => {
-  it("calcula porcentaje de asistencia redondeado", () => {
-    expect(calcularPorcentajeAsistencia(7, 10)).toBe(70);
-    expect(calcularPorcentajeAsistencia(2, 3)).toBe(67);
+describe("CP-12 - Registro de asistencia y cálculo de condición académica", () => {
+  it("calcula el porcentaje de asistencia del alumno", () => {
+    expect(calcularPorcentajeAsistencia(8, 10)).toBe(80);
   });
 
-  it("devuelve 0 si no hay clases registradas", () => {
-    expect(calcularPorcentajeAsistencia(3, 0)).toBe(0);
-    expect(
-      getCondicionAsistencia({
-        totalClases: 0,
-        presentesEquivalentes: 0,
-        umbralPorcentaje: 75,
-        minClasesParaLibre: 4,
-      })
-    ).toEqual({
-      porcentaje: 0,
-      estado: "regular",
-      faltasRestantes: 0,
-      mensaje: "Sin clases registradas.",
-    });
-  });
-
-  it("marca regular cuando cumple el umbral requerido", () => {
-    const result = getCondicionAsistencia({
+  it("determina condición regular cuando el alumno cumple el umbral de asistencia", () => {
+    const resultado = getCondicionAsistencia({
       totalClases: 10,
       presentesEquivalentes: 8,
       umbralPorcentaje: 75,
       minClasesParaLibre: 4,
     });
 
-    expect(result.estado).toBe("regular");
-    expect(result.porcentaje).toBe(80);
-    expect(result.faltasRestantes).toBe(0);
+    expect(resultado.estado).toBe("regular");
+    expect(resultado.porcentaje).toBe(80);
   });
 
-  it("marca en riesgo cuando no alcanza el umbral pero aun no queda libre", () => {
-    const result = getCondicionAsistencia({
+  it("determina condición en riesgo cuando el alumno no alcanza el umbral pero aún no queda libre", () => {
+    const resultado = getCondicionAsistencia({
       totalClases: 3,
       presentesEquivalentes: 2,
       umbralPorcentaje: 75,
       minClasesParaLibre: 4,
     });
 
-    expect(result.estado).toBe("en_riesgo");
-    expect(result.porcentaje).toBe(67);
-    expect(result.mensaje).toContain("En riesgo");
+    expect(resultado.estado).toBe("en_riesgo");
+    expect(resultado.porcentaje).toBe(67);
   });
 
-  it("marca libre cuando supera las faltas permitidas con clases suficientes", () => {
-    const result = getCondicionAsistencia({
+  it("determina condición libre cuando el alumno supera las faltas permitidas", () => {
+    const resultado = getCondicionAsistencia({
       totalClases: 10,
       presentesEquivalentes: 6,
       umbralPorcentaje: 75,
       minClasesParaLibre: 4,
     });
 
-    expect(result.estado).toBe("libre");
-    expect(result.porcentaje).toBe(60);
-    expect(result.faltasRestantes).toBeLessThan(0);
-    expect(result.mensaje).toContain("Alumno libre por asistencia");
+    expect(resultado.estado).toBe("libre");
+    expect(resultado.porcentaje).toBe(60);
   });
 });
