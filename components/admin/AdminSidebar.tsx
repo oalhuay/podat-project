@@ -120,7 +120,7 @@ export default function AdminSidebar({
 
   return (
     <aside
-      className={`w-full rounded-[2rem] border border-slate-200 bg-white/95 p-5 shadow-xl shadow-slate-200/60 ${className}`}
+      className={`flex min-h-[calc(100vh-2rem)] w-full flex-col rounded-[2rem] border border-slate-200 bg-white/95 p-5 shadow-xl shadow-slate-200/60 xl:h-[calc(100vh-3rem)] ${className}`}
     >
       <div className="border-b border-slate-100 pb-5">
         <div className="flex items-center gap-3">
@@ -174,7 +174,7 @@ export default function AdminSidebar({
         </div>
       </Link>
 
-      <nav className="mt-6 space-y-2">
+      <nav className="mt-6 flex-1 space-y-2">
         {navItems.map((item) => {
           const isActive =
             pathname === item.href ||
@@ -210,11 +210,11 @@ export default function AdminSidebar({
         })}
       </nav>
 
-      <div className="mt-6">
+      <div className="mt-6 xl:fixed xl:right-8 xl:top-8 xl:z-50 xl:mt-0">
         <ThemeToggle />
       </div>
 
-      <div className="mt-6 grid grid-cols-2 gap-3">
+      <div className="mt-auto grid grid-cols-2 gap-3 border-t border-slate-100 pt-5">
         <button
           type="button"
           onClick={() => router.push("/")}

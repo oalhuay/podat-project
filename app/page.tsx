@@ -272,7 +272,9 @@ function HomeContent() {
             type="button"
             onClick={() => setIsThemeTrayOpen((prev) => !prev)}
             aria-label={isThemeTrayOpen ? "Ocultar selector de tema" : "Mostrar selector de tema"}
-            className="theme-shell flex h-11 w-11 items-center justify-center rounded-l-2xl border border-r-0 border-slate-200 bg-white/85 text-lg text-slate-500 shadow-sm transition-colors hover:bg-slate-50 hover:text-slate-700"
+            className={`theme-shell flex h-11 items-center justify-center rounded-l-2xl border border-r-0 border-slate-200 bg-white/85 text-lg text-slate-500 shadow-sm transition-all duration-300 hover:bg-slate-50 hover:text-slate-700 ${
+              isThemeTrayOpen ? "w-0 border-none opacity-0 overflow-hidden" : "w-11"
+            }`}
           >
             <span
               className={`transition-transform duration-300 ${isThemeTrayOpen ? "rotate-180" : ""}`}
