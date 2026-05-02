@@ -1,4 +1,5 @@
 "use client";
+"use client";
 
 type StatusMessage = {
   type: "success" | "error" | "info";

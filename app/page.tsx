@@ -175,7 +175,16 @@ function HomeContent() {
   }, [isLoadingProfile, isRegisteredUser, router]);
 
   if (isLoadingProfile || isRegisteredUser) {
-    return <SplashScreen message="Entrando al panel principal" />;
+    return (
+      <SplashScreen
+        message={
+          isRegisteredUser
+            ? "Entrando al panel principal"
+            : "Esperando que el usuario inicie sesion"
+        }
+        overlay
+      />
+    );
   }
 
   const handleLogin = async (nextRol: Exclude<Rol, null>) => {
@@ -439,7 +448,7 @@ function HomeContent() {
 
 export default function Home() {
   return (
-    <Suspense fallback={<SplashScreen message="Cargando aplicacion" />}>
+    <Suspense fallback={<SplashScreen message="Cargando aplicacion" overlay />}>
       <HomeContent />
     </Suspense>
   );

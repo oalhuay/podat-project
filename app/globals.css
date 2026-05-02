@@ -232,6 +232,47 @@ button {
     0 0 0 1px rgba(148, 163, 184, 0.14) !important;
 }
 
+[data-theme-resolved="dark"] .splash-chip {
+  background-color: rgba(15, 23, 42, 0.78) !important;
+  color: #c7d7ee !important;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+}
+
+[data-theme-resolved="dark"] .splash-logo-shell {
+  background:
+    linear-gradient(180deg, rgba(15, 23, 42, 0.98), rgba(17, 28, 50, 0.96)) !important;
+  box-shadow:
+    0 20px 44px rgba(2, 6, 23, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
+}
+
+[data-theme-resolved="dark"] .splash-card {
+  border-color: rgba(148, 163, 184, 0.18) !important;
+  background:
+    linear-gradient(180deg, rgba(15, 23, 42, 0.88), rgba(17, 28, 50, 0.92)) !important;
+  box-shadow:
+    0 24px 48px rgba(2, 6, 23, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03) !important;
+}
+
+[data-theme-resolved="dark"] .splash-card-title {
+  color: #f8fafc !important;
+}
+
+[data-theme-resolved="dark"] .splash-card-meta {
+  color: #9fb1c9 !important;
+}
+
+[data-theme-resolved="dark"] .splash-retry {
+  border-color: rgba(148, 163, 184, 0.18) !important;
+  background-color: rgba(15, 23, 42, 0.9) !important;
+  color: #e2e8f0 !important;
+}
+
+[data-theme-resolved="dark"] .splash-retry:hover {
+  background-color: #172338 !important;
+}
+
 a[href],
 button:not(:disabled),
 [role="button"]:not(:disabled),
