@@ -184,6 +184,50 @@ button {
     linear-gradient(180deg, #08111f 0%, #0b1325 100%) !important;
 }
 
+[data-theme-resolved="dark"] .auth-shell {
+  border-color: rgba(148, 163, 184, 0.2) !important;
+  background:
+    linear-gradient(180deg, rgba(15, 23, 42, 0.94), rgba(11, 19, 37, 0.96)) !important;
+  box-shadow:
+    0 28px 70px rgba(2, 6, 23, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+[data-theme-resolved="dark"] .auth-guided-panel {
+  border-color: rgba(148, 163, 184, 0.2) !important;
+  background:
+    linear-gradient(135deg, rgba(93, 154, 212, 0.2), rgba(251, 197, 88, 0.12)) !important;
+}
+
+[data-theme-resolved="dark"] .auth-guided-note {
+  border-color: rgba(148, 163, 184, 0.18) !important;
+  background-color: rgba(8, 17, 31, 0.46) !important;
+}
+
+[data-theme-resolved="dark"] .auth-role-card {
+  background:
+    linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(17, 28, 50, 0.98)) !important;
+  box-shadow:
+    0 18px 42px rgba(2, 6, 23, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+[data-theme-resolved="dark"] .auth-role-overlay {
+  background: radial-gradient(
+    circle at center,
+    rgba(15, 23, 42, 0.08),
+    rgba(15, 23, 42, 0.66) 38%,
+    rgba(8, 17, 31, 0.92) 72%
+  ) !important;
+}
+
+[data-theme-resolved="dark"] .auth-google-badge {
+  background-color: rgba(248, 250, 252, 0.98) !important;
+  box-shadow:
+    0 18px 36px rgba(2, 6, 23, 0.34),
+    0 0 0 1px rgba(148, 163, 184, 0.14) !important;
+}
+
 a[href],
 button:not(:disabled),
 [role="button"]:not(:disabled),
@@ -244,6 +288,15 @@ textarea:disabled {
 .brand-logo__core line,
 .brand-logo__core circle {
   animation: brand-logo-core-glow 4.6s ease-in-out infinite;
+}
+
+.auth-role-overlay {
+  background: radial-gradient(
+    circle at center,
+    rgba(255, 255, 255, 0.97),
+    rgba(255, 255, 255, 0.82) 42%,
+    transparent 76%
+  );
 }
 
 @keyframes brand-mark-enter {
