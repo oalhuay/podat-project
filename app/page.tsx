@@ -111,6 +111,7 @@ function HomeContent() {
     rolParam === "admin" || rolParam === "docente" ? rolParam : null
   );
   const [isAvatarMenuOpen, setIsAvatarMenuOpen] = useState(false);
+  const [isThemeTrayOpen, setIsThemeTrayOpen] = useState(false);
 
   const profileName = useMemo<string>(() => {
     const metadata = user?.user_metadata;
@@ -256,8 +257,35 @@ function HomeContent() {
 
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-slate-50 p-4">
-      <div className="absolute right-4 top-4 z-30 w-full max-w-[260px]">
-        <ThemeToggle />
+        <div
+          className="absolute right-0 top-3 z-30 flex items-center px-2 py-2 md:right-2 md:px-4"
+          onMouseEnter={() => setIsThemeTrayOpen(true)}
+          onMouseLeave={() => setIsThemeTrayOpen(false)}
+        >
+          <div aria-hidden="true" className="absolute right-[-20px] top-0 h-full w-5" />
+          <div
+            className={`flex items-center transition-transform duration-300 ${
+              isThemeTrayOpen ? "translate-x-0" : "translate-x-[calc(100%-1.1rem)] md:translate-x-[calc(100%-1.1rem)]"
+            }`}
+        >
+          <button
+            type="button"
+            onClick={() => setIsThemeTrayOpen((prev) => !prev)}
+            aria-label={isThemeTrayOpen ? "Ocultar selector de tema" : "Mostrar selector de tema"}
+            className="theme-shell flex h-11 w-11 items-center justify-center rounded-l-2xl border border-r-0 border-slate-200 bg-white/85 text-lg text-slate-500 shadow-sm transition-colors hover:bg-slate-50 hover:text-slate-700"
+          >
+            <span
+              className={`transition-transform duration-300 ${isThemeTrayOpen ? "rotate-180" : ""}`}
+              aria-hidden="true"
+            >
+              ◂
+            </span>
+          </button>
+
+          <div className="rounded-r-2xl">
+            <ThemeToggle />
+          </div>
+        </div>
       </div>
 
       <div className="auth-shell relative w-full max-w-3xl rounded-2xl border border-slate-100 bg-white p-8 shadow-xl">

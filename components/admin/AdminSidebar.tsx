@@ -187,16 +187,24 @@ export default function AdminSidebar({
               key={item.href}
               href={item.href}
               onClick={onNavigate}
-              className={`block rounded-[1.5rem] border px-4 py-3 transition-all ${
+              className={`group block rounded-[1.5rem] border px-4 py-3 transition-all duration-300 ${
                 isActive
-                  ? "border-[#5D9AD4]/30 bg-[#5D9AD4]/10 shadow-sm"
-                  : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
+                  ? "border-[#5D9AD4]/30 bg-[#5D9AD4]/10 shadow-sm hover:scale-[1.02]"
+                  : "border-slate-200 bg-white hover:scale-[1.02] hover:border-slate-300 hover:bg-slate-50 hover:shadow-md"
               }`}
             >
-              <div className="text-sm font-black uppercase tracking-[0.18em] text-slate-700">
+              <div className="text-sm font-black uppercase tracking-[0.18em] text-slate-700 transition-transform duration-300 group-hover:translate-y-[-1px]">
                 {item.label}
               </div>
-              <div className="mt-1 text-sm text-slate-500">{item.description}</div>
+              <div
+                className={`overflow-hidden text-sm text-slate-500 transition-all duration-300 ${
+                  isActive
+                    ? "mt-1 max-h-12 opacity-100"
+                    : "mt-0 max-h-0 opacity-0 group-hover:mt-1 group-hover:max-h-12 group-hover:opacity-100 group-focus-visible:mt-1 group-focus-visible:max-h-12 group-focus-visible:opacity-100"
+                }`}
+              >
+                {item.description}
+              </div>
             </Link>
           );
         })}
