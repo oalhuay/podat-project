@@ -3,12 +3,11 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/app/hooks/useAuth";
 import ThemeToggle from "@/components/theme/ThemeToggle";
 import SplashScreen from "@/components/system/SplashScreen";
 import type { Rol } from "@/types/database";
-import { useSearchParams } from "next/navigation";
 
 function HomeContent() {
   const router = useRouter();

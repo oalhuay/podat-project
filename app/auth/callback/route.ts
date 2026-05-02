@@ -114,10 +114,6 @@ export async function GET(request: Request) {
       }
 
       if (dbError) {
-        console.error(
-          `Database error saving profile [${dbError.code ?? "no_code"}]:`,
-          dbError.message
-        );
         redirectUrl.searchParams.set("auth_status", "error");
         redirectUrl.searchParams.set("auth_error", `db_${dbError.code ?? "unknown"}`);
         return NextResponse.redirect(redirectUrl);

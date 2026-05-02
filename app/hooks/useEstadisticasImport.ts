@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { parseEstadisticasFromFile } from "@/lib/import/estadisticas/parseExcel";
-import type { ParsedEstadisticaRow } from "@/lib/import/estadisticas/parseExcel";
+import {
+  parseEstadisticasFromFile,
+  type ParsedEstadisticaRow,
+} from "@/lib/import/estadisticas/parseExcel";
 import type { EstadisticaImportStatus } from "@/lib/import/estadisticas/types";
 import type { Materia } from "@/lib/materias";
 import {

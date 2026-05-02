@@ -10,6 +10,9 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage"
   },
+  "overrides": {
+    "postcss": "^8.5.10"
+  },
   "dependencies": {
     "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.104.1",

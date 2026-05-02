@@ -3,6 +3,8 @@
 :root {
   --background: #f5f8fc;
   --foreground: #0f172a;
+  --font-geist-sans: "Segoe UI";
+  --font-geist-mono: "Consolas";
   --surface-0: #ffffff;
   --surface-1: #f8fafc;
   --surface-2: #e2e8f0;

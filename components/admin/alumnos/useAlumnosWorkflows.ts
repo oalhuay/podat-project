@@ -1,7 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import type { Dispatch, SetStateAction } from "react";
+import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import { supabase } from "@/lib/supabase";
 import { parseAlumnoDisplay, parseAlumnosFromFile } from "@/lib/import/alumnos/parseExcel";
 import type { ImportResult, ImportStatus, ParsedAlumnoRow } from "@/lib/import/alumnos/types";

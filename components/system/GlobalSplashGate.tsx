@@ -1,7 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import SplashScreen from "@/components/system/SplashScreen";
 
 type GlobalSplashGateProps = {
