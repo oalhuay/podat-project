@@ -5,7 +5,7 @@ import { useTheme, type ThemePreference } from "@/app/hooks/useTheme";
 const OPTIONS: Array<{ value: ThemePreference; label: string }> = [
   { value: "light", label: "Claro" },
   { value: "dark", label: "Oscuro" },
-  { value: "system", label: "Automático" },
+  { value: "system", label: "Auto" },
 ];
 
 type ThemeToggleProps = {

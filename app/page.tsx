@@ -1,10 +1,10 @@
 "use client";
 
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/app/hooks/useAuth";
+import BrandLogo from "@/components/brand/BrandLogo";
 import ThemeToggle from "@/components/theme/ThemeToggle";
 import SplashScreen from "@/components/system/SplashScreen";
 import type { Rol } from "@/types/database";
@@ -342,8 +342,8 @@ function HomeContent() {
         )}
 
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-white shadow-sm">
-            <Image src="/logo-podat.svg" alt="PODAT" width={80} height={80} priority />
+          <div className="mx-auto mb-4 flex h-28 w-28 items-center justify-center rounded-full bg-white shadow-sm">
+            <BrandLogo stableRings className="brand-mark h-24 w-24" />
           </div>
           <h1 className="text-5xl font-black tracking-tight text-[#5D9AD4]">PODAT</h1>
           <p className="mt-2 text-xs font-bold tracking-widest text-slate-400">
