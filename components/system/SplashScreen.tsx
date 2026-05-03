@@ -67,7 +67,7 @@ export default function SplashScreen({
             PODAT
           </div>
           <div className="mt-2 text-[11px] font-extrabold tracking-[0.35em] text-slate-400 sm:text-xs">
-            DATOS VIVOS, GESTION INTELIGENTE
+            DATOS VIVOS, GESTIÓN INTELIGENTE
           </div>
         </div>
 
@@ -83,7 +83,7 @@ export default function SplashScreen({
             </div>
 
             <div className="splash-card-meta text-sm font-medium text-slate-500 sm:text-base">
-              Aun no funciona? Refresque la pagina
+              ¿Aún no funciona? Actualice la página
             </div>
           </div>
         </div>
