@@ -92,7 +92,7 @@ export default function PerfilPage() {
       if (!userId) {
         setStatusMessage({
           type: "info",
-          text: "Iniciá sesión para ver la información de tu perfil.",
+          text: "Inicie sesión para ver la información de su perfil.",
         });
         return;
       }
@@ -188,7 +188,7 @@ export default function PerfilPage() {
     <div className="space-y-8">
       <header>
         <h1 className="text-4xl font-black tracking-tight text-slate-900">Perfil</h1>
-        <p className="mt-2 text-slate-500">Resumen de tu cuenta autenticada y accesos de trabajo.</p>
+        <p className="mt-2 text-slate-500">Resumen de su cuenta autenticada y accesos de trabajo.</p>
       </header>
 
       {statusMessage && <StatusBanner message={statusMessage} />}
@@ -295,7 +295,7 @@ export default function PerfilPage() {
                 value={profileForm.displayName}
                 onChange={handleChange("displayName")}
                 className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none transition-colors focus:border-[#5D9AD4]"
-                placeholder="Cómo querés aparecer en el sistema"
+                placeholder="Cómo desea aparecer en el sistema"
               />
             </div>
 
@@ -338,7 +338,7 @@ export default function PerfilPage() {
                 htmlFor="profile-bio"
                 className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400"
               >
-                Sobre tu perfil docente
+                Sobre su perfil docente
               </label>
               <textarea
                 id="profile-bio"
@@ -346,7 +346,7 @@ export default function PerfilPage() {
                 onChange={handleChange("bio")}
                 rows={4}
                 className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none transition-colors focus:border-[#5D9AD4]"
-                placeholder="Contanos brevemente tu experiencia, orientación o funciones."
+                placeholder="Describa brevemente su experiencia, orientación o funciones."
               />
             </div>
 
@@ -366,7 +366,7 @@ export default function PerfilPage() {
                 placeholder="Separá las materias por coma. Ej. Programación I, Base de Datos, Matemática"
               />
               <p className="text-xs text-slate-500">
-                Esta declaración complementa tu perfil. Las asignaciones oficiales las sigue
+                Esta declaración complementa su perfil. Las asignaciones oficiales las sigue
                 administrando el área administrativa.
               </p>
             </div>
@@ -392,7 +392,7 @@ export default function PerfilPage() {
             <div className="mt-4 space-y-3">
               {assignedSubjects.length === 0 ? (
                 <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-500">
-                  Todavía no tenés materias asignadas por administración.
+                  Todavía no tiene materias asignadas por administración.
                 </div>
               ) : (
                 assignedSubjects.map((subject) => (
@@ -414,12 +414,12 @@ export default function PerfilPage() {
 
           <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
             <div className="text-xs font-black uppercase tracking-[0.28em] text-slate-400">
-              Materias declaradas en tu perfil
+              Materias declaradas en su perfil
             </div>
             <div className="mt-4 flex flex-wrap gap-2">
               {declaredSubjectsList.length === 0 ? (
                 <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-500">
-                  Aún no agregaste materias en tu perfil.
+                  Aún no agregó materias en su perfil.
                 </div>
               ) : (
                 declaredSubjectsList.map((subject) => (

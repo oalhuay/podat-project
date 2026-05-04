@@ -96,7 +96,7 @@ export default function GestionUsuariosPage() {
     if (perfilId === currentUserId && adminCount <= 1 && nuevoRol !== "admin") {
       setStatusMessage({
         type: "error",
-        text: "No podés sacarte el rol admin si sos la única persona administradora.",
+        text: "No puede quitarse el rol de administrador si es la única persona administradora.",
       });
       return;
     }

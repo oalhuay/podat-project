@@ -7,10 +7,7 @@ type FileDropzoneProps = {
   onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 };
 
-export default function FileDropzone({
-  archivo,
-  onFileChange,
-}: FileDropzoneProps) {
+export default function FileDropzone({ archivo, onFileChange }: FileDropzoneProps) {
   return (
     <div
       className={cx(
@@ -37,7 +34,7 @@ export default function FileDropzone({
           {archivo ? "OK" : "XLSX"}
         </div>
         <p className="text-xl font-black text-slate-800">
-          {archivo ? archivo.name : "Arrastra el archivo o haz clic para elegirlo"}
+          {archivo ? archivo.name : "Arrastre el archivo o haga clic para seleccionarlo"}
         </p>
         <p className="mt-2 text-sm text-slate-500">
           Formato esperado: `Legajo`, `Alumno` o `Apellido/Nombre`, `Género` y `Condición`.

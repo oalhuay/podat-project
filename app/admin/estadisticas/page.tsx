@@ -150,7 +150,7 @@ export default function EstadisticasPage() {
         if (materiasList.length === 0) {
           setStatusMessage({
             type: "info",
-            text: "No hay materias disponibles. Creá o asigná materias para mapear el Excel.",
+            text: "No hay materias disponibles. Cree o asigne materias para mapear el Excel.",
           });
         }
       } catch (error: unknown) {
@@ -338,7 +338,7 @@ export default function EstadisticasPage() {
       <header>
         <h1 className="text-4xl font-black text-slate-900 tracking-tight">Estadísticas</h1>
         <p className="text-slate-500 mt-2 font-medium">
-          Importá archivos `.xlsx` de estadísticas y construí el dashboard de tus materias.
+          Importe archivos `.xlsx` de estadísticas y construya el dashboard de sus materias.
         </p>
       </header>
 
@@ -348,7 +348,7 @@ export default function EstadisticasPage() {
             <p className="text-xs font-black uppercase tracking-[0.25em] text-slate-400">Paso 1</p>
             <h2 className="mt-3 text-2xl font-black text-slate-900">Preparar importación</h2>
             <p className="mt-2 max-w-3xl text-sm text-slate-600">
-              Subí un archivo `.xlsx`, completá materia o año solo si faltan en el Excel y revisá
+              Suba un archivo `.xlsx`, complete materia o año solo si faltan en el Excel y revise
               la previsualización antes de guardar cambios en la base.
             </p>
 
@@ -411,7 +411,7 @@ export default function EstadisticasPage() {
                 className="block w-full text-sm text-slate-500"
               />
               <p className="mt-4 text-slate-600 font-medium">
-                Podés subir una tabla tipo SyO o un Excel simple con columnas de materia, año,
+                Puede subir una tabla tipo SyO o un Excel simple con columnas de materia, año,
                 varones inscriptos y mujeres inscriptas.
               </p>
               <p className="mt-2 text-sm text-slate-500">
@@ -456,7 +456,7 @@ export default function EstadisticasPage() {
                 <div className="mt-2 text-sm font-semibold text-slate-700">
                   {importReady
                     ? "Previsualización lista para revisar y guardar"
-                    : "Cargá un archivo para generar la previsualización"}
+                    : "Cargue un archivo para generar la previsualización"}
                 </div>
               </div>
               <div className="rounded-2xl bg-slate-50 p-4">
@@ -466,7 +466,7 @@ export default function EstadisticasPage() {
                 <div className="mt-2 text-sm font-semibold text-slate-700">
                   {dashboardReady
                     ? "Dashboard listo para explorar"
-                    : "Seleccioná una materia para visualizar datos"}
+                    : "Seleccione una materia para visualizar datos"}
                 </div>
               </div>
             </div>
@@ -588,7 +588,7 @@ export default function EstadisticasPage() {
               </p>
               <h3 className="mt-2 text-2xl font-black text-slate-900">Confirmar importación</h3>
               <p className="mt-2 text-sm text-slate-600">
-                Usá los filtros para revisar las filas y guardá solo cuando estés conforme con la
+                Utilice los filtros para revisar las filas y guarde solo cuando esté conforme con la
                 previsualización.
               </p>
             </div>
@@ -695,7 +695,7 @@ export default function EstadisticasPage() {
             </p>
             <h2 className="mt-2 text-2xl font-black text-slate-900">Explorar dashboard</h2>
             <p className="mt-2 text-slate-500">
-              Seleccioná materia, indicador y rango de años para visualizar la serie temporal.
+              Seleccione materia, indicador y rango de años para visualizar la serie temporal.
             </p>
           </div>
           <div className="grid gap-3 sm:grid-cols-3 xl:min-w-[24rem]">

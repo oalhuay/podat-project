@@ -63,10 +63,12 @@ export default function RoleAccessButton({
         </span>
         <div className="min-w-0">
           <div className="text-xs font-black uppercase tracking-[0.24em] text-slate-400">
-            Entrar o registrarme
+            Ingresar o registrarse
           </div>
           <div className="mt-2 text-lg font-black text-slate-900">{title}</div>
-          <div className="mt-1 text-sm text-slate-500">Continuá con Google como {roleLabel}.</div>
+          <div className="mt-1 text-sm text-slate-500">
+            Continúe con Google como {roleLabel}.
+          </div>
           <div className="mt-3 text-xs font-medium text-slate-400">{helperText}</div>
         </div>
       </div>
@@ -80,7 +82,7 @@ export default function RoleAccessButton({
             Acceso con Google
           </div>
           <div className="mt-1 text-xs font-medium text-slate-500">
-            Se va a abrir el inicio de sesión seguro para este perfil.
+            Se abrirá el inicio de sesión seguro para este perfil.
           </div>
         </div>
       </div>

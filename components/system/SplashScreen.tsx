@@ -64,7 +64,7 @@ export default function SplashScreen({
             </div>
 
             <div className="splash-card-meta text-sm font-medium text-slate-500 sm:text-base">
-              ¿Aún no funciona? Actualizá la página.
+              ¿Aún no funciona? Actualice la página.
             </div>
           </div>
         </div>

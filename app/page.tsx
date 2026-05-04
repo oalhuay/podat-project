@@ -25,12 +25,10 @@ function HomeContent() {
   const isRegisteredUser = Boolean(user && rolActual);
   const hasAuthenticatedUser = Boolean(user);
   const shouldShowWelcome = !user;
-  const titleText = shouldShowWelcome
-    ? "Bienvenido a PODAT"
-    : "Elige como quieres continuar";
+  const titleText = shouldShowWelcome ? "Bienvenido a PODAT" : "Elija cómo desea continuar";
   const subtitleText = shouldShowWelcome
-    ? "Ingresa con Google y entra a tu espacio de trabajo academico sin pasos extra."
-    : "Tu cuenta ya esta autenticada. Solo falta definir el perfil con el que vas a usar la plataforma.";
+    ? "Inicie sesión con Google y acceda a su espacio de trabajo académico sin pasos adicionales."
+    : "Su cuenta ya está autenticada. Solo falta definir el perfil con el que utilizará la plataforma.";
 
   useEffect(() => {
     if (!isRegisteredUser || isLoadingProfile) return;
@@ -42,8 +40,8 @@ function HomeContent() {
       <SplashScreen
         message={
           isRegisteredUser
-            ? "Entrando al panel principal"
-            : "Esperando que el usuario inicie sesion"
+            ? "Ingresando al panel principal"
+            : "Esperando que el usuario inicie sesión"
         }
         overlay
       />
@@ -72,7 +70,7 @@ function HomeContent() {
           </div>
           <h1 className="text-5xl font-black tracking-tight text-[#5D9AD4]">PODAT</h1>
           <p className="mt-2 text-xs font-bold tracking-widest text-slate-400">
-            DATOS VIVOS, GESTION INTELIGENTE
+            DATOS VIVOS, GESTIÓN INTELIGENTE
           </p>
         </div>
 
@@ -83,13 +81,13 @@ function HomeContent() {
 
         {authStatus === "ok" && (
           <p className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-            Login OK. Rol guardado: {rolParam}
+            Acceso validado correctamente. Rol guardado: {rolParam}
           </p>
         )}
 
         {authStatus === "error" && (
           <p className="mb-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
-            Error en callback: {authError}
+            Se produjo un error en el callback: {authError}
           </p>
         )}
 
@@ -100,14 +98,14 @@ function HomeContent() {
             </p>
             <p className="mt-3 text-base font-semibold text-slate-800">
               {shouldShowWelcome
-                ? "Elige tu perfil para registrarte e ingresar con Google."
+                ? "Seleccione su perfil para registrarse e iniciar sesión con Google."
                 : rolActual
-                  ? "Tu sesion ya esta iniciada. Si quieres, puedes volver a ingresar con otro perfil."
-                  : "Tu sesion ya esta iniciada. Solo falta definir el perfil con el que usaras PODAT."}
+                  ? "Su sesión ya está iniciada. Si lo desea, puede volver a ingresar con otro perfil."
+                  : "Su sesión ya está iniciada. Solo falta definir el perfil con el que utilizará PODAT."}
             </p>
             <div className="auth-guided-note mt-4 rounded-2xl border border-white/70 bg-white/75 px-4 py-3 text-sm text-slate-600 shadow-sm">
-              Si ya tienes cuenta o si es tu primera vez, el acceso funciona igual: eliges un
-              perfil y continuas con Google.
+              Si ya tiene una cuenta o si es su primera vez, el acceso funciona de la misma
+              manera: seleccione un perfil y continúe con Google.
             </div>
           </div>
 
@@ -118,7 +116,7 @@ function HomeContent() {
               icon="D"
               title="Acceso Docente"
               roleLabel="docente"
-              helperText="Ideal para ingresar si ya tienes cuenta o si te registras por primera vez."
+              helperText="Ideal para ingresar si ya tiene una cuenta o si se registra por primera vez."
               onClick={() => void handleLogin("docente")}
             />
 
@@ -128,7 +126,7 @@ function HomeContent() {
               icon="A"
               title="Acceso Administrador"
               roleLabel="administrador"
-              helperText="Usa este acceso si administras usuarios, materias o importaciones globales."
+              helperText="Utilice este acceso si administra usuarios, materias o importaciones globales."
               onClick={() => void handleLogin("admin")}
             />
           </div>
@@ -140,7 +138,7 @@ function HomeContent() {
 
 export default function Home() {
   return (
-    <Suspense fallback={<SplashScreen message="Cargando aplicacion" overlay />}>
+    <Suspense fallback={<SplashScreen message="Cargando aplicación" overlay />}>
       <HomeContent />
     </Suspense>
   );

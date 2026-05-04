@@ -160,7 +160,7 @@ export default function CargarNotasPage() {
     if (!puedeContinuar || !evaluacionNombre) {
       setStatusMessage({
         type: "error",
-        text: "Completá materia, año, nombre de evaluación y tipo.",
+        text: "Complete la materia, el año, el nombre de la evaluación y el tipo.",
       });
       return;
     }
@@ -308,7 +308,7 @@ export default function CargarNotasPage() {
       } else {
         setStatusMessage({
           type: "info",
-          text: "Lista cargada. Completá una nota de 1 a 10 o marcá ausente por alumno.",
+          text: "Lista cargada. Complete una nota de 1 a 10 o marque ausente por alumno.",
         });
       }
     } catch (err: unknown) {
@@ -347,7 +347,7 @@ export default function CargarNotasPage() {
       if (!alumno.ausente && alumno.nota.trim() === "") {
         setStatusMessage({
           type: "error",
-          text: "En alumnos habilitados tenés que cargar nota o marcar ausente.",
+          text: "En los alumnos habilitados debe cargar una nota o marcar ausente.",
         });
         return;
       }
@@ -432,7 +432,7 @@ export default function CargarNotasPage() {
       <header className="mb-10">
         <h1 className="text-4xl font-black text-slate-900 tracking-tight">Notas</h1>
         <p className="mt-2 font-medium text-slate-500">
-          Elegí la evaluación y cargá una nota de 1 a 10 o ausente por alumno.
+          Seleccione la evaluación y cargue una nota de 1 a 10 o ausente por alumno.
         </p>
       </header>
 
@@ -447,7 +447,7 @@ export default function CargarNotasPage() {
               </p>
               <h2 className="mt-3 text-2xl font-black text-slate-900">Configurá la evaluación</h2>
               <p className="mt-2 text-sm text-slate-600">
-                Definí materia, año, evaluación y tipo antes de cargar la lista de alumnos.
+                Defina la materia, el año, la evaluación y el tipo antes de cargar la lista de alumnos.
               </p>
             </div>
 
@@ -462,7 +462,7 @@ export default function CargarNotasPage() {
                   onChange={(e) => setMateriaId(e.target.value)}
                   aria-label="Seleccionar materia para cargar notas"
                 >
-                  <option value="">Elegí una materia...</option>
+                  <option value="">Seleccione una materia...</option>
                   {materiasMostradas.map((m) => (
                     <option key={m.id} value={m.id}>
                       {m.nombre}
@@ -571,7 +571,7 @@ export default function CargarNotasPage() {
                 <div className="mt-2 text-sm font-semibold text-slate-700">
                   {puedeContinuar
                     ? "Configuración lista para cargar alumnos"
-                    : "Completá todos los campos para continuar"}
+                    : "Complete todos los campos para continuar"}
                 </div>
               </div>
             </div>
@@ -591,7 +591,7 @@ export default function CargarNotasPage() {
                   Cargar y revisar notas
                 </h2>
                 <p className="mt-2 text-sm text-slate-600">
-                  Completá una nota entre 1 y 10 o marcá ausente. Los alumnos no habilitados
+                  Complete una nota entre 1 y 10 o marque ausente. Los alumnos no habilitados
                   aparecen bloqueados con su motivo.
                 </p>
               </div>

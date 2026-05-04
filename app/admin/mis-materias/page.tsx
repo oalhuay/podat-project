@@ -71,7 +71,7 @@ export default function MisMateriasPage() {
           Mis Materias
         </h1>
         <p className="text-slate-500 mt-2 font-medium">
-          Materias asignadas a tu perfil.
+          Materias asignadas a su perfil.
         </p>
       </header>
 

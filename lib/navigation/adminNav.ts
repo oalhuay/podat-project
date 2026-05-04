@@ -15,11 +15,11 @@ export const adminNavItems: AdminNavItem[] = [
   {
     href: "/admin/perfil",
     label: "Perfil",
-    description: "Datos del usuario",
+    description: "Datos de su usuario",
   },
   {
     href: "/admin/usuarios",
-    label: "Gestion de usuarios",
+    label: "Gestión de usuarios",
     description: "Roles y accesos",
   },
   {
@@ -35,7 +35,7 @@ export const adminNavItems: AdminNavItem[] = [
   {
     href: "/admin/materias",
     label: "Materias",
-    description: "Catalogo y asignaciones",
+    description: "Catálogo y asignaciones",
   },
 ];
 
@@ -43,17 +43,17 @@ export const docenteNavItems: AdminNavItem[] = [
   {
     href: "/admin/estadisticas/dashboard",
     label: "Dashboard",
-    description: "Vista principal de tus materias",
+    description: "Vista principal de sus materias",
   },
   {
     href: "/admin/perfil",
     label: "Perfil",
-    description: "Datos del usuario",
+    description: "Datos de su usuario",
   },
   {
     href: "/admin/importar-archivo",
     label: "Importar",
-    description: "Estadísticas de tus materias",
+    description: "Estadísticas de sus materias",
   },
   {
     href: "/admin/alumnos",

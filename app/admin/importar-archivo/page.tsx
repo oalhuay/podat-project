@@ -110,7 +110,7 @@ export default function ImportarArchivoDocentePage() {
           Importación de estadísticas
         </h1>
         <p className="mt-2 font-medium text-slate-500">
-          Cargá un archivo `.xlsx` con datos de tus materias y registrá estadísticas en el
+          Cargue un archivo `.xlsx` con datos de sus materias y registre estadísticas en el
           sistema.
         </p>
       </header>
@@ -142,10 +142,10 @@ export default function ImportarArchivoDocentePage() {
                 <span className="text-4xl font-black">+</span>
               </div>
               <p className="mt-6 text-2xl font-black tracking-tight text-slate-900">
-                Arrastrá tu archivo o seleccionalo
+                Arrastre su archivo o selecciónelo
               </p>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-500">
-                Subí un archivo de Excel `.xlsx` desde tu compu. El sistema leerá
+                Suba un archivo de Excel `.xlsx` desde su equipo. El sistema leerá
                 automáticamente la hoja útil y te mostrará una previsualización antes de guardar.
               </p>
               <div className="mt-6 inline-flex rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 shadow-sm">
@@ -164,7 +164,7 @@ export default function ImportarArchivoDocentePage() {
               </p>
               <div className="mt-5 space-y-4 text-sm leading-6 text-slate-600">
                 <p>
-                  Usá solo archivos <span className="font-black text-slate-900">`.xlsx`</span>.
+                  Utilice solo archivos <span className="font-black text-slate-900">`.xlsx`</span>.
                 </p>
                 <p>
                   El archivo debe incluir <span className="font-black text-slate-900">materia</span>{" "}

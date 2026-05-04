@@ -129,7 +129,7 @@ export default function CargarAsistenciaPage() {
     if (!puedeContinuar) {
       setStatusMessage({
         type: "error",
-        text: "Completá materia, año y fecha.",
+        text: "Complete la materia, el año y la fecha.",
       });
       return;
     }
@@ -273,7 +273,7 @@ export default function CargarAsistenciaPage() {
       setStep("carga");
       setStatusMessage({
         type: "info",
-        text: "Lista cargada. Marcá presente, ausente o justificado por alumno.",
+        text: "Lista cargada. Marque presente, ausente o justificado por alumno.",
       });
     } catch (err: unknown) {
       const message =
@@ -353,7 +353,7 @@ export default function CargarAsistenciaPage() {
       <header className="mb-10">
         <h1 className="text-4xl font-black text-slate-900 tracking-tight">Asistencias</h1>
         <p className="mt-2 font-medium text-slate-500">
-          Elegí materia y curso, y después marcá presente, ausente o justificado.
+          Seleccione la materia y el curso, y después marque presente, ausente o justificado.
         </p>
       </header>
 
@@ -368,7 +368,7 @@ export default function CargarAsistenciaPage() {
               </p>
               <h2 className="mt-3 text-2xl font-black text-slate-900">Configurá la clase</h2>
               <p className="mt-2 text-sm text-slate-600">
-                Definí materia, año, fecha y tema antes de cargar la lista para tomar asistencia.
+                Defina la materia, el año, la fecha y el tema antes de cargar la lista para tomar asistencia.
               </p>
             </div>
 
@@ -383,7 +383,7 @@ export default function CargarAsistenciaPage() {
                   onChange={(e) => setMateriaId(e.target.value)}
                   aria-label="Seleccionar materia para cargar asistencias"
                 >
-                  <option value="">Elegí una materia...</option>
+                  <option value="">Seleccione una materia...</option>
                   {materias.map((m) => (
                     <option key={m.id} value={m.id}>
                       {m.nombre}
@@ -500,7 +500,7 @@ export default function CargarAsistenciaPage() {
                 <div className="mt-2 text-sm font-semibold text-slate-700">
                   {puedeContinuar
                     ? "Configuración lista para cargar asistencia"
-                    : "Completá materia, año y fecha para continuar"}
+                    : "Complete la materia, el año y la fecha para continuar"}
                 </div>
               </div>
             </div>
@@ -520,7 +520,7 @@ export default function CargarAsistenciaPage() {
                   Tomar y revisar asistencia
                 </h2>
                 <p className="mt-2 text-sm text-slate-600">
-                  Marcá presente, ausente o justificado por alumno y revisá la condición acumulada
+                  Marque presente, ausente o justificado por alumno y revise la condición acumulada
                   antes de guardar la clase.
                 </p>
               </div>

@@ -1,7 +1,7 @@
 "use client";
 
-import { ImportResult, ImportStatus } from "@/lib/import/alumnos/types";
 import { cx, ui } from "@/components/ui/styles";
+import { ImportResult, ImportStatus } from "@/lib/import/alumnos/types";
 
 type ImportResultsProps = {
   result: ImportResult;
@@ -35,7 +35,7 @@ export default function ImportResults({
           <p className={ui.sectionEyebrow}>Resultado de importación</p>
           <h3 className={cx(ui.sectionTitle, "mt-2")}>Resumen y detalle de filas</h3>
           <p className={cx(ui.sectionText, "mt-2 max-w-3xl")}>
-            Revisá rápidamente cuántos registros son nuevos, cuáles se actualizaron y qué filas
+            Revise rápidamente cuántos registros son nuevos, cuáles se actualizaron y qué filas
             necesitan corrección antes de volver a intentar la carga.
           </p>
         </div>
@@ -95,7 +95,7 @@ export default function ImportResults({
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-slate-900">
             <caption className="sr-only">
-              Resumen detallado de filas importadas con su estado y mensaje de validacion.
+              Resumen detallado de filas importadas con su estado y mensaje de validación.
             </caption>
             <thead className="bg-slate-50 text-xs uppercase text-slate-500">
               <tr>
@@ -124,10 +124,8 @@ export default function ImportResults({
                   <td className="p-3 font-mono text-slate-900">{row.legajo}</td>
                   <td className="p-3 text-slate-900">{row.apellido}</td>
                   <td className="p-3 text-slate-900">{row.nombre}</td>
-                  {showGenero && <td className="p-3 text-slate-900">{row.genero ?? "—"}</td>}
-                  {showCondicion && (
-                    <td className="p-3 text-slate-900">{row.condicion ?? "—"}</td>
-                  )}
+                  {showGenero && <td className="p-3 text-slate-900">{row.genero ?? "-"}</td>}
+                  {showCondicion && <td className="p-3 text-slate-900">{row.condicion ?? "-"}</td>}
                   <td className="p-3">
                     <span
                       className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${badgeClasses[row.status]}`}

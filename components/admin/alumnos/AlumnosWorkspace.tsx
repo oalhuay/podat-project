@@ -76,8 +76,8 @@ export function PadronPanel({
 
       <div className={cx(ui.mutedCard, "mt-4 px-4 py-3 text-sm text-slate-600")}>
         {sourceMode === "excel"
-          ? "Subí un archivo .xlsx con legajo, alumno, género y condición. Después revisá la previsualización antes de aplicar."
-          : 'Completá el padrón escribiendo "Apellido, Nombre" y usá la previsualización para validar filas antes de guardar.'}
+          ? "Suba un archivo `.xlsx` con legajo, alumno, género y condición. Después revise la previsualización antes de aplicar."
+          : 'Complete el padrón escribiendo "Apellido, Nombre" y utilice la previsualización para validar filas antes de guardar.'}
       </div>
 
       {sourceMode === "excel" && (
@@ -409,7 +409,7 @@ export function AsistenciasPanel({
       </div>
 
       <div className={cx(ui.mutedCard, "px-4 py-3 text-sm text-slate-600")}>
-        Cargá la clase del día y revisá la condición acumulada antes de guardar la asistencia
+        Cargue la clase del día y revise la condición acumulada antes de guardar la asistencia
         definitiva.
       </div>
 

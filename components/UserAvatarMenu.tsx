@@ -122,7 +122,7 @@ export default function UserAvatarMenu({ compact = false }: UserAvatarMenuProps)
               onClick={() => setIsMenuOpen(false)}
               className={cx(ui.secondaryButton, "block w-full text-center")}
             >
-              Ir a perfil
+              Ir al perfil
             </Link>
 
             <Link

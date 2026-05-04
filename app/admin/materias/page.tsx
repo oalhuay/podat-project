@@ -83,7 +83,7 @@ const parseMateriasFromMatrix = (matrix: unknown[][]): ParsedMateriaRow[] => {
   }
 
   if (headerRowIndex === -1) {
-    throw new Error("No se detectó el encabezado requerido. Usá columnas: Materia | Código.");
+    throw new Error("No se detectó el encabezado requerido. Utilice las columnas: Materia | Código.");
   }
 
   const parsed = matrix
@@ -197,11 +197,11 @@ export default function MateriasAdminPage() {
     const nombre = nuevaMateria.trim();
     const codigo = nuevoCodigo.trim();
     if (!nombre) {
-      setStatusMessage({ type: "error", text: "Ingresá el nombre de la materia." });
+      setStatusMessage({ type: "error", text: "Ingrese el nombre de la materia." });
       return;
     }
     if (!codigo) {
-      setStatusMessage({ type: "error", text: "Ingresá el código de la materia." });
+      setStatusMessage({ type: "error", text: "Ingrese el código de la materia." });
       return;
     }
 
@@ -317,7 +317,7 @@ export default function MateriasAdminPage() {
     if (!selectedMateriaId || !selectedDocenteId) {
       setStatusMessage({
         type: "error",
-        text: "Seleccioná materia y docente.",
+        text: "Seleccione la materia y el docente.",
       });
       return;
     }
@@ -405,7 +405,7 @@ export default function MateriasAdminPage() {
           Materias y asignaciones
         </h1>
         <p className="text-slate-500 mt-2 font-medium">
-          Gestioná materias, ya sea desde Excel o de forma manual, y asignalas a docentes.
+          Gestione materias, ya sea desde Excel o de forma manual, y asígnelas a docentes.
         </p>
       </header>
 
@@ -449,7 +449,7 @@ export default function MateriasAdminPage() {
             className="sr-only"
             aria-label="Seleccionar archivo de materias en formato Excel"
           />
-          <p className="text-xl font-black text-slate-900">Arrastrá un `.xlsx` o hacé clic</p>
+          <p className="text-xl font-black text-slate-900">Arrastre un `.xlsx` o haga clic</p>
           <p className="mt-2 text-sm text-slate-500">Columnas: Materia | Código</p>
           {excelFile && <p className="mt-3 text-sm font-bold text-slate-700">{excelFile.name}</p>}
         </label>
