@@ -3,13 +3,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/app/hooks/useAuth";
-import { supabase } from "@/lib/supabase";
 import StatusBanner from "@/components/admin/StatusBanner";
+import { getUserProfileViewModel } from "@/lib/auth/getUserProfileViewModel";
 import {
   extractMateriasFromAssignments,
   getMateriaAssignmentsForUser,
   type Materia,
 } from "@/lib/materias";
+import { supabase } from "@/lib/supabase";
 
 type StatusMessage = {
   type: "success" | "error" | "info";
@@ -38,26 +39,11 @@ export default function PerfilPage() {
     declaredSubjects: "",
   });
 
-  const profileName = useMemo<string>(() => {
-    const metadata = user?.user_metadata;
-    return (
-      metadata?.display_name ??
-      metadata?.full_name ??
-      metadata?.name ??
-      user?.email?.split("@")[0] ??
-      "Usuario"
-    );
-  }, [user]);
-
-  const profileEmail = user?.email ?? "Sin correo";
-  const profileAvatar: string | null =
-    user?.user_metadata?.avatar_url ?? user?.user_metadata?.picture ?? null;
-  const profileInitials = profileName
-    .split(" ")
-    .filter((word): word is string => Boolean(word))
-    .slice(0, 2)
-    .map((word) => word[0]?.toUpperCase() ?? "")
-    .join("");
+  const profileViewModel = useMemo(() => getUserProfileViewModel(user), [user]);
+  const profileName = profileViewModel.name;
+  const profileEmail = profileViewModel.email;
+  const profileAvatar = profileViewModel.avatar;
+  const profileInitials = profileViewModel.initials;
 
   useEffect(() => {
     if (!user?.id) {
@@ -78,7 +64,7 @@ export default function PerfilPage() {
       return;
     }
 
-    const metadata = user?.user_metadata;
+    const metadata = user.user_metadata;
     const declaredSubjects = Array.isArray(metadata?.declared_subjects)
       ? metadata.declared_subjects.filter(
           (subject): subject is string => typeof subject === "string"
@@ -106,7 +92,7 @@ export default function PerfilPage() {
       if (!userId) {
         setStatusMessage({
           type: "info",
-          text: "Inicia sesión para ver la información de perfil.",
+          text: "Iniciá sesión para ver la información de tu perfil.",
         });
         return;
       }
@@ -201,12 +187,8 @@ export default function PerfilPage() {
   return (
     <div className="space-y-8">
       <header>
-        <h1 className="text-4xl font-black tracking-tight text-slate-900">
-          Perfil
-        </h1>
-        <p className="mt-2 text-slate-500">
-          Resumen de la cuenta autenticada y accesos de trabajo.
-        </p>
+        <h1 className="text-4xl font-black tracking-tight text-slate-900">Perfil</h1>
+        <p className="mt-2 text-slate-500">Resumen de tu cuenta autenticada y accesos de trabajo.</p>
       </header>
 
       {statusMessage && <StatusBanner message={statusMessage} />}
@@ -232,12 +214,8 @@ export default function PerfilPage() {
               <div className="text-xs font-black uppercase tracking-[0.28em] text-slate-400">
                 Usuario autenticado
               </div>
-              <div className="mt-2 truncate text-3xl font-black text-slate-900">
-                {profileName}
-              </div>
-              <div className="mt-1 truncate text-sm text-slate-600">
-                {profileEmail}
-              </div>
+              <div className="mt-2 truncate text-3xl font-black text-slate-900">{profileName}</div>
+              <div className="mt-1 truncate text-sm text-slate-600">{profileEmail}</div>
             </div>
           </div>
 
@@ -305,23 +283,31 @@ export default function PerfilPage() {
           </div>
           <div className="mt-6 grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">
+              <label
+                htmlFor="profile-display-name"
+                className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400"
+              >
                 Nombre visible
               </label>
               <input
+                id="profile-display-name"
                 type="text"
                 value={profileForm.displayName}
                 onChange={handleChange("displayName")}
                 className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none transition-colors focus:border-[#5D9AD4]"
-                placeholder="Cómo quieres aparecer en el sistema"
+                placeholder="Cómo querés aparecer en el sistema"
               />
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">
+              <label
+                htmlFor="profile-phone"
+                className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400"
+              >
                 Teléfono
               </label>
               <input
+                id="profile-phone"
                 type="text"
                 value={profileForm.phone}
                 onChange={handleChange("phone")}
@@ -331,10 +317,14 @@ export default function PerfilPage() {
             </div>
 
             <div className="space-y-2 md:col-span-2">
-              <label className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">
+              <label
+                htmlFor="profile-department"
+                className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400"
+              >
                 Área o departamento
               </label>
               <input
+                id="profile-department"
                 type="text"
                 value={profileForm.department}
                 onChange={handleChange("department")}
@@ -344,31 +334,40 @@ export default function PerfilPage() {
             </div>
 
             <div className="space-y-2 md:col-span-2">
-              <label className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">
+              <label
+                htmlFor="profile-bio"
+                className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400"
+              >
                 Sobre tu perfil docente
               </label>
               <textarea
+                id="profile-bio"
                 value={profileForm.bio}
                 onChange={handleChange("bio")}
                 rows={4}
                 className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none transition-colors focus:border-[#5D9AD4]"
-                placeholder="Cuéntanos brevemente tu experiencia, orientación o funciones."
+                placeholder="Contanos brevemente tu experiencia, orientación o funciones."
               />
             </div>
 
             <div className="space-y-2 md:col-span-2">
-              <label className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">
-                Materias que dictas
+              <label
+                htmlFor="profile-subjects"
+                className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400"
+              >
+                Materias que dictás
               </label>
               <textarea
+                id="profile-subjects"
                 value={profileForm.declaredSubjects}
                 onChange={handleChange("declaredSubjects")}
                 rows={3}
                 className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none transition-colors focus:border-[#5D9AD4]"
-                placeholder="Separa las materias por coma. Ej. Programación I, Base de Datos, Matemática"
+                placeholder="Separá las materias por coma. Ej. Programación I, Base de Datos, Matemática"
               />
               <p className="text-xs text-slate-500">
-                Esta declaración complementa tu perfil. Las asignaciones oficiales siguen siendo administradas por el área administrativa.
+                Esta declaración complementa tu perfil. Las asignaciones oficiales las sigue
+                administrando el área administrativa.
               </p>
             </div>
           </div>
@@ -393,7 +392,7 @@ export default function PerfilPage() {
             <div className="mt-4 space-y-3">
               {assignedSubjects.length === 0 ? (
                 <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-500">
-                  Todavía no tienes materias asignadas por administración.
+                  Todavía no tenés materias asignadas por administración.
                 </div>
               ) : (
                 assignedSubjects.map((subject) => (

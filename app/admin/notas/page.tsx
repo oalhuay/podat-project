@@ -92,7 +92,7 @@ export default function CargarNotasPage() {
         if (materiasList.length === 0) {
           setStatusMessage({
             type: "info",
-            text: "No hay materias cargadas en base de datos.",
+            text: "No hay materias cargadas en la base.",
           });
         }
       } catch (error: unknown) {
@@ -160,7 +160,7 @@ export default function CargarNotasPage() {
     if (!puedeContinuar || !evaluacionNombre) {
       setStatusMessage({
         type: "error",
-        text: "Completa Materia, Año, Nombre de evaluación y Tipo.",
+        text: "Completá materia, año, nombre de evaluación y tipo.",
       });
       return;
     }
@@ -168,7 +168,6 @@ export default function CargarNotasPage() {
     setIsLoading(true);
     try {
       const materiaIdNum = Number(materiaId);
-
       const anioValue = Number(anio);
 
       const { data: alumnosData, error: alumnosError } = await supabase
@@ -304,12 +303,12 @@ export default function CargarNotasPage() {
       if (tipo === "Recuperatorio") {
         setStatusMessage({
           type: "info",
-          text: `Lista cargada. Habilitados para recuperatorio: ${habilitados}/${filas.length}. Solo se permiten alumnos con nota < 4, ausente o sin nota en el parcial base.`,
+          text: `Lista cargada. Habilitados para recuperatorio: ${habilitados}/${filas.length}.`,
         });
       } else {
         setStatusMessage({
           type: "info",
-          text: "Lista cargada. Completa una nota entre 1 y 10 o marca Ausente por alumno.",
+          text: "Lista cargada. Completá una nota de 1 a 10 o marcá ausente por alumno.",
         });
       }
     } catch (err: unknown) {
@@ -330,7 +329,7 @@ export default function CargarNotasPage() {
     if (!materiaId || !anio || !evaluacionNombre) {
       setStatusMessage({
         type: "error",
-        text: "No hay curso/evaluación seleccionada para guardar notas.",
+        text: "No hay curso ni evaluación seleccionados para guardar notas.",
       });
       return;
     }
@@ -348,7 +347,7 @@ export default function CargarNotasPage() {
       if (!alumno.ausente && alumno.nota.trim() === "") {
         setStatusMessage({
           type: "error",
-          text: "En alumnos habilitados debes cargar nota (1 a 10) o marcar Ausente.",
+          text: "En alumnos habilitados tenés que cargar nota o marcar ausente.",
         });
         return;
       }
@@ -358,7 +357,7 @@ export default function CargarNotasPage() {
         if (!isNotaEnRango(notaNum)) {
           setStatusMessage({
             type: "error",
-            text: "Cada nota debe estar entre 1 y 10.",
+            text: "Cada nota tiene que estar entre 1 y 10.",
           });
           return;
         }
@@ -429,11 +428,11 @@ export default function CargarNotasPage() {
   };
 
   return (
-    <div className="p-8 max-w-5xl mx-auto min-h-screen bg-white">
+    <div className="min-h-screen max-w-5xl mx-auto bg-white p-8">
       <header className="mb-10">
         <h1 className="text-4xl font-black text-slate-900 tracking-tight">Notas</h1>
-        <p className="text-slate-500 mt-2 font-medium">
-          Selecciona evaluación y registra una nota (1 a 10) o ausente por alumno.
+        <p className="mt-2 font-medium text-slate-500">
+          Elegí la evaluación y cargá una nota de 1 a 10 o ausente por alumno.
         </p>
       </header>
 
@@ -446,100 +445,96 @@ export default function CargarNotasPage() {
               <p className="text-xs font-black uppercase tracking-[0.25em] text-slate-400">
                 Paso 1
               </p>
-              <h2 className="mt-3 text-2xl font-black text-slate-900">
-                Configura la evaluación
-              </h2>
+              <h2 className="mt-3 text-2xl font-black text-slate-900">Configurá la evaluación</h2>
               <p className="mt-2 text-sm text-slate-600">
-                Define materia, año, evaluación y tipo antes de cargar la lista de alumnos.
+                Definí materia, año, evaluación y tipo antes de cargar la lista de alumnos.
               </p>
             </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label className="text-xs uppercase tracking-widest font-bold text-slate-400">
-                Materia
-              </label>
-              <select
-                className="w-full p-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-slate-900 focus:border-[#5D9AD4] outline-none transition-all"
-                value={materiaId}
-                onChange={(e) => setMateriaId(e.target.value)}
-              >
-                  <option value="">Seleccionar materia...</option>
-                {materiasMostradas.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.nombre}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              <div className="space-y-2">
+                <label className="text-xs uppercase tracking-widest font-bold text-slate-400">
+                  Materia
+                </label>
+                <select
+                  className="w-full rounded-2xl border-2 border-slate-100 bg-slate-50 p-4 text-slate-900 outline-none transition-all focus:border-[#5D9AD4]"
+                  value={materiaId}
+                  onChange={(e) => setMateriaId(e.target.value)}
+                  aria-label="Seleccionar materia para cargar notas"
+                >
+                  <option value="">Elegí una materia...</option>
+                  {materiasMostradas.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.nombre}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-            <div className="space-y-2">
-              <label className="text-xs uppercase tracking-widest font-bold text-slate-400">
-                Año
-              </label>
-              <input
-                type="number"
-                min={1900}
-                max={CURRENT_YEAR}
-                className="w-full p-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-slate-900 focus:border-[#5D9AD4] outline-none transition-all"
-                value={anio}
-                onChange={(e) => setAnio(e.target.value)}
-              />
-            </div>
+              <div className="space-y-2">
+                <label className="text-xs uppercase tracking-widest font-bold text-slate-400">
+                  Año
+                </label>
+                <input
+                  type="number"
+                  min={1900}
+                  max={CURRENT_YEAR}
+                  className="w-full rounded-2xl border-2 border-slate-100 bg-slate-50 p-4 text-slate-900 outline-none transition-all focus:border-[#5D9AD4]"
+                  value={anio}
+                  onChange={(e) => setAnio(e.target.value)}
+                  aria-label="Ingresar año para cargar notas"
+                />
+              </div>
 
-            <div className="space-y-2">
-              <label className="text-xs uppercase tracking-widest font-bold text-slate-400">
-                Curso interno
-              </label>
-              <div className="w-full p-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-slate-500">
-                Automático por materia y año
+              <div className="space-y-2">
+                <label className="text-xs uppercase tracking-widest font-bold text-slate-400">
+                  Curso interno
+                </label>
+                <div className="w-full rounded-2xl border-2 border-slate-100 bg-slate-50 p-4 text-slate-500">
+                  Automático por materia y año
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs uppercase tracking-widest font-bold text-slate-400">
+                  Nombre de la evaluación
+                </label>
+                <InlineSelect
+                  value={evaluacionNombre}
+                  onChange={setEvaluacionNombre}
+                  options={EVALUACION_OPTIONS}
+                />
+              </div>
+
+              <div className="space-y-2 md:col-span-2">
+                <label className="text-xs uppercase tracking-widest font-bold text-slate-400">
+                  Tipo
+                </label>
+                <InlineSelect value={tipo} onChange={setTipo} options={TIPO_OPTIONS} />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-xs uppercase tracking-widest font-bold text-slate-400">
-                Nombre de la evaluación
-              </label>
-              <InlineSelect
-                value={evaluacionNombre}
-                onChange={setEvaluacionNombre}
-                options={EVALUACION_OPTIONS}
-              />
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              <button
+                onClick={continuar}
+                disabled={!puedeContinuar || isLoading}
+                className="w-full rounded-2xl bg-[#5D9AD4] p-4 text-lg font-black text-white transition-all hover:scale-[1.01] disabled:opacity-60 disabled:hover:scale-100"
+              >
+                {isLoading ? "CARGANDO..." : "CARGAR LISTA DEL CURSO"}
+              </button>
+              <button
+                onClick={() =>
+                  resetToStart({
+                    type: "info",
+                    text: "Carga cancelada. No se guardaron cambios.",
+                  })
+                }
+                disabled={isLoading}
+                className="w-full rounded-2xl bg-slate-200 p-4 text-lg font-black text-slate-800 transition-colors hover:bg-slate-300 disabled:opacity-60"
+              >
+                CANCELAR CARGA
+              </button>
             </div>
-
-            <div className="space-y-2 md:col-span-2">
-              <label className="text-xs uppercase tracking-widest font-bold text-slate-400">
-                Tipo
-              </label>
-              <InlineSelect
-                value={tipo}
-                onChange={setTipo}
-                options={TIPO_OPTIONS}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <button
-              onClick={continuar}
-              disabled={!puedeContinuar || isLoading}
-              className="w-full p-4 bg-[#5D9AD4] text-white font-black text-lg rounded-2xl hover:scale-[1.01] transition-all disabled:opacity-60 disabled:hover:scale-100"
-            >
-              {isLoading ? "CARGANDO..." : "CARGAR LISTA DEL CURSO"}
-            </button>
-            <button
-              onClick={() =>
-                resetToStart({
-                  type: "info",
-                  text: "Carga cancelada. No se guardaron cambios.",
-                })
-              }
-              disabled={isLoading}
-              className="w-full p-4 bg-slate-200 text-slate-800 font-black text-lg rounded-2xl hover:bg-slate-300 transition-colors disabled:opacity-60"
-            >
-              CANCELAR CARGA
-            </button>
-          </div>
           </div>
 
           <aside className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
@@ -576,7 +571,7 @@ export default function CargarNotasPage() {
                 <div className="mt-2 text-sm font-semibold text-slate-700">
                   {puedeContinuar
                     ? "Configuración lista para cargar alumnos"
-                    : "Completa todos los campos para continuar"}
+                    : "Completá todos los campos para continuar"}
                 </div>
               </div>
             </div>
@@ -596,7 +591,7 @@ export default function CargarNotasPage() {
                   Cargar y revisar notas
                 </h2>
                 <p className="mt-2 text-sm text-slate-600">
-                  Completa una nota entre 1 y 10 o marca ausente. Los alumnos no habilitados
+                  Completá una nota entre 1 y 10 o marcá ausente. Los alumnos no habilitados
                   aparecen bloqueados con su motivo.
                 </p>
               </div>
@@ -629,17 +624,20 @@ export default function CargarNotasPage() {
             </div>
           </div>
 
-          <div className="rounded-3xl border border-slate-200 overflow-hidden">
+          <div className="overflow-hidden rounded-3xl border border-slate-200">
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-slate-900">
-                <thead className="bg-slate-50 text-slate-500 uppercase text-xs">
+                <caption className="sr-only">
+                  Tabla de carga de notas por alumno con campos para nota y estado de ausencia.
+                </caption>
+                <thead className="bg-slate-50 text-xs uppercase text-slate-500">
                   <tr>
-                    <th className="text-left p-3">Legajo</th>
-                    <th className="text-left p-3">Apellido</th>
-                    <th className="text-left p-3">Nombre</th>
-                    <th className="text-left p-3">Nota (1 a 10)</th>
-                    <th className="text-left p-3">Ausente</th>
-                    <th className="text-left p-3">Alerta</th>
+                    <th className="p-3 text-left">Legajo</th>
+                    <th className="p-3 text-left">Apellido</th>
+                    <th className="p-3 text-left">Nombre</th>
+                    <th className="p-3 text-left">Nota (1 a 10)</th>
+                    <th className="p-3 text-left">Ausente</th>
+                    <th className="p-3 text-left">Alerta</th>
                   </tr>
                 </thead>
                 <tbody className="text-slate-800">
@@ -653,7 +651,7 @@ export default function CargarNotasPage() {
                       <td className="p-3">
                         <div className="font-medium">{alumno.nombre}</div>
                         {!alumno.habilitado && alumno.motivoBloqueo && (
-                          <div className="text-xs text-slate-500 mt-1">{alumno.motivoBloqueo}</div>
+                          <div className="mt-1 text-xs text-slate-500">{alumno.motivoBloqueo}</div>
                         )}
                       </td>
                       <td className="p-3">
@@ -665,7 +663,8 @@ export default function CargarNotasPage() {
                           value={alumno.nota}
                           disabled={!alumno.habilitado || alumno.ausente || isLoading}
                           onChange={(e) => onChangeNota(alumno.alumnoId, e.target.value)}
-                          className="w-32 p-2 rounded-xl border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:border-[#5D9AD4] outline-none disabled:bg-slate-100 disabled:text-slate-400"
+                          aria-label={`Nota de ${alumno.apellido} ${alumno.nombre}`}
+                          className="w-32 rounded-xl border border-slate-200 bg-white p-2 text-slate-900 outline-none focus:border-[#5D9AD4] placeholder:text-slate-400 disabled:bg-slate-100 disabled:text-slate-400"
                         />
                       </td>
                       <td className="p-3">
@@ -675,6 +674,7 @@ export default function CargarNotasPage() {
                             checked={alumno.ausente}
                             disabled={!alumno.habilitado || isLoading}
                             onChange={(e) => onChangeAusente(alumno.alumnoId, e.target.checked)}
+                            aria-label={`Marcar ausente a ${alumno.apellido} ${alumno.nombre}`}
                             className="h-4 w-4"
                           />
                           <span className={alumno.habilitado ? "text-slate-700" : "text-slate-400"}>
@@ -704,11 +704,11 @@ export default function CargarNotasPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <button
               onClick={guardarNotas}
               disabled={isLoading}
-              className="w-full p-4 bg-green-600 text-white font-black text-lg rounded-2xl hover:bg-green-700 transition-colors disabled:opacity-60"
+              className="w-full rounded-2xl bg-green-600 p-4 text-lg font-black text-white transition-colors hover:bg-green-700 disabled:opacity-60"
             >
               {isLoading ? "GUARDANDO..." : "GUARDAR CAMBIOS"}
             </button>
@@ -720,9 +720,9 @@ export default function CargarNotasPage() {
                 })
               }
               disabled={isLoading}
-              className="w-full p-4 bg-slate-200 text-slate-800 font-black text-lg rounded-2xl hover:bg-slate-300 transition-colors disabled:opacity-60"
+              className="w-full rounded-2xl bg-slate-200 p-4 text-lg font-black text-slate-800 transition-colors hover:bg-slate-300 disabled:opacity-60"
             >
-              VOLVER A CONFIGURACIÓN
+              VOLVER A CONFIGURACION
             </button>
           </div>
         </section>

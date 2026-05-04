@@ -34,7 +34,7 @@ export default function ImportarArchivoDocentePage() {
     messages: {
       missingMateria:
         "El archivo debe incluir la materia en la columna o encabezado del bloque.",
-      missingYear: "El archivo debe incluir el ano para cada fila o columna de datos.",
+      missingYear: "El archivo debe incluir el año para cada fila o columna de datos.",
     },
     onStatusMessage: setStatusMessage,
   });
@@ -107,10 +107,11 @@ export default function ImportarArchivoDocentePage() {
     <div className="min-h-screen max-w-5xl mx-auto bg-white p-8">
       <header className="mb-10">
         <h1 className="text-4xl font-black tracking-tight text-slate-900">
-          Importacion de Estadisticas
+          Importación de estadísticas
         </h1>
         <p className="mt-2 font-medium text-slate-500">
-          Carga un archivo .xlsx con datos de tus materias y registra estadisticas en el sistema.
+          Cargá un archivo `.xlsx` con datos de tus materias y registrá estadísticas en el
+          sistema.
         </p>
       </header>
 
@@ -122,6 +123,7 @@ export default function ImportarArchivoDocentePage() {
             accept=".xlsx"
             onChange={handleFileChange}
             className="sr-only"
+            aria-label="Seleccionar archivo de estadísticas en formato Excel"
           />
 
           <div className="grid gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.85fr)]">
@@ -140,11 +142,11 @@ export default function ImportarArchivoDocentePage() {
                 <span className="text-4xl font-black">+</span>
               </div>
               <p className="mt-6 text-2xl font-black tracking-tight text-slate-900">
-                Arrastra tu archivo o seleccionalo
+                Arrastrá tu archivo o seleccionalo
               </p>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-500">
-                Sube un archivo de Excel `.xlsx` desde tu PC. El sistema leera automaticamente la
-                hoja util y te mostrara una previsualizacion antes de guardar.
+                Subí un archivo de Excel `.xlsx` desde tu compu. El sistema leerá
+                automáticamente la hoja útil y te mostrará una previsualización antes de guardar.
               </p>
               <div className="mt-6 inline-flex rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 shadow-sm">
                 Elegir archivo `.xlsx`
@@ -158,27 +160,27 @@ export default function ImportarArchivoDocentePage() {
 
             <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
               <p className="text-xs font-black uppercase tracking-[0.25em] text-slate-400">
-                Guia rapida
+                Guía rápida
               </p>
               <div className="mt-5 space-y-4 text-sm leading-6 text-slate-600">
                 <p>
-                  Usa solo archivos <span className="font-black text-slate-900">`.xlsx`</span>.
+                  Usá solo archivos <span className="font-black text-slate-900">`.xlsx`</span>.
                 </p>
                 <p>
                   El archivo debe incluir <span className="font-black text-slate-900">materia</span>{" "}
-                  y <span className="font-black text-slate-900">ano</span> dentro del propio Excel.
+                  y <span className="font-black text-slate-900">año</span> dentro del propio Excel.
                 </p>
                 <p>
                   <span className="font-black text-slate-900">Formato docente PODAT:</span> bloque
-                  por materia con encabezado y luego una fila por ano.
+                  por materia con encabezado y luego una fila por año.
                 </p>
                 <p>
                   <span className="font-black text-slate-900">Formato simple:</span>{" "}
-                  `Materia | Ano | Varones inscriptos | Mujeres inscriptas`.
+                  `Materia | Año | Varones inscriptos | Mujeres inscriptas`.
                 </p>
                 <p>
                   <span className="font-black text-slate-900">Formato tipo SyO:</span> columna
-                  `Materia`, columna `Indicadores` y columnas por ano.
+                  `Materia`, columna `Indicadores` y columnas por año.
                 </p>
               </div>
             </div>
@@ -194,7 +196,7 @@ export default function ImportarArchivoDocentePage() {
               <p className="text-2xl font-black text-slate-800">{summary.total}</p>
             </div>
             <div className="rounded-2xl bg-emerald-50 p-4">
-              <p className="text-xs font-bold uppercase text-emerald-700">Validos</p>
+              <p className="text-xs font-bold uppercase text-emerald-700">Válidos</p>
               <p className="text-2xl font-black text-emerald-800">{summary.validos}</p>
             </div>
             <div className="rounded-2xl bg-amber-50 p-4">
@@ -206,11 +208,11 @@ export default function ImportarArchivoDocentePage() {
               <p className="text-2xl font-black text-rose-800">{summary.materiaFaltante}</p>
             </div>
             <div className="rounded-2xl bg-rose-50 p-4">
-              <p className="text-xs font-bold uppercase text-rose-700">Materia invalida</p>
+              <p className="text-xs font-bold uppercase text-rose-700">Materia inválida</p>
               <p className="text-2xl font-black text-rose-800">{summary.materiaDesconocida}</p>
             </div>
             <div className="rounded-2xl bg-rose-50 p-4">
-              <p className="text-xs font-bold uppercase text-rose-700">Ano faltante</p>
+              <p className="text-xs font-bold uppercase text-rose-700">Año faltante</p>
               <p className="text-2xl font-black text-rose-800">{summary.anioFaltante}</p>
             </div>
             <div className="rounded-2xl bg-rose-50 p-4">
@@ -285,11 +287,15 @@ export default function ImportarArchivoDocentePage() {
             <div className="overflow-hidden rounded-3xl border border-slate-200">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm text-slate-900">
+                  <caption className="sr-only">
+                    Previsualización de filas importadas con materia, indicador, año, valor y
+                    estado.
+                  </caption>
                   <thead className="bg-slate-50 text-xs uppercase text-slate-500">
                     <tr>
                       <th className="p-3 text-left">Materia</th>
                       <th className="p-3 text-left">Indicador</th>
-                      <th className="p-3 text-left">Ano</th>
+                      <th className="p-3 text-left">Año</th>
                       <th className="p-3 text-left">Valor</th>
                       <th className="p-3 text-left">Estado</th>
                       <th className="p-3 text-left">Detalle</th>
@@ -332,14 +338,14 @@ export default function ImportarArchivoDocentePage() {
                 disabled={isImporting}
                 className="w-full rounded-2xl bg-green-600 p-4 text-lg font-black text-white transition-colors hover:bg-green-700 disabled:opacity-70"
               >
-                {isImporting ? "GUARDANDO..." : "GUARDAR ESTADISTICAS"}
+                {isImporting ? "GUARDANDO..." : "GUARDAR ESTADÍSTICAS"}
               </button>
               <button
                 onClick={clearPreview}
                 disabled={isImporting}
                 className="w-full rounded-2xl bg-slate-200 p-4 text-lg font-black text-slate-800 transition-colors hover:bg-slate-300 disabled:opacity-70"
               >
-                LIMPIAR PREVISUALIZACION
+                LIMPIAR PREVISUALIZACIÓN
               </button>
             </div>
           </div>

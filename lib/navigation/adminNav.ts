@@ -25,7 +25,7 @@ export const adminNavItems: AdminNavItem[] = [
   {
     href: "/admin/importar-archivo",
     label: "Importar",
-    description: "Estadisticas e importacion",
+    description: "Estadísticas e importación",
   },
   {
     href: "/admin/alumnos",
@@ -53,7 +53,7 @@ export const docenteNavItems: AdminNavItem[] = [
   {
     href: "/admin/importar-archivo",
     label: "Importar",
-    description: "Estadisticas de tus materias",
+    description: "Estadísticas de tus materias",
   },
   {
     href: "/admin/alumnos",
@@ -72,5 +72,5 @@ export function getAdminNavItems(role: Rol): AdminNavItem[] {
 }
 
 export function getPanelLabel(role: Rol) {
-  return role === "docente" ? "Panel docente" : "Panel de gestion";
+  return role === "docente" ? "Panel docente" : "Panel de gestión";
 }

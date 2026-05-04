@@ -14,7 +14,6 @@ import { Line } from "react-chartjs-2";
 import { useAuth } from "@/app/hooks/useAuth";
 import { useEstadisticasImport } from "@/app/hooks/useEstadisticasImport";
 import { useTheme } from "@/app/hooks/useTheme";
-import { supabase } from "@/lib/supabase";
 import StatusBanner from "@/components/admin/StatusBanner";
 import { getChartPalette } from "@/lib/charts/theme";
 import {
@@ -22,8 +21,6 @@ import {
   INDICATOR_BY_CODE,
   type IndicatorCode,
 } from "@/lib/estadisticas/catalog";
-import { getAccessibleMaterias, type Materia } from "@/lib/materias";
-import type { Rol } from "@/types/database";
 import {
   ESTADISTICA_STATUS_CLASSES,
   ESTADISTICA_STATUS_LABELS,
@@ -31,6 +28,9 @@ import {
   type ImportDefaults,
   type StatusMessage,
 } from "@/lib/import/estadisticas/workflow";
+import { getAccessibleMaterias, type Materia } from "@/lib/materias";
+import { supabase } from "@/lib/supabase";
+import type { Rol } from "@/types/database";
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend);
 
@@ -97,6 +97,7 @@ export default function EstadisticasPage() {
   const [statsRows, setStatsRows] = useState<StatRow[]>([]);
   const [isLoadingStats, setIsLoadingStats] = useState(false);
   const [isCreatingMaterias, setIsCreatingMaterias] = useState(false);
+
   const importDefaults = useMemo<ImportDefaults>(() => {
     const parsedYear = Number(fallbackYear);
     const normalizedYear =
@@ -109,6 +110,7 @@ export default function EstadisticasPage() {
       anio: normalizedYear,
     };
   }, [fallbackMateriaId, fallbackYear]);
+
   const {
     archivo,
     parsedRows,
@@ -148,7 +150,7 @@ export default function EstadisticasPage() {
         if (materiasList.length === 0) {
           setStatusMessage({
             type: "info",
-            text: "No hay materias disponibles. Crea o asigna materias para mapear el Excel.",
+            text: "No hay materias disponibles. Creá o asigná materias para mapear el Excel.",
           });
         }
       } catch (error: unknown) {
@@ -292,88 +294,81 @@ export default function EstadisticasPage() {
     };
   }, [series, selectedIndicator]);
 
-  const chartOptions = useMemo(
-    () => {
-      const palette = getChartPalette(resolvedTheme);
-      return {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            position: "bottom" as const,
-            labels: {
-              color: palette.text,
-            },
+  const chartOptions = useMemo(() => {
+    const palette = getChartPalette(resolvedTheme);
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: "bottom" as const,
+          labels: {
+            color: palette.text,
           },
         },
-        scales: {
-          x: {
-            ticks: {
-              color: palette.mutedText,
-            },
-            grid: {
-              color: palette.grid,
-            },
+      },
+      scales: {
+        x: {
+          ticks: {
+            color: palette.mutedText,
           },
-          y: {
-            ticks: {
-              color: palette.mutedText,
-              callback: (value: string | number) => {
-                if (indicatorUnit === "percent") return `${value}%`;
-                if (indicatorUnit === "ratio") return Number(value).toFixed(2);
-                return value;
-              },
-            },
-            grid: {
-              color: palette.grid,
-            },
+          grid: {
+            color: palette.grid,
           },
         },
-      };
-    },
-    [indicatorUnit, resolvedTheme]
-  );
+        y: {
+          ticks: {
+            color: palette.mutedText,
+            callback: (value: string | number) => {
+              if (indicatorUnit === "percent") return `${value}%`;
+              if (indicatorUnit === "ratio") return Number(value).toFixed(2);
+              return value;
+            },
+          },
+          grid: {
+            color: palette.grid,
+          },
+        },
+      },
+    };
+  }, [indicatorUnit, resolvedTheme]);
 
   return (
     <div className="p-8 max-w-6xl mx-auto min-h-screen bg-white space-y-12">
       <header>
-        <h1 className="text-4xl font-black text-slate-900 tracking-tight">
-          Estadísticas
-        </h1>
+        <h1 className="text-4xl font-black text-slate-900 tracking-tight">Estadísticas</h1>
         <p className="text-slate-500 mt-2 font-medium">
-          Importa archivos .xlsx de estadísticas y construye el dashboard de tus materias.
+          Importá archivos `.xlsx` de estadísticas y construí el dashboard de tus materias.
         </p>
       </header>
 
       <section className="space-y-6">
         <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
           <div className="rounded-[2rem] border border-slate-200 bg-slate-50 p-6 md:p-8">
-            <p className="text-xs font-black uppercase tracking-[0.25em] text-slate-400">
-              Paso 1
-            </p>
-            <h2 className="mt-3 text-2xl font-black text-slate-900">
-              Preparar importación
-            </h2>
+            <p className="text-xs font-black uppercase tracking-[0.25em] text-slate-400">Paso 1</p>
+            <h2 className="mt-3 text-2xl font-black text-slate-900">Preparar importación</h2>
             <p className="mt-2 max-w-3xl text-sm text-slate-600">
-              Sube un archivo `.xlsx`, completa materia o año solo si faltan en el Excel y revisa
+              Subí un archivo `.xlsx`, completá materia o año solo si faltan en el Excel y revisá
               la previsualización antes de guardar cambios en la base.
             </p>
 
             <div className="mt-6 grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <label className="text-xs uppercase tracking-widest font-bold text-slate-400">
+                <label
+                  htmlFor="stats-fallback-materia"
+                  className="text-xs uppercase tracking-widest font-bold text-slate-400"
+                >
                   Materia opcional
                 </label>
                 <select
+                  id="stats-fallback-materia"
                   className="w-full rounded-2xl border-2 border-slate-100 bg-white p-3 text-slate-900 outline-none focus:border-[#5D9AD4]"
                   value={fallbackMateriaId}
                   onChange={(e) =>
-                    setFallbackMateriaId(
-                      e.target.value === "" ? "" : Number(e.target.value)
-                    )
+                    setFallbackMateriaId(e.target.value === "" ? "" : Number(e.target.value))
                   }
                 >
-                <option value="">Usar la del archivo...</option>
+                  <option value="">Usar la del archivo...</option>
                   {materias.map((materia) => (
                     <option key={materia.id} value={materia.id}>
                       {materia.nombre}
@@ -383,10 +378,14 @@ export default function EstadisticasPage() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs uppercase tracking-widest font-bold text-slate-400">
+                <label
+                  htmlFor="stats-fallback-year"
+                  className="text-xs uppercase tracking-widest font-bold text-slate-400"
+                >
                   Año opcional
                 </label>
                 <input
+                  id="stats-fallback-year"
                   type="number"
                   min={1900}
                   max={3000}
@@ -402,6 +401,7 @@ export default function EstadisticasPage() {
               <input
                 type="file"
                 accept=".xlsx"
+                aria-label="Seleccionar archivo de estadísticas en formato Excel"
                 onChange={async (event) => {
                   const file = event.target.files?.[0];
                   if (!file) return;
@@ -411,11 +411,11 @@ export default function EstadisticasPage() {
                 className="block w-full text-sm text-slate-500"
               />
               <p className="mt-4 text-slate-600 font-medium">
-                Puedes subir una tabla tipo SyO o un Excel simple con columnas de materia, año,
+                Podés subir una tabla tipo SyO o un Excel simple con columnas de materia, año,
                 varones inscriptos y mujeres inscriptas.
               </p>
               <p className="mt-2 text-sm text-slate-500">
-                Si el archivo no trae materia o año, puedes completarlos aquí antes de importar.
+                Si el archivo no trae materia o año, podés completarlos acá antes de importar.
               </p>
               {archivo && (
                 <p className="mt-3 rounded-full bg-[#5D9AD4]/10 px-4 py-2 text-xs font-bold text-slate-600">
@@ -456,7 +456,7 @@ export default function EstadisticasPage() {
                 <div className="mt-2 text-sm font-semibold text-slate-700">
                   {importReady
                     ? "Previsualización lista para revisar y guardar"
-                    : "Carga un archivo para generar la previsualización"}
+                    : "Cargá un archivo para generar la previsualización"}
                 </div>
               </div>
               <div className="rounded-2xl bg-slate-50 p-4">
@@ -466,7 +466,7 @@ export default function EstadisticasPage() {
                 <div className="mt-2 text-sm font-semibold text-slate-700">
                   {dashboardReady
                     ? "Dashboard listo para explorar"
-                    : "Selecciona una materia para visualizar datos"}
+                    : "Seleccioná una materia para visualizar datos"}
                 </div>
               </div>
             </div>
@@ -486,52 +486,50 @@ export default function EstadisticasPage() {
                   Revisar calidad del archivo
                 </h3>
                 <p className="mt-2 text-sm text-slate-600">
-                  Antes de guardar, verifica cuántas filas son válidas y qué datos necesitan
+                  Antes de guardar, verificá cuántas filas son válidas y qué datos necesitan
                   corrección o intervención manual.
                 </p>
               </div>
             </div>
 
-          <div className="mt-6 grid grid-cols-2 md:grid-cols-6 gap-3">
-            <div className="rounded-2xl p-4 bg-slate-100">
-              <p className="text-xs uppercase text-slate-500 font-bold">Total</p>
-              <p className="text-2xl font-black text-slate-800">{summary.total}</p>
+            <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-6">
+              <div className="rounded-2xl p-4 bg-slate-100">
+                <p className="text-xs uppercase text-slate-500 font-bold">Total</p>
+                <p className="text-2xl font-black text-slate-800">{summary.total}</p>
+              </div>
+              <div className="rounded-2xl p-4 bg-emerald-50">
+                <p className="text-xs uppercase text-emerald-700 font-bold">Válidos</p>
+                <p className="text-2xl font-black text-emerald-800">{summary.validos}</p>
+              </div>
+              <div className="rounded-2xl p-4 bg-amber-50">
+                <p className="text-xs uppercase text-amber-700 font-bold">Calculados</p>
+                <p className="text-2xl font-black text-amber-800">{summary.calculados}</p>
+              </div>
+              <div className="rounded-2xl p-4 bg-rose-50">
+                <p className="text-xs uppercase text-rose-700 font-bold">Materia faltante</p>
+                <p className="text-2xl font-black text-rose-800">{summary.materiaFaltante}</p>
+              </div>
+              <div className="rounded-2xl p-4 bg-rose-50">
+                <p className="text-xs uppercase text-rose-700 font-bold">Materia inválida</p>
+                <p className="text-2xl font-black text-rose-800">
+                  {summary.materiaDesconocida}
+                </p>
+              </div>
+              <div className="rounded-2xl p-4 bg-rose-50">
+                <p className="text-xs uppercase text-rose-700 font-bold">Año faltante</p>
+                <p className="text-2xl font-black text-rose-800">{summary.anioFaltante}</p>
+              </div>
+              <div className="rounded-2xl p-4 bg-rose-50">
+                <p className="text-xs uppercase text-rose-700 font-bold">Indicador inválido</p>
+                <p className="text-2xl font-black text-rose-800">
+                  {summary.indicadorDesconocido}
+                </p>
+              </div>
+              <div className="rounded-2xl p-4 bg-rose-50">
+                <p className="text-xs uppercase text-rose-700 font-bold">Valor inválido</p>
+                <p className="text-2xl font-black text-rose-800">{summary.valorInvalido}</p>
+              </div>
             </div>
-            <div className="rounded-2xl p-4 bg-emerald-50">
-              <p className="text-xs uppercase text-emerald-700 font-bold">Válidos</p>
-              <p className="text-2xl font-black text-emerald-800">{summary.validos}</p>
-            </div>
-            <div className="rounded-2xl p-4 bg-amber-50">
-              <p className="text-xs uppercase text-amber-700 font-bold">Calculados</p>
-              <p className="text-2xl font-black text-amber-800">{summary.calculados}</p>
-            </div>
-            <div className="rounded-2xl p-4 bg-rose-50">
-              <p className="text-xs uppercase text-rose-700 font-bold">Materia faltante</p>
-              <p className="text-2xl font-black text-rose-800">
-                {summary.materiaFaltante}
-              </p>
-            </div>
-            <div className="rounded-2xl p-4 bg-rose-50">
-              <p className="text-xs uppercase text-rose-700 font-bold">Materia inválida</p>
-              <p className="text-2xl font-black text-rose-800">
-                {summary.materiaDesconocida}
-              </p>
-            </div>
-            <div className="rounded-2xl p-4 bg-rose-50">
-              <p className="text-xs uppercase text-rose-700 font-bold">Año faltante</p>
-              <p className="text-2xl font-black text-rose-800">{summary.anioFaltante}</p>
-            </div>
-            <div className="rounded-2xl p-4 bg-rose-50">
-              <p className="text-xs uppercase text-rose-700 font-bold">Indicador inválido</p>
-              <p className="text-2xl font-black text-rose-800">
-                {summary.indicadorDesconocido}
-              </p>
-            </div>
-            <div className="rounded-2xl p-4 bg-rose-50">
-              <p className="text-xs uppercase text-rose-700 font-bold">Valor inválido</p>
-              <p className="text-2xl font-black text-rose-800">{summary.valorInvalido}</p>
-            </div>
-          </div>
           </div>
         )}
 
@@ -546,30 +544,22 @@ export default function EstadisticasPage() {
             <p className="text-xs uppercase tracking-widest font-bold text-slate-400 mb-4">
               Cambios detectados
             </p>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
               <div className="rounded-2xl p-4 bg-slate-100">
                 <p className="text-xs uppercase text-slate-500 font-bold">Revisados</p>
-                <p className="text-2xl font-black text-slate-800">
-                  {changeSummary.revisados}
-                </p>
+                <p className="text-2xl font-black text-slate-800">{changeSummary.revisados}</p>
               </div>
               <div className="rounded-2xl p-4 bg-emerald-50">
                 <p className="text-xs uppercase text-emerald-700 font-bold">Nuevos</p>
-                <p className="text-2xl font-black text-emerald-800">
-                  {changeSummary.nuevos}
-                </p>
+                <p className="text-2xl font-black text-emerald-800">{changeSummary.nuevos}</p>
               </div>
               <div className="rounded-2xl p-4 bg-amber-50">
                 <p className="text-xs uppercase text-amber-700 font-bold">Actualizados</p>
-                <p className="text-2xl font-black text-amber-800">
-                  {changeSummary.actualizados}
-                </p>
+                <p className="text-2xl font-black text-amber-800">{changeSummary.actualizados}</p>
               </div>
               <div className="rounded-2xl p-4 bg-slate-50">
                 <p className="text-xs uppercase text-slate-500 font-bold">Sin cambios</p>
-                <p className="text-2xl font-black text-slate-800">
-                  {changeSummary.sinCambios}
-                </p>
+                <p className="text-2xl font-black text-slate-800">{changeSummary.sinCambios}</p>
               </div>
             </div>
           </div>
@@ -596,11 +586,9 @@ export default function EstadisticasPage() {
               <p className="text-xs font-black uppercase tracking-[0.25em] text-slate-400">
                 Paso 3
               </p>
-              <h3 className="mt-2 text-2xl font-black text-slate-900">
-                Confirmar importación
-              </h3>
+              <h3 className="mt-2 text-2xl font-black text-slate-900">Confirmar importación</h3>
               <p className="mt-2 text-sm text-slate-600">
-                Usa los filtros para revisar las filas y guarda solo cuando estés conforme con la
+                Usá los filtros para revisar las filas y guardá solo cuando estés conforme con la
                 previsualización.
               </p>
             </div>
@@ -634,6 +622,10 @@ export default function EstadisticasPage() {
             <div className="rounded-3xl border border-slate-200 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm text-slate-900">
+                  <caption className="sr-only">
+                    Previsualización de estadísticas importadas con materia, indicador, año, valor
+                    y estado.
+                  </caption>
                   <thead className="bg-slate-50 text-slate-500 uppercase text-xs">
                     <tr>
                       <th className="text-left p-3">Materia</th>
@@ -650,7 +642,7 @@ export default function EstadisticasPage() {
                         <td className="p-3">{row.materia}</td>
                         <td className="p-3">{row.indicadorRaw}</td>
                         <td className="p-3">{row.anio}</td>
-                        <td className="p-3">{row.valor ?? "—"}</td>
+                        <td className="p-3">{row.valor ?? "-"}</td>
                         <td className="p-3">
                           <span
                             className={`inline-flex px-2.5 py-1 rounded-full text-xs font-bold ${
@@ -703,7 +695,7 @@ export default function EstadisticasPage() {
             </p>
             <h2 className="mt-2 text-2xl font-black text-slate-900">Explorar dashboard</h2>
             <p className="mt-2 text-slate-500">
-              Selecciona materia, indicador y rango de años para visualizar la serie temporal.
+              Seleccioná materia, indicador y rango de años para visualizar la serie temporal.
             </p>
           </div>
           <div className="grid gap-3 sm:grid-cols-3 xl:min-w-[24rem]">
@@ -736,19 +728,21 @@ export default function EstadisticasPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="space-y-2">
-            <label className="text-xs uppercase tracking-widest font-bold text-slate-400">
+            <label
+              htmlFor="dashboard-materia"
+              className="text-xs uppercase tracking-widest font-bold text-slate-400"
+            >
               Materia
             </label>
             <select
+              id="dashboard-materia"
               className="w-full p-3 rounded-2xl border-2 border-slate-100 bg-slate-50 text-slate-900 focus:border-[#5D9AD4] outline-none"
               value={selectedMateriaId}
               onChange={(e) =>
-                setSelectedMateriaId(
-                  e.target.value === "" ? "" : Number(e.target.value)
-                )
+                setSelectedMateriaId(e.target.value === "" ? "" : Number(e.target.value))
               }
             >
-                <option value="">Seleccionar materia...</option>
+              <option value="">Seleccionar materia...</option>
               {materias.map((m) => (
                 <option key={m.id} value={m.id}>
                   {m.nombre}
@@ -758,27 +752,35 @@ export default function EstadisticasPage() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs uppercase tracking-widest font-bold text-slate-400">
+            <label
+              htmlFor="dashboard-indicador"
+              className="text-xs uppercase tracking-widest font-bold text-slate-400"
+            >
               Indicador
             </label>
             <select
+              id="dashboard-indicador"
               className="w-full p-3 rounded-2xl border-2 border-slate-100 bg-slate-50 text-slate-900 focus:border-[#5D9AD4] outline-none"
               value={selectedIndicator}
               onChange={(e) => setSelectedIndicator(e.target.value as IndicatorCode)}
             >
               {ALL_INDICATORS.map((indicator) => (
                 <option key={indicator.code} value={indicator.code}>
-                  {indicator.label} {indicator.isCalculated ? "(calc)" : ""}
+                  {indicator.label} {indicator.isCalculated ? "(calculado)" : ""}
                 </option>
               ))}
             </select>
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs uppercase tracking-widest font-bold text-slate-400">
+            <label
+              htmlFor="dashboard-year-from"
+              className="text-xs uppercase tracking-widest font-bold text-slate-400"
+            >
               Desde
             </label>
             <input
+              id="dashboard-year-from"
               type="number"
               min={1900}
               max={CURRENT_YEAR}
@@ -789,10 +791,14 @@ export default function EstadisticasPage() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs uppercase tracking-widest font-bold text-slate-400">
+            <label
+              htmlFor="dashboard-year-to"
+              className="text-xs uppercase tracking-widest font-bold text-slate-400"
+            >
               Hasta
             </label>
             <input
+              id="dashboard-year-to"
               type="number"
               min={1900}
               max={CURRENT_YEAR}

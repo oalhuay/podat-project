@@ -49,17 +49,12 @@ export default function CargarAsistenciaPage() {
   const [claseId, setClaseId] = useState<string | null>(null);
   const [alumnos, setAlumnos] = useState<AlumnoFila[]>([]);
   const [totalClases, setTotalClases] = useState<number>(0);
-  const [presentesBaseMap, setPresentesBaseMap] = useState<Map<number, number>>(
-    new Map()
-  );
+  const [presentesBaseMap, setPresentesBaseMap] = useState<Map<number, number>>(new Map());
   const [statusMessage, setStatusMessage] = useState<StatusMessage | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState<"seleccion" | "carga">("seleccion");
 
-  const puedeContinuar = useMemo(
-    () => Boolean(materiaId && anio && fecha),
-    [materiaId, anio, fecha]
-  );
+  const puedeContinuar = useMemo(() => Boolean(materiaId && anio && fecha), [materiaId, anio, fecha]);
   const selectedMateria =
     materiaId === ""
       ? null
@@ -82,7 +77,7 @@ export default function CargarAsistenciaPage() {
         if (materiasList.length === 0) {
           setStatusMessage({
             type: "info",
-            text: "No hay materias cargadas en base de datos.",
+            text: "No hay materias cargadas en la base.",
           });
         }
       } catch (error: unknown) {
@@ -134,7 +129,7 @@ export default function CargarAsistenciaPage() {
     if (!puedeContinuar) {
       setStatusMessage({
         type: "error",
-        text: "Completa Materia, Año y Fecha.",
+        text: "Completá materia, año y fecha.",
       });
       return;
     }
@@ -142,7 +137,6 @@ export default function CargarAsistenciaPage() {
     setIsLoading(true);
     try {
       const materiaIdNum = Number(materiaId);
-
       const anioValue = Number(anio);
 
       const { data: claseData, error: claseError } = await supabase
@@ -279,7 +273,7 @@ export default function CargarAsistenciaPage() {
       setStep("carga");
       setStatusMessage({
         type: "info",
-        text: "Lista cargada. Marca Presente/Ausente/Justificado por alumno.",
+        text: "Lista cargada. Marcá presente, ausente o justificado por alumno.",
       });
     } catch (err: unknown) {
       const message =
@@ -355,13 +349,11 @@ export default function CargarAsistenciaPage() {
   };
 
   return (
-    <div className="p-8 max-w-5xl mx-auto min-h-screen bg-white">
+    <div className="min-h-screen max-w-5xl mx-auto bg-white p-8">
       <header className="mb-10">
-        <h1 className="text-4xl font-black text-slate-900 tracking-tight">
-          Asistencias
-        </h1>
-        <p className="text-slate-500 mt-2 font-medium">
-          Selecciona materia y comisión, luego marca Presente/Ausente/Justificado.
+        <h1 className="text-4xl font-black text-slate-900 tracking-tight">Asistencias</h1>
+        <p className="mt-2 font-medium text-slate-500">
+          Elegí materia y curso, y después marcá presente, ausente o justificado.
         </p>
       </header>
 
@@ -374,104 +366,106 @@ export default function CargarAsistenciaPage() {
               <p className="text-xs font-black uppercase tracking-[0.25em] text-slate-400">
                 Paso 1
               </p>
-              <h2 className="mt-3 text-2xl font-black text-slate-900">
-                Configura la clase
-              </h2>
+              <h2 className="mt-3 text-2xl font-black text-slate-900">Configurá la clase</h2>
               <p className="mt-2 text-sm text-slate-600">
-                Define materia, año, fecha y tema antes de cargar la lista para tomar asistencia.
+                Definí materia, año, fecha y tema antes de cargar la lista para tomar asistencia.
               </p>
             </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label className="text-xs uppercase tracking-widest font-bold text-slate-400">
-                Materia
-              </label>
-              <select
-                className="w-full p-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-slate-900 focus:border-[#5D9AD4] outline-none transition-all"
-                value={materiaId}
-                onChange={(e) => setMateriaId(e.target.value)}
-              >
-                  <option value="">Seleccionar materia...</option>
-                {materias.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.nombre}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              <div className="space-y-2">
+                <label className="text-xs uppercase tracking-widest font-bold text-slate-400">
+                  Materia
+                </label>
+                <select
+                  className="w-full rounded-2xl border-2 border-slate-100 bg-slate-50 p-4 text-slate-900 outline-none transition-all focus:border-[#5D9AD4]"
+                  value={materiaId}
+                  onChange={(e) => setMateriaId(e.target.value)}
+                  aria-label="Seleccionar materia para cargar asistencias"
+                >
+                  <option value="">Elegí una materia...</option>
+                  {materias.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.nombre}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-            <div className="space-y-2">
-              <label className="text-xs uppercase tracking-widest font-bold text-slate-400">
-                Año
-              </label>
-              <input
-                type="number"
-                min={1900}
-                max={CURRENT_YEAR}
-                className="w-full p-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-slate-900 focus:border-[#5D9AD4] outline-none transition-all"
-                value={anio}
-                onChange={(e) => setAnio(e.target.value)}
-              />
-            </div>
+              <div className="space-y-2">
+                <label className="text-xs uppercase tracking-widest font-bold text-slate-400">
+                  Año
+                </label>
+                <input
+                  type="number"
+                  min={1900}
+                  max={CURRENT_YEAR}
+                  className="w-full rounded-2xl border-2 border-slate-100 bg-slate-50 p-4 text-slate-900 outline-none transition-all focus:border-[#5D9AD4]"
+                  value={anio}
+                  onChange={(e) => setAnio(e.target.value)}
+                  aria-label="Ingresar año para cargar asistencias"
+                />
+              </div>
 
-            <div className="space-y-2">
-              <label className="text-xs uppercase tracking-widest font-bold text-slate-400">
-                Curso interno
-              </label>
-              <div className="w-full p-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-slate-500">
-                Automático por materia y año
+              <div className="space-y-2">
+                <label className="text-xs uppercase tracking-widest font-bold text-slate-400">
+                  Curso interno
+                </label>
+                <div className="w-full rounded-2xl border-2 border-slate-100 bg-slate-50 p-4 text-slate-500">
+                  Automático por materia y año
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs uppercase tracking-widest font-bold text-slate-400">
+                  Fecha
+                </label>
+                <input
+                  type="date"
+                  max={today}
+                  className="w-full rounded-2xl border-2 border-slate-100 bg-slate-50 p-4 text-slate-900 outline-none transition-all focus:border-[#5D9AD4]"
+                  value={fecha}
+                  onChange={(e) => setFecha(e.target.value)}
+                  aria-label="Seleccionar fecha de la clase"
+                />
+              </div>
+
+              <div className="space-y-2 md:col-span-2">
+                <label className="text-xs uppercase tracking-widest font-bold text-slate-400">
+                  Tema
+                </label>
+                <input
+                  type="text"
+                  className="w-full rounded-2xl border-2 border-slate-100 bg-slate-50 p-4 text-slate-900 outline-none transition-all focus:border-[#5D9AD4]"
+                  value={tema}
+                  onChange={(e) => setTema(e.target.value)}
+                  placeholder="Unidad, tema o práctica"
+                  aria-label="Ingresar tema opcional de la clase"
+                />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-xs uppercase tracking-widest font-bold text-slate-400">
-                Fecha
-              </label>
-              <input
-                type="date"
-                max={today}
-                className="w-full p-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-slate-900 focus:border-[#5D9AD4] outline-none transition-all"
-                value={fecha}
-                onChange={(e) => setFecha(e.target.value)}
-              />
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              <button
+                onClick={continuar}
+                disabled={!puedeContinuar || isLoading}
+                className="w-full rounded-2xl bg-[#5D9AD4] p-4 text-lg font-black text-white transition-all hover:scale-[1.01] disabled:opacity-60 disabled:hover:scale-100"
+              >
+                {isLoading ? "CARGANDO..." : "CARGAR LISTA DEL CURSO"}
+              </button>
+              <button
+                onClick={() =>
+                  resetToStart({
+                    type: "info",
+                    text: "Carga cancelada. No se guardaron cambios.",
+                  })
+                }
+                disabled={isLoading}
+                className="w-full rounded-2xl bg-slate-200 p-4 text-lg font-black text-slate-800 transition-colors hover:bg-slate-300 disabled:opacity-60"
+              >
+                CANCELAR CARGA
+              </button>
             </div>
-
-            <div className="space-y-2 md:col-span-2">
-              <label className="text-xs uppercase tracking-widest font-bold text-slate-400">
-                Tema (opcional)
-              </label>
-              <input
-                type="text"
-                className="w-full p-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-slate-900 focus:border-[#5D9AD4] outline-none transition-all"
-                value={tema}
-                onChange={(e) => setTema(e.target.value)}
-                placeholder="Unidad, tema o práctica"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <button
-              onClick={continuar}
-              disabled={!puedeContinuar || isLoading}
-              className="w-full p-4 bg-[#5D9AD4] text-white font-black text-lg rounded-2xl hover:scale-[1.01] transition-all disabled:opacity-60 disabled:hover:scale-100"
-            >
-              {isLoading ? "CARGANDO..." : "CARGAR LISTA DEL CURSO"}
-            </button>
-            <button
-              onClick={() =>
-                resetToStart({
-                  type: "info",
-                  text: "Carga cancelada. No se guardaron cambios.",
-                })
-              }
-              disabled={isLoading}
-              className="w-full p-4 bg-slate-200 text-slate-800 font-black text-lg rounded-2xl hover:bg-slate-300 transition-colors disabled:opacity-60"
-            >
-              CANCELAR CARGA
-            </button>
-          </div>
           </div>
 
           <aside className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
@@ -506,7 +500,7 @@ export default function CargarAsistenciaPage() {
                 <div className="mt-2 text-sm font-semibold text-slate-700">
                   {puedeContinuar
                     ? "Configuración lista para cargar asistencia"
-                    : "Completa materia, año y fecha para continuar"}
+                    : "Completá materia, año y fecha para continuar"}
                 </div>
               </div>
             </div>
@@ -526,7 +520,7 @@ export default function CargarAsistenciaPage() {
                   Tomar y revisar asistencia
                 </h2>
                 <p className="mt-2 text-sm text-slate-600">
-                  Marca presente, ausente o justificado por alumno y revisa la condición acumulada
+                  Marcá presente, ausente o justificado por alumno y revisá la condición acumulada
                   antes de guardar la clase.
                 </p>
               </div>
@@ -555,16 +549,19 @@ export default function CargarAsistenciaPage() {
             </div>
           </div>
 
-          <div className="rounded-3xl border border-slate-200 overflow-hidden">
+          <div className="overflow-hidden rounded-3xl border border-slate-200">
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-slate-900">
-                <thead className="bg-slate-50 text-slate-500 uppercase text-xs">
+                <caption className="sr-only">
+                  Tabla de asistencia por alumno con selector de estado y condición acumulada.
+                </caption>
+                <thead className="bg-slate-50 text-xs uppercase text-slate-500">
                   <tr>
-                    <th className="text-left p-3">Legajo</th>
-                    <th className="text-left p-3">Apellido</th>
-                    <th className="text-left p-3">Nombre</th>
-                    <th className="text-left p-3">Estado</th>
-                    <th className="text-left p-3">Condición</th>
+                    <th className="p-3 text-left">Legajo</th>
+                    <th className="p-3 text-left">Apellido</th>
+                    <th className="p-3 text-left">Nombre</th>
+                    <th className="p-3 text-left">Estado</th>
+                    <th className="p-3 text-left">Condición</th>
                   </tr>
                 </thead>
                 <tbody className="text-slate-800">
@@ -580,7 +577,8 @@ export default function CargarAsistenciaPage() {
                           onChange={(e) =>
                             onChangeEstado(alumno.alumnoId, e.target.value as EstadoAsistencia)
                           }
-                          className="p-2 rounded-xl border border-slate-200 bg-white text-slate-900 focus:border-[#5D9AD4] outline-none"
+                          aria-label={`Estado de asistencia de ${alumno.apellido} ${alumno.nombre}`}
+                          className="rounded-xl border border-slate-200 bg-white p-2 text-slate-900 outline-none focus:border-[#5D9AD4]"
                         >
                           <option value="presente">Presente</option>
                           <option value="ausente">Ausente</option>
@@ -598,8 +596,8 @@ export default function CargarAsistenciaPage() {
                                 alumno.condicion.estado === "libre"
                                   ? "text-red-600"
                                   : alumno.condicion.estado === "en_riesgo"
-                                  ? "text-amber-600"
-                                  : "text-emerald-600"
+                                    ? "text-amber-600"
+                                    : "text-emerald-600"
                               }
                             >
                               {alumno.condicion.mensaje}
@@ -616,11 +614,11 @@ export default function CargarAsistenciaPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <button
               onClick={guardarAsistencia}
               disabled={isLoading}
-              className="w-full p-4 bg-green-600 text-white font-black text-lg rounded-2xl hover:bg-green-700 transition-colors disabled:opacity-60"
+              className="w-full rounded-2xl bg-green-600 p-4 text-lg font-black text-white transition-colors hover:bg-green-700 disabled:opacity-60"
             >
               {isLoading ? "GUARDANDO..." : "GUARDAR CAMBIOS"}
             </button>
@@ -632,9 +630,9 @@ export default function CargarAsistenciaPage() {
                 })
               }
               disabled={isLoading}
-              className="w-full p-4 bg-slate-200 text-slate-800 font-black text-lg rounded-2xl hover:bg-slate-300 transition-colors disabled:opacity-60"
+              className="w-full rounded-2xl bg-slate-200 p-4 text-lg font-black text-slate-800 transition-colors hover:bg-slate-300 disabled:opacity-60"
             >
-              VOLVER A CONFIGURACIÓN
+              VOLVER A CONFIGURACION
             </button>
           </div>
         </section>

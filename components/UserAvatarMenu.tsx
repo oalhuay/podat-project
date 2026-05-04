@@ -64,7 +64,7 @@ export default function UserAvatarMenu({ compact = false }: UserAvatarMenuProps)
         )}
         aria-haspopup="menu"
         aria-expanded={isMenuOpen}
-        aria-label="Abrir menu de perfil"
+        aria-label="Abrir menú de perfil"
       >
         <ProfileAvatar
           src={profile.avatar}
@@ -138,7 +138,7 @@ export default function UserAvatarMenu({ compact = false }: UserAvatarMenuProps)
               onClick={() => void handleSignOut()}
               className="w-full rounded-2xl bg-slate-900 px-4 py-3 text-sm font-black text-white transition-colors hover:bg-slate-800"
             >
-              Cerrar sesion
+              Cerrar sesión
             </button>
           </div>
         </div>
