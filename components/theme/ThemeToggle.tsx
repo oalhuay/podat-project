@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useTheme } from "@/app/hooks/useTheme";
+import { cx } from "@/components/ui/styles";
 
 type ThemeToggleProps = {
   compact?: boolean;
@@ -10,25 +11,27 @@ type ThemeToggleProps = {
 export default function ThemeToggle({ compact = false }: ThemeToggleProps) {
   const { resolvedTheme, setThemePreference } = useTheme();
   const isDark = resolvedTheme === "dark";
-  const toggleTheme = () => setThemePreference(isDark ? "light" : "dark");
 
   return (
     <div
-      className={`theme-shell inline-flex items-center gap-1 rounded-full border border-slate-200/70 bg-slate-50/90 p-1.5 ${
+      className={cx(
+        "theme-shell inline-flex items-center gap-1 rounded-full border border-slate-200/70 bg-slate-50/90 p-1.5",
         compact ? "" : "shadow-sm shadow-slate-200/50"
-      }`}
+      )}
       aria-label={`Tema actual: ${isDark ? "oscuro" : "claro"}`}
     >
       <button
         type="button"
-        onClick={toggleTheme}
+        onClick={() => setThemePreference("light")}
         aria-label="Modo claro"
+        aria-pressed={!isDark}
         title="Modo claro"
-        className={`flex h-10 w-10 items-center justify-center rounded-full transition-all duration-200 hover:scale-105 ${
+        className={cx(
+          "flex h-10 w-10 items-center justify-center rounded-full transition-all duration-200 hover:scale-105",
           !isDark
             ? "bg-[#5D9AD4]/14 text-[#3D73A7] shadow-sm shadow-[#5D9AD4]/20"
             : "text-slate-300 opacity-85 hover:bg-slate-100/10 hover:text-slate-100"
-        }`}
+        )}
       >
         <Image
           src="/sun-shape-svgrepo-com.svg"
@@ -46,14 +49,16 @@ export default function ThemeToggle({ compact = false }: ThemeToggleProps) {
 
       <button
         type="button"
-        onClick={toggleTheme}
+        onClick={() => setThemePreference("dark")}
         aria-label="Modo oscuro"
+        aria-pressed={isDark}
         title="Modo oscuro"
-        className={`flex h-10 w-10 items-center justify-center rounded-full transition-all duration-200 hover:scale-105 ${
+        className={cx(
+          "flex h-10 w-10 items-center justify-center rounded-full transition-all duration-200 hover:scale-105",
           isDark
             ? "bg-[#5D9AD4]/20 text-[#D7E8FA] shadow-sm shadow-[#5D9AD4]/20"
             : "text-[#5D86B8] opacity-80 hover:bg-[#5D9AD4]/10 hover:text-[#3D73A7]"
-        }`}
+        )}
       >
         <Image
           src="/moon-svgrepo-com.svg"

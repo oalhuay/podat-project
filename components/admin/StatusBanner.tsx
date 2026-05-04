@@ -1,5 +1,4 @@
 "use client";
-"use client";
 
 type StatusMessage = {
   type: "success" | "error" | "info";
@@ -26,6 +25,8 @@ export default function StatusBanner({ message }: StatusBannerProps) {
   return (
     <div
       className={`mt-6 flex items-start gap-3 rounded-[1.5rem] border px-4 py-3 text-sm font-medium shadow-sm ${statusMessageClasses[message.type]}`}
+      role="status"
+      aria-live="polite"
     >
       <span
         aria-hidden="true"

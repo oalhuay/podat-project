@@ -1,6 +1,7 @@
 "use client";
 
 import { ImportResult, ImportStatus } from "@/lib/import/alumnos/types";
+import { cx, ui } from "@/components/ui/styles";
 
 type ImportResultsProps = {
   result: ImportResult;
@@ -31,42 +32,38 @@ export default function ImportResults({
     <section className="mt-10 space-y-6">
       <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
-          <p className="text-xs font-black uppercase tracking-[0.25em] text-slate-400">
-            Resultado de importación
-          </p>
-          <h3 className="mt-2 text-2xl font-black tracking-tight text-slate-900">
-            Resumen y detalle de filas
-          </h3>
-          <p className="mt-2 max-w-3xl text-sm text-slate-500">
-            Revisa rápidamente cuántos registros son nuevos, cuáles se actualizaron y qué filas
+          <p className={ui.sectionEyebrow}>Resultado de importación</p>
+          <h3 className={cx(ui.sectionTitle, "mt-2")}>Resumen y detalle de filas</h3>
+          <p className={cx(ui.sectionText, "mt-2 max-w-3xl")}>
+            Revisá rápidamente cuántos registros son nuevos, cuáles se actualizaron y qué filas
             necesitan corrección antes de volver a intentar la carga.
           </p>
         </div>
-        <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
+        <div className={cx(ui.mutedCard, "px-4 py-3 text-sm text-slate-600")}>
           <span className="font-black text-slate-900">{rowsFiltradas.length}</span> fila(s) en la
           vista actual
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        <div className="rounded-2xl p-4 bg-slate-100">
-          <p className="text-xs uppercase text-slate-500 font-bold">Total</p>
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+        <div className="rounded-2xl bg-slate-100 p-4">
+          <p className="text-xs font-bold uppercase text-slate-500">Total</p>
           <p className="text-2xl font-black text-slate-800">{result.summary.total}</p>
         </div>
-        <div className="rounded-2xl p-4 bg-green-50">
-          <p className="text-xs uppercase text-green-700 font-bold">Nuevos</p>
+        <div className="rounded-2xl bg-green-50 p-4">
+          <p className="text-xs font-bold uppercase text-green-700">Nuevos</p>
           <p className="text-2xl font-black text-green-800">{result.summary.nuevos}</p>
         </div>
-        <div className="rounded-2xl p-4 bg-blue-50">
-          <p className="text-xs uppercase text-blue-700 font-bold">Actualizados</p>
+        <div className="rounded-2xl bg-blue-50 p-4">
+          <p className="text-xs font-bold uppercase text-blue-700">Actualizados</p>
           <p className="text-2xl font-black text-blue-800">{result.summary.actualizados}</p>
         </div>
-        <div className="rounded-2xl p-4 bg-yellow-50">
-          <p className="text-xs uppercase text-yellow-700 font-bold">Duplicados</p>
+        <div className="rounded-2xl bg-yellow-50 p-4">
+          <p className="text-xs font-bold uppercase text-yellow-700">Duplicados</p>
           <p className="text-2xl font-black text-yellow-800">{result.summary.duplicados}</p>
         </div>
-        <div className="rounded-2xl p-4 bg-red-50">
-          <p className="text-xs uppercase text-red-700 font-bold">Inválidos</p>
+        <div className="rounded-2xl bg-red-50 p-4">
+          <p className="text-xs font-bold uppercase text-red-700">Inválidos</p>
           <p className="text-2xl font-black text-red-800">{result.summary.invalidos}</p>
         </div>
       </div>
@@ -83,10 +80,10 @@ export default function ImportResults({
             key={option.value}
             type="button"
             onClick={() => onChangeStatusFilter(option.value as "todos" | ImportStatus)}
-            className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${
+            className={`rounded-full border px-3 py-1.5 text-xs font-bold transition-colors ${
               statusFilter === option.value
-                ? "bg-slate-800 text-white border-slate-800"
-                : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
+                ? "border-slate-800 bg-slate-800 text-white"
+                : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
             }`}
           >
             {option.label}
@@ -94,18 +91,21 @@ export default function ImportResults({
         ))}
       </div>
 
-      <div className="rounded-3xl border border-slate-200 overflow-hidden">
+      <div className="overflow-hidden rounded-3xl border border-slate-200">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-slate-900">
-            <thead className="bg-slate-50 text-slate-500 uppercase text-xs">
+            <caption className="sr-only">
+              Resumen detallado de filas importadas con su estado y mensaje de validacion.
+            </caption>
+            <thead className="bg-slate-50 text-xs uppercase text-slate-500">
               <tr>
-                <th className="text-left p-3">Legajo</th>
-                <th className="text-left p-3">Apellido</th>
-                <th className="text-left p-3">Nombre</th>
-                {showGenero && <th className="text-left p-3">Género</th>}
-                {showCondicion && <th className="text-left p-3">Condición</th>}
-                <th className="text-left p-3">Estado</th>
-                <th className="text-left p-3">Detalle</th>
+                <th className="p-3 text-left">Legajo</th>
+                <th className="p-3 text-left">Apellido</th>
+                <th className="p-3 text-left">Nombre</th>
+                {showGenero && <th className="p-3 text-left">Género</th>}
+                {showCondicion && <th className="p-3 text-left">Condición</th>}
+                <th className="p-3 text-left">Estado</th>
+                <th className="p-3 text-left">Detalle</th>
               </tr>
             </thead>
             <tbody>
@@ -130,7 +130,7 @@ export default function ImportResults({
                   )}
                   <td className="p-3">
                     <span
-                      className={`inline-flex px-2.5 py-1 rounded-full text-xs font-bold ${badgeClasses[row.status]}`}
+                      className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${badgeClasses[row.status]}`}
                     >
                       {row.status.toUpperCase().replace("_", " ")}
                     </span>

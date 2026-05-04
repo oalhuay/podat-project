@@ -21,8 +21,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     };
   }, [isMobileSidebarOpen]);
 
-  const panelLabel =
-    role === "docente" ? "Panel docente" : "Panel de gestión";
+  const panelLabel = role === "docente" ? "Panel docente" : "Panel de gestión";
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(93,154,212,0.12),_transparent_30%),linear-gradient(180deg,_#f8fafc_0%,_#eef4ff_100%)]">
@@ -64,10 +63,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/35 p-4 backdrop-blur-[2px] sm:p-6"
             onClick={() => setIsMobileSidebarOpen(false)}
           >
-            <div
-              className="w-[min(88vw,22rem)]"
-              onClick={(event) => event.stopPropagation()}
-            >
+            <div className="w-[min(88vw,22rem)]" onClick={(event) => event.stopPropagation()}>
               <AdminSidebar onNavigate={() => setIsMobileSidebarOpen(false)} />
             </div>
           </div>
