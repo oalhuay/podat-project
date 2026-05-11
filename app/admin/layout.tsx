@@ -25,7 +25,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(93,154,212,0.12),_transparent_30%),linear-gradient(180deg,_#f8fafc_0%,_#eef4ff_100%)]">
-      <div className="sticky top-0 z-30 border-b border-white/70 bg-white/80 px-4 py-3 shadow-sm backdrop-blur sm:px-6 xl:hidden">
+      <div className="sticky top-0 z-30 border-b border-white/70 bg-white px-4 py-3 shadow-sm sm:px-6 xl:hidden">
         <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4">
           <Link
             href="/admin/estadisticas/dashboard"
@@ -73,7 +73,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       <div className="mx-auto flex max-w-[1600px] flex-col gap-6 px-4 py-4 sm:px-6 xl:flex-row xl:px-8 xl:py-6">
         <AdminSidebar className="hidden xl:sticky xl:top-6 xl:z-40 xl:block xl:w-80" />
         <div className="min-w-0 flex-1">
-          <div className="rounded-[2rem] border border-white/70 bg-white/90 p-6 shadow-xl shadow-slate-200/40 backdrop-blur sm:p-8">
+          <div className="rounded-[2rem] border border-white/70 bg-white p-6 shadow-xl shadow-slate-200/40 sm:p-8">
             {children}
           </div>
         </div>

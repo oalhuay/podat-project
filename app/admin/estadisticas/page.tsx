@@ -533,35 +533,45 @@ export default function EstadisticasPage() {
           </div>
         )}
 
-        {isCheckingChanges && (
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-            Analizando cambios contra la base actual...
-          </div>
-        )}
-
-        {changeSummary && !isCheckingChanges && (
-          <div className="rounded-3xl border border-slate-200 bg-white p-5">
-            <p className="text-xs uppercase tracking-widest font-bold text-slate-400 mb-4">
-              Cambios detectados
-            </p>
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-              <div className="rounded-2xl p-4 bg-slate-100">
-                <p className="text-xs uppercase text-slate-500 font-bold">Revisados</p>
-                <p className="text-2xl font-black text-slate-800">{changeSummary.revisados}</p>
+        {previewRows.length > 0 && (
+          <div className="min-h-[11.5rem]">
+            {isCheckingChanges ? (
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                Analizando cambios contra la base actual...
               </div>
-              <div className="rounded-2xl p-4 bg-emerald-50">
-                <p className="text-xs uppercase text-emerald-700 font-bold">Nuevos</p>
-                <p className="text-2xl font-black text-emerald-800">{changeSummary.nuevos}</p>
+            ) : changeSummary ? (
+              <div className="rounded-3xl border border-slate-200 bg-white p-5">
+                <p className="mb-4 text-xs font-bold uppercase tracking-widest text-slate-400">
+                  Cambios detectados
+                </p>
+                <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                  <div className="rounded-2xl bg-slate-100 p-4">
+                    <p className="text-xs font-bold uppercase text-slate-500">Revisados</p>
+                    <p className="text-2xl font-black text-slate-800">{changeSummary.revisados}</p>
+                  </div>
+                  <div className="rounded-2xl bg-emerald-50 p-4">
+                    <p className="text-xs font-bold uppercase text-emerald-700">Nuevos</p>
+                    <p className="text-2xl font-black text-emerald-800">{changeSummary.nuevos}</p>
+                  </div>
+                  <div className="rounded-2xl bg-amber-50 p-4">
+                    <p className="text-xs font-bold uppercase text-amber-700">Actualizados</p>
+                    <p className="text-2xl font-black text-amber-800">
+                      {changeSummary.actualizados}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl bg-slate-50 p-4">
+                    <p className="text-xs font-bold uppercase text-slate-500">Sin cambios</p>
+                    <p className="text-2xl font-black text-slate-800">
+                      {changeSummary.sinCambios}
+                    </p>
+                  </div>
+                </div>
               </div>
-              <div className="rounded-2xl p-4 bg-amber-50">
-                <p className="text-xs uppercase text-amber-700 font-bold">Actualizados</p>
-                <p className="text-2xl font-black text-amber-800">{changeSummary.actualizados}</p>
+            ) : (
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                No hay filas validas para comparar contra la base actual.
               </div>
-              <div className="rounded-2xl p-4 bg-slate-50">
-                <p className="text-xs uppercase text-slate-500 font-bold">Sin cambios</p>
-                <p className="text-2xl font-black text-slate-800">{changeSummary.sinCambios}</p>
-              </div>
-            </div>
+            )}
           </div>
         )}
 
@@ -637,8 +647,11 @@ export default function EstadisticasPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {rowsFiltradas.map((row, index) => (
-                      <tr key={`${row.materia}-${row.anio}-${index}`} className="border-t">
+                    {rowsFiltradas.map((row) => (
+                      <tr
+                        key={`${row.materiaId ?? "sin-materia"}-${row.indicadorCode ?? row.indicadorRaw}-${row.anio ?? "sin-anio"}-${row.valor ?? "sin-valor"}-${row.status}`}
+                        className="border-t"
+                      >
                         <td className="p-3">{row.materia}</td>
                         <td className="p-3">{row.indicadorRaw}</td>
                         <td className="p-3">{row.anio}</td>
