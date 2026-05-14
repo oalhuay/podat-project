@@ -135,6 +135,7 @@ export default function AlumnosPage() {
     onTipoEvaluacionChange,
     onChangeNota,
     onChangeAusente,
+    onChangeAusenteTodos,
     cargarNotas,
     guardarNotas,
   } = useNotasWorkflow({
@@ -431,6 +432,7 @@ export default function AlumnosPage() {
                 onCargarNotas={cargarNotas}
                 onChangeNota={onChangeNota}
                 onChangeAusente={onChangeAusente}
+                onChangeAusenteTodos={onChangeAusenteTodos}
                 onGuardarNotas={guardarNotas}
               />
             )}

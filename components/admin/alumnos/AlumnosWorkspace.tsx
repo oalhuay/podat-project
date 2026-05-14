@@ -194,6 +194,7 @@ type NotasPanelProps = {
   onCargarNotas: () => Promise<void>;
   onChangeNota: (alumnoId: number, nota: string) => void;
   onChangeAusente: (alumnoId: number, checked: boolean) => void;
+  onChangeAusenteTodos: (checked: boolean) => void;
   onGuardarNotas: () => Promise<void>;
 };
 
@@ -210,8 +211,13 @@ export function NotasPanel({
   onCargarNotas,
   onChangeNota,
   onChangeAusente,
+  onChangeAusenteTodos,
   onGuardarNotas,
 }: NotasPanelProps) {
+  const alumnosHabilitados = notasRows.filter((row) => row.habilitado);
+  const allAusentes =
+    alumnosHabilitados.length > 0 && alumnosHabilitados.every((row) => row.ausente);
+
   return (
     <div className="space-y-4 rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/30">
       <div className="grid gap-3 md:grid-cols-3">
@@ -271,7 +277,18 @@ export function NotasPanel({
                   <th className="p-3 text-left">Apellido</th>
                   <th className="p-3 text-left">Nombre</th>
                   <th className="p-3 text-left">Nota (1-10)</th>
-                  <th className="p-3 text-left">Ausente</th>
+                  <th className="p-3 text-left">
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={allAusentes}
+                        disabled={alumnosHabilitados.length === 0 || isLoadingNotas}
+                        onChange={(event) => onChangeAusenteTodos(event.target.checked)}
+                        aria-label="Marcar ausente a todos los alumnos habilitados"
+                      />
+                      <span>Ausente</span>
+                    </label>
+                  </th>
                   <th className="p-3 text-left">Alerta</th>
                 </tr>
               </thead>

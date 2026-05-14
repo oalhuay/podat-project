@@ -392,6 +392,25 @@ export function useNotasWorkflow({
     );
   };
 
+  const onChangeAusenteTodos = (checked: boolean) => {
+    setNotasRows((prev) =>
+      prev.map((row) => {
+        if (!row.habilitado) return row;
+
+        const nextNota = checked ? "" : row.nota;
+        const alert = getAlertaCalificacion(tipoEvaluacion, parseNotaInput(nextNota), checked);
+
+        return {
+          ...row,
+          ausente: checked,
+          nota: nextNota,
+          alertaEstado: alert.estado,
+          alertaMensaje: alert.mensaje,
+        };
+      })
+    );
+  };
+
   const cargarNotas = async () => {
     if (!hasCursoConfigurado) {
       setStatusMessage({
@@ -646,6 +665,7 @@ export function useNotasWorkflow({
     onTipoEvaluacionChange,
     onChangeNota,
     onChangeAusente,
+    onChangeAusenteTodos,
     cargarNotas,
     guardarNotas,
   };
