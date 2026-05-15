@@ -5,11 +5,7 @@ import Link from "next/link";
 import { useAuth } from "@/app/hooks/useAuth";
 import StatusBanner from "@/components/admin/StatusBanner";
 import { getUserProfileViewModel } from "@/lib/auth/getUserProfileViewModel";
-import {
-  extractMateriasFromAssignments,
-  getMateriaAssignmentsForUser,
-  type Materia,
-} from "@/lib/materias";
+import { getAccessibleMaterias, type Materia } from "@/lib/materias";
 import { supabase } from "@/lib/supabase";
 
 type StatusMessage = {
@@ -89,7 +85,7 @@ export default function PerfilPage() {
     const loadProfileData = async () => {
       const userId = user?.id;
       if (isLoadingProfile) return;
-      if (!userId) {
+      if (!userId || !role) {
         setStatusMessage({
           type: "info",
           text: "Inicie sesión para ver la información de su perfil.",
@@ -98,8 +94,8 @@ export default function PerfilPage() {
       }
 
       try {
-        const assignments = await getMateriaAssignmentsForUser(userId);
-        setAssignedSubjects(extractMateriasFromAssignments(assignments));
+        const materias = await getAccessibleMaterias(userId, role);
+        setAssignedSubjects(materias);
       } catch (error: unknown) {
         const message =
           typeof error === "object" && error !== null && "message" in error
@@ -117,7 +113,7 @@ export default function PerfilPage() {
     }, 0);
 
     return () => window.clearTimeout(timeoutId);
-  }, [isLoadingProfile, user?.id]);
+  }, [isLoadingProfile, role, user?.id]);
 
   const shortcuts =
     role === "docente"

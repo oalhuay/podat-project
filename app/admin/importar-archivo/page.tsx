@@ -20,7 +20,7 @@ export default function ImportarArchivoDocentePage() {
     () => ({
       missingMateria:
         "El archivo debe incluir la materia en la columna o encabezado del bloque.",
-      missingYear: "El archivo debe incluir el aÃ±o para cada fila o columna de datos.",
+      missingYear: "El archivo debe incluir el año para cada fila o columna de datos.",
     }),
     []
   );
@@ -39,11 +39,6 @@ export default function ImportarArchivoDocentePage() {
     aceptarImportacion,
   } = useEstadisticasImport({
     materias,
-    messages: {
-      missingMateria:
-        "El archivo debe incluir la materia en la columna o encabezado del bloque.",
-      missingYear: "El archivo debe incluir el año para cada fila o columna de datos.",
-    },
     messages: importMessages,
     onStatusMessage: setStatusMessage,
   });

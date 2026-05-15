@@ -71,9 +71,10 @@ Los archivos dentro de `supabase/` documentan parte de la evolución del esquema
 - `estadisticas.sql`
 - `materias_docentes.sql`
 - `materias_add_codigo.sql`
-- `remove_comisiones_model.sql`
+- `final_schema_alignment.sql`
 
-Conviene revisar y consolidar estos scripts antes de desplegar en un entorno nuevo.
+`remove_comisiones_model.sql` queda como migración histórica del cambio desde `comisiones`
+hacia el modelo actual por `materia_id + anio`.
 
 ## Estado actual del proyecto
 

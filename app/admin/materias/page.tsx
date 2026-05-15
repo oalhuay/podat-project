@@ -343,7 +343,6 @@ export default function MateriasAdminPage() {
       const { error } = await supabase.from("materias_docentes").insert({
         materia_id: Number(selectedMateriaId),
         user_id: selectedDocenteId,
-        comision: null,
       });
       if (error) throw error;
 

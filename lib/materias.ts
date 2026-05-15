@@ -11,7 +11,6 @@ export type MateriaDocenteAssignment = {
   id: number;
   materia_id: number;
   user_id?: string;
-  comision: string | null;
   materias?: Materia | Materia[] | null;
 };
 
@@ -50,7 +49,7 @@ export const getAccessibleMaterias = async (
 
   const { data, error } = await supabase
     .from("materias_docentes")
-    .select("id, materia_id, user_id, comision, materias(id, nombre, codigo)")
+    .select("id, materia_id, user_id, materias(id, nombre, codigo)")
     .eq("user_id", userId)
     .order("id", { ascending: false });
 
@@ -61,18 +60,3 @@ export const getAccessibleMaterias = async (
   return extractMateriasFromAssignments((data ?? []) as MateriaDocenteAssignment[]);
 };
 
-export const getMateriaAssignmentsForUser = async (
-  userId: string
-): Promise<MateriaDocenteAssignment[]> => {
-  const { data, error } = await supabase
-    .from("materias_docentes")
-    .select("id, materia_id, user_id, comision, materias(id, nombre, codigo)")
-    .eq("user_id", userId)
-    .order("id", { ascending: false });
-
-  if (error) {
-    throw error;
-  }
-
-  return (data ?? []) as MateriaDocenteAssignment[];
-};
