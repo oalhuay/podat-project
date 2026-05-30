@@ -41,7 +41,7 @@ export default function AdminSidebar({
         className
       )}
     >
-      <div className="admin-sidebar-scroll flex min-h-0 w-full flex-col overflow-y-auto overscroll-contain p-5 [-webkit-overflow-scrolling:touch]">
+      <div className="admin-sidebar-scroll m-2 flex min-h-0 w-[calc(100%-1rem)] flex-1 flex-col overflow-y-auto overscroll-contain p-3 pr-4 [-webkit-overflow-scrolling:touch]">
         <div className="shrink-0 border-b border-slate-100 pb-5">
           <div className="flex items-center gap-3">
             <Link
@@ -123,7 +123,7 @@ export default function AdminSidebar({
           })}
         </nav>
 
-        <div className="mt-6 shrink-0 xl:fixed xl:right-8 xl:top-8 xl:z-50 xl:mt-0">
+        <div className="mt-6 flex shrink-0 justify-center">
           <ThemeToggle />
         </div>
 
