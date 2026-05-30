@@ -71,7 +71,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       )}
 
       <div className="mx-auto flex max-w-[1600px] flex-col gap-6 px-4 py-4 sm:px-6 xl:flex-row xl:px-8 xl:py-6">
-        <AdminSidebar className="hidden xl:sticky xl:top-6 xl:z-40 xl:block xl:w-80" />
+        <AdminSidebar className="hidden xl:sticky xl:top-6 xl:z-40 xl:flex xl:w-80" />
         <div className="min-w-0 flex-1">
           <div className="rounded-[2rem] border border-white/70 bg-white p-6 shadow-xl shadow-slate-200/40 sm:p-8">
             {children}

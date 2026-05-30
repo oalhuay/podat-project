@@ -37,11 +37,11 @@ export default function AdminSidebar({
   return (
     <aside
       className={cx(
-        "flex min-h-[calc(100vh-2rem)] w-full flex-col rounded-[2rem] border border-slate-200 bg-white/95 p-5 shadow-xl shadow-slate-200/60 xl:h-[calc(100vh-3rem)]",
+        "flex h-[calc(100dvh-2rem)] max-h-[calc(100dvh-2rem)] w-full flex-col overflow-y-auto overscroll-contain rounded-[2rem] border border-slate-200 bg-white/95 p-5 shadow-xl shadow-slate-200/60 [-webkit-overflow-scrolling:touch] [scrollbar-gutter:stable] [scrollbar-width:thin] [scrollbar-color:rgba(93,154,212,0.5)_transparent] xl:h-[calc(100dvh-3rem)] xl:max-h-[calc(100dvh-3rem)] [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#5D9AD4]/40 [&::-webkit-scrollbar-track]:bg-transparent",
         className
       )}
     >
-      <div className="border-b border-slate-100 pb-5">
+      <div className="shrink-0 border-b border-slate-100 pb-5">
         <div className="flex items-center gap-3">
           <Link
             href="/admin/estadisticas/dashboard"
@@ -64,7 +64,7 @@ export default function AdminSidebar({
       <Link
         href="/admin/perfil"
         onClick={onNavigate}
-        className="mt-5 block rounded-[1.75rem] bg-[linear-gradient(145deg,_rgba(93,154,212,0.14),_rgba(251,197,88,0.18))] p-4 transition-transform hover:-translate-y-0.5"
+        className="mt-5 block shrink-0 rounded-[1.75rem] bg-[linear-gradient(145deg,_rgba(93,154,212,0.14),_rgba(251,197,88,0.18))] p-4 transition-transform hover:-translate-y-0.5"
       >
         <div className="flex items-center gap-3">
           <ProfileAvatar
@@ -86,7 +86,7 @@ export default function AdminSidebar({
         </div>
       </Link>
 
-      <nav className="mt-6 flex-1 space-y-2">
+      <nav className="mt-6 shrink-0 space-y-2 pr-1">
         {navItems.map((item) => {
           const isActive =
             pathname === item.href ||
@@ -122,11 +122,11 @@ export default function AdminSidebar({
         })}
       </nav>
 
-      <div className="mt-6 xl:fixed xl:right-8 xl:top-8 xl:z-50 xl:mt-0">
+      <div className="mt-6 shrink-0 xl:fixed xl:right-8 xl:top-8 xl:z-50 xl:mt-0">
         <ThemeToggle />
       </div>
 
-      <div className="mt-auto grid grid-cols-2 gap-3 border-t border-slate-100 pt-5">
+      <div className="mt-5 grid shrink-0 grid-cols-2 gap-3 border-t border-slate-100 pt-5">
         <button type="button" onClick={() => router.push("/")} className={ui.secondaryButton}>
           Inicio
         </button>
