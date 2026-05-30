@@ -9,12 +9,11 @@ import {
   LineElement,
   BarElement,
   ArcElement,
-  RadialLinearScale,
   Tooltip,
   Legend,
   Filler,
 } from "chart.js";
-import { Bar, Chart, Doughnut, Line, Radar, Scatter } from "react-chartjs-2";
+import { Bar, Chart, Doughnut, Line } from "react-chartjs-2";
 import { useAuth } from "@/app/hooks/useAuth";
 import { useTheme } from "@/app/hooks/useTheme";
 import { supabase } from "@/lib/supabase";
@@ -33,7 +32,6 @@ ChartJS.register(
   LineElement,
   BarElement,
   ArcElement,
-  RadialLinearScale,
   Tooltip,
   Legend,
   Filler
@@ -55,10 +53,7 @@ type ChartKey =
   | "linea"
   | "area"
   | "estado"
-  | "ranking"
   | "genero"
-  | "radar"
-  | "dispersion"
   | "combinado";
 
 type ChartSelections = Record<ChartKey, number | "">;
@@ -68,10 +63,7 @@ const CHART_KEYS: ChartKey[] = [
   "linea",
   "area",
   "estado",
-  "ranking",
   "genero",
-  "radar",
-  "dispersion",
   "combinado",
 ];
 
@@ -106,10 +98,7 @@ const createInitialSelections = (materiaId: number | ""): ChartSelections => ({
   linea: materiaId,
   area: materiaId,
   estado: materiaId,
-  ranking: materiaId,
   genero: materiaId,
-  radar: materiaId,
-  dispersion: materiaId,
   combinado: materiaId,
 });
 
@@ -357,12 +346,6 @@ export default function EstadisticasDashboardPage() {
   const totalInscriptos = (materiaId: number | "", year: number) =>
     getCount(materiaId, year, "VAR_INS") + getCount(materiaId, year, "MUJ_INS");
 
-  const totalRegulares = (materiaId: number | "", year: number) =>
-    getCount(materiaId, year, "VAR_REG") + getCount(materiaId, year, "MUJ_REG");
-
-  const totalRecursantes = (materiaId: number | "", year: number) =>
-    getCount(materiaId, year, "VAR_REC") + getCount(materiaId, year, "MUJ_REC");
-
   const handleSelectionChange = (chartKey: ChartKey, value: number | "") => {
     setChartSelections((current) => ({
       ...current,
@@ -445,36 +428,6 @@ export default function EstadisticasDashboardPage() {
     },
   } as const;
 
-  const radarOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        position: "bottom" as const,
-        labels: {
-          color: chartPalette.text,
-        },
-      },
-    },
-    scales: {
-      r: {
-        angleLines: {
-          color: chartPalette.grid,
-        },
-        grid: {
-          color: chartPalette.grid,
-        },
-        pointLabels: {
-          color: chartPalette.mutedText,
-        },
-        ticks: {
-          color: chartPalette.mutedText,
-          backdropColor: chartPalette.surface,
-        },
-      },
-    },
-  } as const;
-
   const doughnutOptions = {
     responsive: true,
     maintainAspectRatio: false,
@@ -483,47 +436,6 @@ export default function EstadisticasDashboardPage() {
         position: "bottom" as const,
         labels: {
           color: chartPalette.text,
-        },
-      },
-    },
-  } as const;
-
-  const scatterOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        position: "bottom" as const,
-        labels: {
-          color: chartPalette.text,
-        },
-      },
-    },
-    scales: {
-      x: {
-        title: {
-          display: true,
-          text: "Regulares",
-          color: chartPalette.text,
-        },
-        ticks: {
-          color: chartPalette.mutedText,
-        },
-        grid: {
-          color: chartPalette.grid,
-        },
-      },
-      y: {
-        title: {
-          display: true,
-          text: "Recursantes",
-          color: chartPalette.text,
-        },
-        ticks: {
-          color: chartPalette.mutedText,
-        },
-        grid: {
-          color: chartPalette.grid,
         },
       },
     },
@@ -554,16 +466,9 @@ export default function EstadisticasDashboardPage() {
   const estadoMateriaId = chartSelections.estado;
   const estadoYear = focusYearForMateria(estadoMateriaId);
   const estadoYears = yearsForMateria(estadoMateriaId);
-  const rankingMateriaId = chartSelections.ranking;
-  const rankingYears = yearsForMateria(rankingMateriaId);
   const generoMateriaId = chartSelections.genero;
   const generoYear = focusYearForMateria(generoMateriaId);
   const generoYears = yearsForMateria(generoMateriaId);
-  const radarMateriaId = chartSelections.radar;
-  const radarYear = focusYearForMateria(radarMateriaId);
-  const radarYears = yearsForMateria(radarMateriaId);
-  const dispersionMateriaId = chartSelections.dispersion;
-  const dispersionYears = yearsForMateria(dispersionMateriaId);
   const combinadoMateriaId = chartSelections.combinado;
   const combinadoYears = yearsForMateria(combinadoMateriaId);
 
@@ -730,60 +635,6 @@ export default function EstadisticasDashboardPage() {
           )}
         </ChartCard>
 
-        <ChartCard
-          title="Ranking de indicadores"
-          description="Comparación histórica de porcentajes clave por materia."
-          materiaId={rankingMateriaId}
-          materias={materias}
-          onMateriaChange={(value) => handleSelectionChange("ranking", value)}
-        >
-          {renderLoadingOrEmpty(rankingMateriaId, rankingYears) ?? (
-            <Bar
-              data={{
-                labels: rankingYears.map(String),
-                datasets: [
-                  {
-                    label: "% Varones Regulares",
-                    data: rankingYears.map(
-                      (year) =>
-                        getIndicatorValue(
-                          byYearForMateria(rankingMateriaId),
-                          year,
-                          "PCT_VAR_REG"
-                        ) ?? 0
-                    ),
-                    backgroundColor: "rgba(93, 154, 212, 0.75)",
-                  },
-                  {
-                    label: "% Mujeres Regulares",
-                    data: rankingYears.map(
-                      (year) =>
-                        getIndicatorValue(
-                          byYearForMateria(rankingMateriaId),
-                          year,
-                          "PCT_MUJ_REG"
-                        ) ?? 0
-                    ),
-                    backgroundColor: "rgba(16, 185, 129, 0.75)",
-                  },
-                  {
-                    label: "% Mujeres Recursantes",
-                    data: rankingYears.map(
-                      (year) =>
-                        getIndicatorValue(
-                          byYearForMateria(rankingMateriaId),
-                          year,
-                          "PCT_MUJ_REC"
-                        ) ?? 0
-                    ),
-                    backgroundColor: "rgba(244, 63, 94, 0.75)",
-                  },
-                ],
-              }}
-              options={barChartOptions}
-            />
-          )}
-        </ChartCard>
 
         <ChartCard
           title="Proporción de género"
@@ -813,68 +664,6 @@ export default function EstadisticasDashboardPage() {
           )}
         </ChartCard>
 
-        <ChartCard
-          title="Recursantes vs regularidad"
-          description={`Comparación radial del año ${radarYear}.`}
-          materiaId={radarMateriaId}
-          materias={materias}
-          onMateriaChange={(value) => handleSelectionChange("radar", value)}
-        >
-          {renderLoadingOrEmpty(radarMateriaId, radarYears) ?? (
-            <Radar
-              data={{
-                labels: ["Regulares", "Recursantes"],
-                datasets: [
-                  {
-                    label: "Varones",
-                    data: [
-                      getCount(radarMateriaId, radarYear, "VAR_REG"),
-                      getCount(radarMateriaId, radarYear, "VAR_REC"),
-                    ],
-                    backgroundColor: "rgba(93, 154, 212, 0.3)",
-                    borderColor: "#5D9AD4",
-                  },
-                  {
-                    label: "Mujeres",
-                    data: [
-                      getCount(radarMateriaId, radarYear, "MUJ_REG"),
-                      getCount(radarMateriaId, radarYear, "MUJ_REC"),
-                    ],
-                    backgroundColor: "rgba(251, 197, 88, 0.3)",
-                    borderColor: "#FBC558",
-                  },
-                ],
-              }}
-              options={radarOptions}
-            />
-          )}
-        </ChartCard>
-
-        <ChartCard
-          title="Dispersión académica"
-          description="Relación entre regulares y recursantes para cada año disponible."
-          materiaId={dispersionMateriaId}
-          materias={materias}
-          onMateriaChange={(value) => handleSelectionChange("dispersion", value)}
-        >
-          {renderLoadingOrEmpty(dispersionMateriaId, dispersionYears) ?? (
-            <Scatter
-              data={{
-                datasets: [
-                  {
-                    label: "Años",
-                    data: dispersionYears.map((year) => ({
-                      x: totalRegulares(dispersionMateriaId, year),
-                      y: totalRecursantes(dispersionMateriaId, year),
-                    })),
-                    backgroundColor: "rgba(93, 154, 212, 0.8)",
-                  },
-                ],
-              }}
-              options={scatterOptions}
-            />
-          )}
-        </ChartCard>
 
         <ChartCard
           title="Vista combinada"
