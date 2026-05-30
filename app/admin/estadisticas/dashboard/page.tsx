@@ -13,9 +13,11 @@ import {
   Tooltip,
   Legend,
   Filler,
+  RadarController,
+  BubbleController,
   type ScriptableContext,
 } from "chart.js";
-import { Bar, Chart, Doughnut, Line, PolarArea } from "react-chartjs-2";
+import { Bar, Bubble, Doughnut, Line, PolarArea, Radar } from "react-chartjs-2";
 import { useAuth } from "@/app/hooks/useAuth";
 import { useTheme } from "@/app/hooks/useTheme";
 import { supabase } from "@/lib/supabase";
@@ -38,6 +40,8 @@ ChartJS.register(
   Tooltip,
   Legend,
   Filler,
+  RadarController,
+  BubbleController,
 );
 
 type StatusMessage = {
@@ -158,120 +162,9 @@ const createRadialGradient = (
   return gradient;
 };
 
-type LineAnimationContext = ScriptableContext<"line"> & {
-  xStarted?: boolean;
-  yStarted?: boolean;
-};
-
-const getPreviousY = (context: LineAnimationContext) => {
-  const yScale = context.chart.scales.y;
-  if (context.dataIndex === 0 || !yScale) {
-    return yScale?.getPixelForValue(0) ?? 0;
-  }
-
-  return context.chart
-    .getDatasetMeta(context.datasetIndex)
-    .data[context.dataIndex - 1]?.getProps(["y"], true).y;
-};
-
-const createProgressiveLineAnimation = (pointCount: number) => {
-  const totalDuration = 1800;
-  const delayBetweenPoints = pointCount > 0 ? totalDuration / pointCount : 0;
-
-  return {
-    x: {
-      type: "number" as const,
-      easing: "linear" as const,
-      duration: delayBetweenPoints,
-      from: Number.NaN,
-      delay(context: LineAnimationContext) {
-        if (context.type !== "data" || context.xStarted) return 0;
-        context.xStarted = true;
-        return context.dataIndex * delayBetweenPoints;
-      },
-    },
-    y: {
-      type: "number" as const,
-      easing: "linear" as const,
-      duration: delayBetweenPoints,
-      from: getPreviousY,
-      delay(context: LineAnimationContext) {
-        if (context.type !== "data" || context.yStarted) return 0;
-        context.yStarted = true;
-        return context.dataIndex * delayBetweenPoints;
-      },
-    },
-  };
-};
-
-const easeOutQuart = (value: number) => 1 - Math.pow(1 - value, 4);
-
-const createProgressiveEasingAnimation = (pointCount: number) => {
-  const totalDuration = 2200;
-  const safePointCount = Math.max(pointCount, 1);
-  const duration = (context: LineAnimationContext) =>
-    (easeOutQuart(context.dataIndex / safePointCount) * totalDuration) /
-    safePointCount;
-  const delay = (context: LineAnimationContext) =>
-    easeOutQuart(context.dataIndex / safePointCount) * totalDuration;
-
-  return {
-    x: {
-      type: "number" as const,
-      easing: "linear" as const,
-      duration,
-      from: Number.NaN,
-      delay(context: LineAnimationContext) {
-        if (context.type !== "data" || context.xStarted) return 0;
-        context.xStarted = true;
-        return delay(context);
-      },
-    },
-    y: {
-      type: "number" as const,
-      easing: "linear" as const,
-      duration,
-      from: getPreviousY,
-      delay(context: LineAnimationContext) {
-        if (context.type !== "data" || context.yStarted) return 0;
-        context.yStarted = true;
-        return delay(context);
-      },
-    },
-  };
-};
-
-const createDelayedAnimation = <
-  TContext extends ScriptableContext<"bar"> | ScriptableContext<"line"> =
-    ScriptableContext<"bar">,
->(
-  step = 180,
-) => {
-  let delayed = false;
-
-  return {
-    duration: 900,
-    easing: "easeOutQuart" as const,
-    onComplete: () => {
-      delayed = true;
-    },
-    delay(context: TContext) {
-      if (context.type === "data" && context.mode === "default" && !delayed) {
-        return context.dataIndex * step + context.datasetIndex * 80;
-      }
-
-      return 0;
-    },
-  };
-};
-
-const dropYAnimation = {
-  y: {
-    type: "number" as const,
-    easing: "easeInOutElastic" as const,
-    duration: 1200,
-    from: 0,
-  },
+const standardFastAnimation = {
+  duration: 600,
+  easing: "easeOutQuart" as const,
 };
 
 const buildByYear = (rows: StatRow[]) => {
@@ -814,12 +707,7 @@ export default function EstadisticasDashboardPage() {
   const doughnutOptions = {
     responsive: true,
     maintainAspectRatio: false,
-    animation: {
-      animateRotate: true,
-      animateScale: true,
-      duration: 1400,
-      easing: "easeOutBounce" as const,
-    },
+    animation: standardFastAnimation,
     plugins: {
       legend: {
         position: "bottom" as const,
@@ -833,12 +721,7 @@ export default function EstadisticasDashboardPage() {
   const estadoRadialOptions = {
     responsive: true,
     maintainAspectRatio: false,
-    animation: {
-      animateRotate: true,
-      animateScale: true,
-      duration: 1600,
-      easing: "easeOutQuart" as const,
-    },
+    animation: standardFastAnimation,
     plugins: {
       legend: {
         position: "bottom" as const,
@@ -868,6 +751,98 @@ export default function EstadisticasDashboardPage() {
     },
   } as const;
 
+  const radarOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: standardFastAnimation,
+    plugins: {
+      legend: {
+        position: "bottom" as const,
+        labels: {
+          color: chartPalette.text,
+        },
+      },
+    },
+    scales: {
+      r: {
+        beginAtZero: true,
+        ticks: {
+          color: chartPalette.mutedText,
+          backdropColor: "transparent",
+          precision: 0,
+        },
+        grid: {
+          color: chartPalette.grid,
+        },
+        angleLines: {
+          color: chartPalette.grid,
+        },
+        pointLabels: {
+          color: chartPalette.mutedText,
+          font: {
+            size: 11,
+          },
+        },
+      },
+    },
+  } as const;
+
+  const bubbleOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: standardFastAnimation,
+    plugins: {
+      legend: {
+        display: false,
+      },
+      tooltip: {
+        callbacks: {
+          label: (context: any) => {
+            const dataPoint = context.raw;
+            const year = dataPoint.x;
+            const total = dataPoint.y;
+            const radius = dataPoint.r;
+            const retention = Math.round(((radius - 4) / 15) * 100);
+            return `Año ${year}: ${total} inscriptos (Retención: ${retention}%)`;
+          },
+        },
+      },
+    },
+    scales: {
+      x: {
+        ticks: {
+          color: chartPalette.mutedText,
+          precision: 0,
+        },
+        grid: {
+          color: chartPalette.grid,
+        },
+      },
+      y: {
+        beginAtZero: true,
+        ticks: {
+          color: chartPalette.mutedText,
+        },
+        grid: {
+          color: chartPalette.grid,
+        },
+      },
+    },
+  } as const;
+
+  const getBubbleData = (materiaId: number | "", years: number[]) => {
+    return years.map((year) => {
+      const ins = totalInscriptos(materiaId, year);
+      const reg = getCount(materiaId, year, "VAR_REG") + getCount(materiaId, year, "MUJ_REG");
+      const retention = ins > 0 ? reg / ins : 0;
+      return {
+        x: year,
+        y: ins,
+        r: Math.round(retention * 15) + 4,
+      };
+    });
+  };
+
   const renderLoadingOrEmpty = (materiaId: number | "", years: number[]) => {
     if (isLoadingStats) {
       return <EmptyChartState text="Cargando gráfico..." />;
@@ -888,12 +863,13 @@ export default function EstadisticasDashboardPage() {
     return null;
   };
 
+  const estadoYear = Number(selectedYear);
   const lineaMateriaId = chartSelections.linea;
   const lineaYears = yearsForMateria(lineaMateriaId);
   const areaMateriaId = chartSelections.area;
   const areaYears = yearsForMateria(areaMateriaId);
+  const areaHasSelectedYear = areaYears.includes(estadoYear);
   const estadoMateriaId = chartSelections.estado;
-  const estadoYear = Number(selectedYear);
   const estadoYears = yearsForMateria(estadoMateriaId);
   const estadoHasSelectedYear = estadoYears.includes(estadoYear);
   const estadoChartValues = ESTADO_ALUMNADO_METRICS.map((metric) => ({
@@ -980,52 +956,57 @@ export default function EstadisticasDashboardPage() {
               }}
               options={{
                 ...chartOptionsFor("VAR_INS", true),
-                animations: createProgressiveLineAnimation(lineaYears.length),
+                animation: standardFastAnimation,
               }}
             />
           )}
         </ChartCard>
 
         <ChartCard
-          title="Inscriptos acumulados"
-          description="Vista de área para seguir la presencia histórica por materia."
+          title="Distribución y rendimiento"
+          description={`Comparativa de inscripción, regularidad y recursado por género del año ${estadoYear}.`}
           materiaId={areaMateriaId}
           materias={materias}
           onMateriaChange={(value) => handleSelectionChange("area", value)}
         >
-          {renderLoadingOrEmpty(areaMateriaId, areaYears) ?? (
-            <Line
+          {isLoadingStats ? (
+            <EmptyChartState text="Cargando gráfico..." />
+          ) : areaMateriaId === "" ? (
+            <EmptyChartState text="Selecciona una materia para visualizar el gráfico." />
+          ) : !areaHasSelectedYear ? (
+            <EmptyChartState text={`No hay datos cargados para el año ${estadoYear}.`} />
+          ) : (
+            <Radar
               data={{
-                labels: areaYears.map(String),
+                labels: ["Inscriptos", "Regulares", "Recursantes"],
                 datasets: [
                   {
                     label: "Varones",
-                    data: areaYears.map((year) =>
-                      getCount(areaMateriaId, year, "VAR_INS"),
-                    ),
+                    data: [
+                      getCount(areaMateriaId, estadoYear, "VAR_INS"),
+                      getCount(areaMateriaId, estadoYear, "VAR_REG"),
+                      getCount(areaMateriaId, estadoYear, "VAR_REC"),
+                    ],
                     borderColor: "#5D9AD4",
-                    backgroundColor: "rgba(93, 154, 212, 0.25)",
-                    fill: true,
-                    pointRadius: 2,
-                    tension: 0.3,
+                    backgroundColor: "rgba(93, 154, 212, 0.2)",
+                    borderWidth: 2,
+                    pointBackgroundColor: "#5D9AD4",
                   },
                   {
                     label: "Mujeres",
-                    data: areaYears.map((year) =>
-                      getCount(areaMateriaId, year, "MUJ_INS"),
-                    ),
+                    data: [
+                      getCount(areaMateriaId, estadoYear, "MUJ_INS"),
+                      getCount(areaMateriaId, estadoYear, "MUJ_REG"),
+                      getCount(areaMateriaId, estadoYear, "MUJ_REC"),
+                    ],
                     borderColor: "#FBC558",
-                    backgroundColor: "rgba(251, 197, 88, 0.25)",
-                    fill: true,
-                    pointRadius: 2,
-                    tension: 0.3,
+                    backgroundColor: "rgba(251, 197, 88, 0.2)",
+                    borderWidth: 2,
+                    pointBackgroundColor: "#FBC558",
                   },
                 ],
               }}
-              options={{
-                ...chartOptionsFor("VAR_INS", true),
-                animations: createProgressiveEasingAnimation(areaYears.length),
-              }}
+              options={radarOptions}
             />
           )}
         </ChartCard>
@@ -1036,15 +1017,7 @@ export default function EstadisticasDashboardPage() {
           materiaId={estadoMateriaId}
           materias={materias}
           onMateriaChange={(value) => handleSelectionChange("estado", value)}
-          footer={
-            estadoHasSelectedYear && (
-              <VisibleDataTable
-                title={`Datos visibles ${estadoYear}`}
-                columns={["Indicador", "Valor"]}
-                rows={estadoVisibleRows}
-              />
-            )
-          }
+
         >
           {isLoadingStats ? (
             <EmptyChartState text="Cargando gráfico..." />
@@ -1122,7 +1095,7 @@ export default function EstadisticasDashboardPage() {
               }}
               options={{
                 ...percentStackedBarOptions,
-                animation: createDelayedAnimation(140),
+                animation: standardFastAnimation,
               }}
             />
           )}
@@ -1157,44 +1130,26 @@ export default function EstadisticasDashboardPage() {
         </ChartCard>
 
         <ChartCard
-          title="Vista combinada"
-          description="Cruce histórico entre inscriptos totales y mujeres inscriptas."
+          title="Evolución y retención histórica"
+          description="Relación anual entre inscriptos totales (Y), año (X) y tasa de retención (tamaño de la burbuja)."
           materiaId={combinadoMateriaId}
           materias={materias}
           onMateriaChange={(value) => handleSelectionChange("combinado", value)}
         >
           {renderLoadingOrEmpty(combinadoMateriaId, combinadoYears) ?? (
-            <Chart
-              type="bar"
+            <Bubble
               data={{
-                labels: combinadoYears.map(String),
                 datasets: [
                   {
-                    type: "bar" as const,
-                    label: "Total Inscriptos",
-                    data: combinadoYears.map((year) =>
-                      totalInscriptos(combinadoMateriaId, year),
-                    ),
-                    backgroundColor: "rgba(93, 154, 212, 0.5)",
-                    borderRadius: 8,
-                  },
-                  {
-                    type: "line" as const,
-                    label: "Mujeres Inscriptas",
-                    data: combinadoYears.map((year) =>
-                      getCount(combinadoMateriaId, year, "MUJ_INS"),
-                    ),
-                    borderColor: "#FBC558",
-                    backgroundColor: "rgba(251, 197, 88, 0.2)",
-                    tension: 0.3,
-                    pointRadius: 2,
+                    label: "Matrícula vs Retención",
+                    data: getBubbleData(combinadoMateriaId, combinadoYears),
+                    backgroundColor: "rgba(93, 154, 212, 0.6)",
+                    borderColor: "#5D9AD4",
+                    borderWidth: 2,
                   },
                 ],
               }}
-              options={{
-                ...barChartOptions,
-                animations: dropYAnimation,
-              }}
+              options={bubbleOptions}
             />
           )}
         </ChartCard>
