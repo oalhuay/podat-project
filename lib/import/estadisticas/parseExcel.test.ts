@@ -72,11 +72,11 @@ describe("parseEstadisticasFromMatrix", () => {
   it("parsea el formato docente por bloques de materia y años en filas", () => {
     const matrix = [
       [],
-      [null, "SISTEMAS Y ORGANIZACIONES", "Año", "Varones Inscriptos", "Varones Regulares", "Mujeres Inscriptas", "Mujeres Regulares"],
+      [null, "SISTEMAS Y ORGANIZACIONES", "Ano", "Varones Inscriptos", "Varones Regulares", "Mujeres Inscriptas", "Mujeres Regulares"],
       [null, "SISTEMAS Y ORGANIZACIONES", "2010", "110", "44", "12", "10"],
       [null, "SISTEMAS Y ORGANIZACIONES", "2011", "105", "40", "10", "9"],
       [],
-      [null, "INGENIERIA DE SOFTWARE", "Año", "Varones Inscriptos", "Varones Regulares", "Mujeres Inscriptas", "Mujeres Regulares"],
+      [null, "INGENIERIA DE SOFTWARE", "Ano", "Varones Inscriptos", "Varones Regulares", "Mujeres Inscriptas", "Mujeres Regulares"],
       [null, "INGENIERIA DE SOFTWARE", "2010", "115", "42", "14", "12"],
     ];
 
@@ -153,7 +153,102 @@ describe("parseEstadisticasFromMatrix", () => {
         anio: 2010,
         valor: 12,
       },
+      {
+        materia: "SISTEMAS Y ORGANIZACIONES",
+        indicador: "Varones Recursantes",
+        anio: 2010,
+        valor: 66,
+      },
+      {
+        materia: "SISTEMAS Y ORGANIZACIONES",
+        indicador: "Mujeres Recursantes",
+        anio: 2010,
+        valor: 2,
+      },
+      {
+        materia: "SISTEMAS Y ORGANIZACIONES",
+        indicador: "Varones Recursantes",
+        anio: 2011,
+        valor: 65,
+      },
+      {
+        materia: "SISTEMAS Y ORGANIZACIONES",
+        indicador: "Mujeres Recursantes",
+        anio: 2011,
+        valor: 1,
+      },
+      {
+        materia: "INGENIERIA DE SOFTWARE",
+        indicador: "Varones Recursantes",
+        anio: 2010,
+        valor: 73,
+      },
+      {
+        materia: "INGENIERIA DE SOFTWARE",
+        indicador: "Mujeres Recursantes",
+        anio: 2010,
+        valor: 2,
+      },
     ]);
+  });
+
+  it("no duplica recursantes si el Excel ya los trae", () => {
+    const matrix = [
+      [
+        null,
+        "INGENIERIA DE SOFTWARE",
+        "Ano",
+        "Varones Inscriptos",
+        "Varones Regulares",
+        "Varones Recursantes",
+      ],
+      [null, "INGENIERIA DE SOFTWARE", 2025, 45, 10, 30],
+    ];
+
+    const parsed = parseEstadisticasFromMatrix(matrix);
+
+    expect(parsed.filter((row) => row.indicador === "Varones Recursantes")).toEqual([
+      {
+        materia: "INGENIERIA DE SOFTWARE",
+        indicador: "Varones Recursantes",
+        anio: 2025,
+        valor: 30,
+      },
+    ]);
+  });
+
+  it("deriva cantidades a partir de porcentajes", () => {
+    const matrix = [
+      [],
+      [null, "SISTEMAS Y ORGANIZACIONES", "Ano", "Varones Inscriptos", "% Varones Regulares (s/inscriptos)", "Mujeres Inscriptas", "% Mujeres Regulares (s/inscriptas)"],
+      [null, "SISTEMAS Y ORGANIZACIONES", "2010", "100", "40", "50", "20"],
+    ];
+
+    const parsed = parseEstadisticasFromMatrix(matrix);
+
+    // Should derive Varones Regulares count as 40 (40% of 100)
+    expect(parsed.find((row) => row.indicador === "Varones Regulares")).toEqual({
+      materia: "SISTEMAS Y ORGANIZACIONES",
+      indicador: "Varones Regulares",
+      anio: 2010,
+      valor: 40,
+    });
+
+    // Should derive Mujeres Regulares count as 10 (20% of 50)
+    expect(parsed.find((row) => row.indicador === "Mujeres Regulares")).toEqual({
+      materia: "SISTEMAS Y ORGANIZACIONES",
+      indicador: "Mujeres Regulares",
+      anio: 2010,
+      valor: 10,
+    });
+
+    // Should also derive Recursantes since we now have both Inscriptos and Regulares counts
+    expect(parsed.find((row) => row.indicador === "Varones Recursantes")).toEqual({
+      materia: "SISTEMAS Y ORGANIZACIONES",
+      indicador: "Varones Recursantes",
+      anio: 2010,
+      valor: 60,
+    });
   });
 
   it("devuelve vacio cuando no encuentra encabezados", () => {

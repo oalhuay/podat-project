@@ -1,4 +1,5 @@
 import { readWorkbookMatrix } from "@/lib/import/excel/readWorkbookMatrix";
+import { getIndicatorFromLabel, type IndicatorCode } from "@/lib/estadisticas/catalog";
 
 export type ParsedEstadisticaRow = {
   materia: string | null;
@@ -69,6 +70,180 @@ const pickYear = (value: unknown): number | null => {
   if (year === null) return null;
   const truncated = Math.trunc(year);
   return truncated >= 1900 && truncated <= 3000 ? truncated : null;
+};
+
+const DERIVED_RECURSANTE_INDICATORS: Array<{
+  inscriptos: IndicatorCode;
+  regulares: IndicatorCode;
+  recursantes: IndicatorCode;
+  label: string;
+}> = [
+  {
+    inscriptos: "VAR_INS",
+    regulares: "VAR_REG",
+    recursantes: "VAR_REC",
+    label: "Varones Recursantes",
+  },
+  {
+    inscriptos: "MUJ_INS",
+    regulares: "MUJ_REG",
+    recursantes: "MUJ_REC",
+    label: "Mujeres Recursantes",
+  },
+];
+
+const DERIVED_PERCENTAGE_INDICATORS: Array<{
+  percentageCode: IndicatorCode;
+  baseCode: IndicatorCode;
+  countCode: IndicatorCode;
+  label: string;
+}> = [
+  {
+    percentageCode: "PCT_VAR_REG",
+    baseCode: "VAR_INS",
+    countCode: "VAR_REG",
+    label: "Varones Regulares",
+  },
+  {
+    percentageCode: "PCT_MUJ_REG",
+    baseCode: "MUJ_INS",
+    countCode: "MUJ_REG",
+    label: "Mujeres Regulares",
+  },
+  {
+    percentageCode: "PCT_VAR_REC",
+    baseCode: "VAR_INS",
+    countCode: "VAR_REC",
+    label: "Varones Recursantes",
+  },
+  {
+    percentageCode: "PCT_MUJ_REC",
+    baseCode: "MUJ_INS",
+    countCode: "MUJ_REC",
+    label: "Mujeres Recursantes",
+  },
+];
+
+const deriveCountsFromPercentages = (
+  rows: ParsedEstadisticaRow[]
+): ParsedEstadisticaRow[] => {
+  if (rows.length === 0) return rows;
+
+  const result = [...rows];
+  const byMateriaYear = new Map<
+    string,
+    {
+      materia: string | null;
+      anio: number;
+      values: Partial<Record<IndicatorCode, number>>;
+    }
+  >();
+
+  for (const row of rows) {
+    if (row.anio === null) continue;
+
+    const indicator = getIndicatorFromLabel(row.indicador);
+    if (!indicator) continue;
+
+    const key = `${row.materia ?? ""}|${row.anio}`;
+    const group =
+      byMateriaYear.get(key) ??
+      ({
+        materia: row.materia,
+        anio: row.anio,
+        values: {},
+      } satisfies {
+        materia: string | null;
+        anio: number;
+        values: Partial<Record<IndicatorCode, number>>;
+      });
+
+    group.values[indicator.code] = row.valor;
+    byMateriaYear.set(key, group);
+  }
+
+  byMateriaYear.forEach((group) => {
+    DERIVED_PERCENTAGE_INDICATORS.forEach((definition) => {
+      if (group.values[definition.countCode] !== undefined) return;
+
+      const percentage = group.values[definition.percentageCode];
+      const base = group.values[definition.baseCode];
+      if (percentage === undefined || base === undefined) return;
+
+      const count = Math.round((percentage / 100) * base);
+      if (!Number.isFinite(count) || count < 0) return;
+
+      result.push({
+        materia: group.materia,
+        indicador: definition.label,
+        anio: group.anio,
+        valor: count,
+      });
+    });
+  });
+
+  return result;
+};
+
+const addDerivedRecursantes = (
+  rows: ParsedEstadisticaRow[]
+): ParsedEstadisticaRow[] => {
+  if (rows.length === 0) return rows;
+
+  const result = [...rows];
+  const byMateriaYear = new Map<
+    string,
+    {
+      materia: string | null;
+      anio: number;
+      values: Partial<Record<IndicatorCode, number>>;
+    }
+  >();
+
+  for (const row of rows) {
+    if (row.anio === null) continue;
+
+    const indicator = getIndicatorFromLabel(row.indicador);
+    if (!indicator) continue;
+
+    const key = `${row.materia ?? ""}|${row.anio}`;
+    const group =
+      byMateriaYear.get(key) ??
+      ({
+        materia: row.materia,
+        anio: row.anio,
+        values: {},
+      } satisfies {
+        materia: string | null;
+        anio: number;
+        values: Partial<Record<IndicatorCode, number>>;
+      });
+
+    group.values[indicator.code] = row.valor;
+    byMateriaYear.set(key, group);
+  }
+
+  byMateriaYear.forEach((group) => {
+    DERIVED_RECURSANTE_INDICATORS.forEach((definition) => {
+      if (group.values[definition.recursantes] !== undefined) return;
+
+      const inscriptos = group.values[definition.inscriptos];
+      const regulares = group.values[definition.regulares];
+      if (inscriptos === undefined || regulares === undefined) return;
+
+      const recursantes = inscriptos - regulares;
+      if (!Number.isFinite(recursantes) || recursantes < 0) return;
+
+      result.push({
+        materia: group.materia,
+        indicador: definition.label,
+        anio: group.anio,
+        valor: recursantes,
+      });
+    });
+  });
+
+  return result;
 };
 
 const detectAllHeaderRows = (rows: unknown[][]) => {
@@ -213,7 +388,9 @@ export const parseEstadisticasFromMatrix = (
   matrix: unknown[][]
 ): ParsedEstadisticaRow[] => {
   const rowBasedRows = parseRowBasedRows(matrix);
-  if (rowBasedRows.length > 0) return rowBasedRows;
+  if (rowBasedRows.length > 0) {
+    return addDerivedRecursantes(deriveCountsFromPercentages(rowBasedRows));
+  }
 
   const headerInfos = detectAllHeaderRows(matrix);
   if (headerInfos.length === 0) return [];
@@ -256,7 +433,7 @@ export const parseEstadisticasFromMatrix = (
     }
   }
 
-  return rows;
+  return addDerivedRecursantes(deriveCountsFromPercentages(rows));
 };
 
 export const parseEstadisticasFromFile = async (
