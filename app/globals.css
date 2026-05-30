@@ -294,6 +294,15 @@ textarea:disabled {
   cursor: not-allowed;
 }
 
+.admin-sidebar-scroll {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.admin-sidebar-scroll::-webkit-scrollbar {
+  display: none;
+}
+
 .brand-mark {
   animation: brand-mark-enter 480ms cubic-bezier(0.22, 1, 0.36, 1);
   transform-origin: center;
