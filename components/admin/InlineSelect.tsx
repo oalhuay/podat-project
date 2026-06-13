@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { cx, ui } from "@/components/ui/styles";
 
 type SelectOption<T extends string> = {
   label: string;
@@ -59,7 +60,7 @@ export default function InlineSelect<T extends string>({
       <button
         type="button"
         onClick={() => setIsOpen((current) => !current)}
-        className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-left text-slate-900 shadow-sm outline-none transition-colors hover:border-slate-300 focus:border-[#5D9AD4]"
+        className={cx(ui.input, "flex items-center justify-between text-left")}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
       >

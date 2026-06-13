@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/lib/supabase";
 import StatusBanner from "@/components/admin/StatusBanner";
 import { readWorkbookMatrix } from "@/lib/import/excel/readWorkbookMatrix";
+import { supabase } from "@/lib/supabase";
 
 type Materia = {
   id: number;
@@ -57,7 +57,7 @@ const pickText = (value: unknown): string => {
 
 const parseMateriasFromMatrix = (matrix: unknown[][]): ParsedMateriaRow[] => {
   const materiaAliases = new Set(["materia", "nombremateria", "asignatura"]);
-  const codigoAliases = new Set(["codigo", "codigomateria", "codigodeMateria", "cod"]);
+  const codigoAliases = new Set(["codigo", "codigomateria", "codigodemateria", "cod"]);
 
   let headerRowIndex = -1;
   let materiaCol = -1;
@@ -83,9 +83,7 @@ const parseMateriasFromMatrix = (matrix: unknown[][]): ParsedMateriaRow[] => {
   }
 
   if (headerRowIndex === -1) {
-    throw new Error(
-      "No se detectó el encabezado requerido. Usa columnas: Materia | Código."
-    );
+    throw new Error("No se detectó el encabezado requerido. Utilice las columnas: Materia | Código.");
   }
 
   const parsed = matrix
@@ -199,11 +197,11 @@ export default function MateriasAdminPage() {
     const nombre = nuevaMateria.trim();
     const codigo = nuevoCodigo.trim();
     if (!nombre) {
-      setStatusMessage({ type: "error", text: "Ingresa el nombre de la materia." });
+      setStatusMessage({ type: "error", text: "Ingrese el nombre de la materia." });
       return;
     }
     if (!codigo) {
-      setStatusMessage({ type: "error", text: "Ingresa el código de la materia." });
+      setStatusMessage({ type: "error", text: "Ingrese el código de la materia." });
       return;
     }
 
@@ -221,7 +219,7 @@ export default function MateriasAdminPage() {
         if (updateError) throw updateError;
         setStatusMessage({
           type: "success",
-          text: "Materia existente actualizada con el nuevo código.",
+          text: "La materia existente se actualizó con el nuevo código.",
         });
       } else {
         const { error: insertError } = await supabase.from("materias").insert({
@@ -251,7 +249,7 @@ export default function MateriasAdminPage() {
 
   const importarMateriasDesdeExcel = async () => {
     if (parsedExcelRows.length === 0) {
-      setStatusMessage({ type: "error", text: "Primero carga un archivo válido." });
+      setStatusMessage({ type: "error", text: "Primero cargá un archivo válido." });
       return;
     }
 
@@ -319,7 +317,7 @@ export default function MateriasAdminPage() {
     if (!selectedMateriaId || !selectedDocenteId) {
       setStatusMessage({
         type: "error",
-        text: "Selecciona materia y docente.",
+        text: "Seleccione la materia y el docente.",
       });
       return;
     }
@@ -345,7 +343,6 @@ export default function MateriasAdminPage() {
       const { error } = await supabase.from("materias_docentes").insert({
         materia_id: Number(selectedMateriaId),
         user_id: selectedDocenteId,
-        comision: null,
       });
       if (error) throw error;
 
@@ -407,7 +404,7 @@ export default function MateriasAdminPage() {
           Materias y asignaciones
         </h1>
         <p className="text-slate-500 mt-2 font-medium">
-          Gestiona materias (Excel o manual) y asigna/quita materias a docentes.
+          Gestione materias, ya sea desde Excel o de forma manual, y asígnelas a docentes.
         </p>
       </header>
 
@@ -449,8 +446,9 @@ export default function MateriasAdminPage() {
               event.target.value = "";
             }}
             className="sr-only"
+            aria-label="Seleccionar archivo de materias en formato Excel"
           />
-          <p className="text-xl font-black text-slate-900">Arrastra un .xlsx o haz clic</p>
+          <p className="text-xl font-black text-slate-900">Arrastre un `.xlsx` o haga clic</p>
           <p className="mt-2 text-sm text-slate-500">Columnas: Materia | Código</p>
           {excelFile && <p className="mt-3 text-sm font-bold text-slate-700">{excelFile.name}</p>}
         </label>
@@ -463,6 +461,9 @@ export default function MateriasAdminPage() {
             </div>
             <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
               <table className="w-full text-sm">
+                <caption className="sr-only">
+                  Vista previa de materias detectadas en el archivo Excel.
+                </caption>
                 <thead className="bg-slate-50 text-xs uppercase text-slate-500">
                   <tr>
                     <th className="p-3 text-left">Materia</th>
@@ -473,7 +474,7 @@ export default function MateriasAdminPage() {
                   {parsedExcelRows.slice(0, 20).map((row, index) => (
                     <tr key={`${row.nombre}-${index}`} className="border-t border-slate-100">
                       <td className="p-3">{row.nombre}</td>
-                      <td className="p-3">{row.codigo || "—"}</td>
+                      <td className="p-3">{row.codigo || "-"}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -491,7 +492,7 @@ export default function MateriasAdminPage() {
         )}
       </section>
 
-      <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <section className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <div className="rounded-3xl border border-slate-200 p-6 bg-slate-50">
           <h2 className="text-lg font-black text-slate-900">Carga manual de materia</h2>
           <p className="mt-2 text-sm text-slate-500">
@@ -499,24 +500,32 @@ export default function MateriasAdminPage() {
             <span className="font-black">Código</span>.
           </p>
           <div className="mt-4 space-y-3">
+            <label htmlFor="manual-materia-nombre" className="sr-only">
+              Nombre de la materia
+            </label>
             <input
+              id="manual-materia-nombre"
               type="text"
               placeholder="Materia"
               value={nuevaMateria}
               onChange={(e) => setNuevaMateria(e.target.value)}
-              className="w-full p-3 rounded-2xl border-2 border-slate-100 bg-white text-slate-900 focus:border-[#5D9AD4] outline-none"
+              className="w-full rounded-2xl border-2 border-slate-100 bg-white p-3 text-slate-900 outline-none focus:border-[#5D9AD4]"
             />
+            <label htmlFor="manual-materia-codigo" className="sr-only">
+              Código de la materia
+            </label>
             <input
+              id="manual-materia-codigo"
               type="text"
-              placeholder="Código de materia"
+              placeholder="Código de la materia"
               value={nuevoCodigo}
               onChange={(e) => setNuevoCodigo(e.target.value)}
-              className="w-full p-3 rounded-2xl border-2 border-slate-100 bg-white text-slate-900 focus:border-[#5D9AD4] outline-none"
+              className="w-full rounded-2xl border-2 border-slate-100 bg-white p-3 text-slate-900 outline-none focus:border-[#5D9AD4]"
             />
             <button
               onClick={crearMateriaManual}
               disabled={isSavingManual}
-              className="w-full p-3 rounded-2xl bg-slate-900 text-white font-bold hover:bg-slate-800 transition-colors disabled:opacity-70"
+              className="w-full rounded-2xl bg-slate-900 p-3 font-bold text-white transition-colors hover:bg-slate-800 disabled:opacity-70"
             >
               {isSavingManual ? "GUARDANDO..." : "GUARDAR MATERIA"}
             </button>
@@ -526,12 +535,16 @@ export default function MateriasAdminPage() {
         <div className="rounded-3xl border border-slate-200 p-6 bg-white">
           <h2 className="text-lg font-black text-slate-900">Asignar materia a docente</h2>
           <div className="mt-4 space-y-3">
+            <label htmlFor="assign-materia" className="sr-only">
+              Seleccionar materia
+            </label>
             <select
+              id="assign-materia"
               value={selectedMateriaId}
               onChange={(e) =>
                 setSelectedMateriaId(e.target.value === "" ? "" : Number(e.target.value))
               }
-              className="w-full p-3 rounded-2xl border-2 border-slate-100 bg-slate-50 text-slate-900 focus:border-[#5D9AD4] outline-none"
+              className="w-full rounded-2xl border-2 border-slate-100 bg-slate-50 p-3 text-slate-900 outline-none focus:border-[#5D9AD4]"
             >
               <option value="">Seleccionar materia</option>
               {materias.map((m) => (
@@ -541,10 +554,14 @@ export default function MateriasAdminPage() {
               ))}
             </select>
 
+            <label htmlFor="assign-docente" className="sr-only">
+              Seleccionar docente
+            </label>
             <select
+              id="assign-docente"
               value={selectedDocenteId}
               onChange={(e) => setSelectedDocenteId(e.target.value)}
-              className="w-full p-3 rounded-2xl border-2 border-slate-100 bg-slate-50 text-slate-900 focus:border-[#5D9AD4] outline-none"
+              className="w-full rounded-2xl border-2 border-slate-100 bg-slate-50 p-3 text-slate-900 outline-none focus:border-[#5D9AD4]"
             >
               <option value="">Seleccionar docente</option>
               {docentes.map((d) => (
@@ -557,7 +574,7 @@ export default function MateriasAdminPage() {
             <button
               onClick={asignarMateria}
               disabled={isAssigning}
-              className="w-full p-3 rounded-2xl bg-[#5D9AD4] text-white font-bold hover:bg-[#4C86BD] transition-colors disabled:opacity-70"
+              className="w-full rounded-2xl bg-[#5D9AD4] p-3 font-bold text-white transition-colors hover:bg-[#4C86BD] disabled:opacity-70"
             >
               {isAssigning ? "ASIGNANDO..." : "ASIGNAR"}
             </button>
@@ -568,12 +585,15 @@ export default function MateriasAdminPage() {
       <section className="rounded-3xl border border-slate-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-slate-900">
+            <caption className="sr-only">
+              Listado de asignaciones entre materias y docentes.
+            </caption>
             <thead className="bg-slate-50 text-slate-500 uppercase text-xs">
               <tr>
                 <th className="text-left p-3">Materia</th>
                 <th className="text-left p-3">Código</th>
                 <th className="text-left p-3">Docente</th>
-                <th className="text-left p-3"></th>
+                <th className="text-left p-3">Acción</th>
               </tr>
             </thead>
             <tbody>
@@ -582,14 +602,15 @@ export default function MateriasAdminPage() {
                 const docente = docenteMap.get(asig.user_id);
                 return (
                   <tr key={asig.id} className="border-t border-slate-100">
-                    <td className="p-3">{materia?.nombre ?? "—"}</td>
-                    <td className="p-3 text-slate-500">{materia?.codigo ?? "—"}</td>
+                    <td className="p-3">{materia?.nombre ?? "-"}</td>
+                    <td className="p-3 text-slate-500">{materia?.codigo ?? "-"}</td>
                     <td className="p-3">{docente?.correo ?? asig.user_id}</td>
                     <td className="p-3 text-right">
                       <button
                         onClick={() => eliminarAsignacion(asig.id)}
                         disabled={isAssigning}
                         className="text-xs font-bold text-rose-600 hover:text-rose-700 disabled:opacity-70"
+                        aria-label={`Quitar asignación de ${materia?.nombre ?? "materia"} para ${docente?.correo ?? "este docente"}`}
                       >
                         Quitar
                       </button>

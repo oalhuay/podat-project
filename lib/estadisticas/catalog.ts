@@ -219,8 +219,16 @@ export const INDICATOR_BY_CODE: Record<IndicatorCode, IndicatorDefinition> =
 
 const aliasToCode = new Map<string, IndicatorCode>();
 INDICATORS.forEach((indicator) => {
-  aliasToCode.set(normalizeText(indicator.label), indicator.code);
-  indicator.aliases.forEach((alias) => aliasToCode.set(normalizeText(alias), indicator.code));
+  const normalizedLabel = normalizeText(indicator.label);
+  if (!aliasToCode.has(normalizedLabel)) {
+    aliasToCode.set(normalizedLabel, indicator.code);
+  }
+  indicator.aliases.forEach((alias) => {
+    const normalizedAlias = normalizeText(alias);
+    if (!aliasToCode.has(normalizedAlias)) {
+      aliasToCode.set(normalizedAlias, indicator.code);
+    }
+  });
 });
 
 export const getIndicatorFromLabel = (label: string): IndicatorDefinition | null => {

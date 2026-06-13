@@ -1,8 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import BrandLogo from "@/components/brand/BrandLogo";
 import { useAuth } from "@/app/hooks/useAuth";
@@ -22,12 +21,11 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     };
   }, [isMobileSidebarOpen]);
 
-  const panelLabel =
-    role === "docente" ? "Panel docente" : "Panel de gestión";
+  const panelLabel = role === "docente" ? "Panel docente" : "Panel de gestión";
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(93,154,212,0.12),_transparent_30%),linear-gradient(180deg,_#f8fafc_0%,_#eef4ff_100%)]">
-      <div className="sticky top-0 z-30 border-b border-white/70 bg-white/80 px-4 py-3 shadow-sm backdrop-blur sm:px-6 xl:hidden">
+      <div className="sticky top-0 z-30 border-b border-white/70 bg-white px-4 py-3 shadow-sm sm:px-6 xl:hidden">
         <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4">
           <Link
             href="/admin/estadisticas/dashboard"
@@ -65,10 +63,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/35 p-4 backdrop-blur-[2px] sm:p-6"
             onClick={() => setIsMobileSidebarOpen(false)}
           >
-            <div
-              className="w-[min(88vw,22rem)]"
-              onClick={(event) => event.stopPropagation()}
-            >
+            <div className="w-[min(88vw,22rem)]" onClick={(event) => event.stopPropagation()}>
               <AdminSidebar onNavigate={() => setIsMobileSidebarOpen(false)} />
             </div>
           </div>
@@ -76,9 +71,9 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       )}
 
       <div className="mx-auto flex max-w-[1600px] flex-col gap-6 px-4 py-4 sm:px-6 xl:flex-row xl:px-8 xl:py-6">
-        <AdminSidebar className="hidden xl:sticky xl:top-6 xl:block xl:w-80" />
+        <AdminSidebar className="hidden xl:sticky xl:top-6 xl:z-40 xl:flex xl:w-80" />
         <div className="min-w-0 flex-1">
-          <div className="rounded-[2rem] border border-white/70 bg-white/90 p-6 shadow-xl shadow-slate-200/40 backdrop-blur sm:p-8">
+          <div className="rounded-[2rem] border border-white/70 bg-white p-6 shadow-xl shadow-slate-200/40 sm:p-8">
             {children}
           </div>
         </div>

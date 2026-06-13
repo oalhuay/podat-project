@@ -3,14 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/app/hooks/useAuth";
 import StatusBanner from "@/components/admin/StatusBanner";
-import {
-  dedupeMaterias,
-  getAccessibleMaterias,
-  getMateriaAssignmentsForUser,
-  extractMateriasFromAssignments,
-  type Materia,
-  type MateriaDocenteAssignment,
-} from "@/lib/materias";
+import { dedupeMaterias, getAccessibleMaterias, type Materia } from "@/lib/materias";
 
 type StatusMessage = {
   type: "success" | "error" | "info";
@@ -20,7 +13,6 @@ type StatusMessage = {
 export default function MisMateriasPage() {
   const { user, role, isLoadingProfile } = useAuth();
   const [materias, setMaterias] = useState<Materia[]>([]);
-  const [asignaciones, setAsignaciones] = useState<MateriaDocenteAssignment[]>([]);
   const [statusMessage, setStatusMessage] = useState<StatusMessage | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -34,15 +26,8 @@ export default function MisMateriasPage() {
           return;
         }
 
-        if (role === "admin") {
-          const allMaterias = await getAccessibleMaterias(user.id, role);
-          setMaterias(allMaterias);
-          setAsignaciones([]);
-        } else {
-          const asigns = await getMateriaAssignmentsForUser(user.id);
-          setAsignaciones(asigns);
-          setMaterias(extractMateriasFromAssignments(asigns));
-        }
+        const allMaterias = await getAccessibleMaterias(user.id, role);
+        setMaterias(allMaterias);
       } catch (error: unknown) {
         const message =
           typeof error === "object" && error !== null && "message" in error
@@ -60,19 +45,13 @@ export default function MisMateriasPage() {
     void loadMaterias();
   }, [isLoadingProfile, role, user?.id]);
 
-  const materiasUnicas = useMemo(() => {
-    return dedupeMaterias(materias);
-  }, [materias]);
+  const materiasUnicas = useMemo(() => dedupeMaterias(materias), [materias]);
 
   return (
     <div className="p-8 max-w-5xl mx-auto min-h-screen bg-white space-y-8">
       <header>
-        <h1 className="text-4xl font-black text-slate-900 tracking-tight">
-          Mis Materias
-        </h1>
-        <p className="text-slate-500 mt-2 font-medium">
-          Materias asignadas a tu perfil.
-        </p>
+        <h1 className="text-4xl font-black text-slate-900 tracking-tight">Mis Materias</h1>
+        <p className="text-slate-500 mt-2 font-medium">Materias asignadas a su perfil.</p>
       </header>
 
       {statusMessage && <StatusBanner message={statusMessage} />}
@@ -86,26 +65,16 @@ export default function MisMateriasPage() {
           No hay materias asignadas.
         </div>
       ) : (
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <section className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {materiasUnicas.map((materia) => (
             <div
               key={materia.id}
               className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm"
             >
-              <p className="text-xs uppercase tracking-widest font-bold text-slate-400">
-                {materia.codigo ?? "SIN CÓDIGO"}
+              <p className="text-xs font-bold uppercase tracking-widest text-slate-400">
+                {materia.codigo ?? "SIN CODIGO"}
               </p>
-              <p className="text-lg font-black text-slate-900 mt-2">
-                {materia.nombre}
-              </p>
-              {asignaciones.length > 0 && (
-                <div className="mt-3 text-sm text-slate-600">
-                  {asignaciones
-                    .filter((a) => a.materia_id === materia.id)
-                    .map((a) => a.comision ?? "Sin comisión")
-                    .join(" · ")}
-                </div>
-              )}
+              <p className="mt-2 text-lg font-black text-slate-900">{materia.nombre}</p>
             </div>
           ))}
         </section>

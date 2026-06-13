@@ -61,7 +61,6 @@ export default function ImportarAlumnos() {
   const [materias, setMaterias] = useState<Materia[]>([]);
   const [materia, setMateria] = useState("");
   const [anio, setAnio] = useState(String(CURRENT_YEAR));
-  const [comision, setComision] = useState("");
   const [archivo, setArchivo] = useState<File | null>(null);
   const [datosPrevia, setDatosPrevia] = useState<ParsedAlumnoRow[]>([]);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
@@ -71,7 +70,7 @@ export default function ImportarAlumnos() {
   const [statusFilter, setStatusFilter] = useState<"todos" | ImportStatus>("todos");
   const importDbClient = toImportAlumnosDbClient(supabase, { supportsGenero: true });
 
-  const puedeSubir = materia && anio && comision && archivo;
+  const puedeSubir = materia && anio && archivo;
 
   useEffect(() => {
     const loadMaterias = async () => {
@@ -369,7 +368,7 @@ export default function ImportarAlumnos() {
         </p>
       </header>
 
-      <section className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+      <section className="grid grid-cols-1 gap-6 mb-10 md:grid-cols-2">
         <div className="space-y-2">
           <label className="text-xs uppercase tracking-widest font-bold text-slate-400">
             Materia
@@ -400,19 +399,6 @@ export default function ImportarAlumnos() {
             className="w-full p-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-slate-900 focus:border-[#5D9AD4] outline-none transition-all"
             value={anio}
             onChange={(e) => setAnio(e.target.value)}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <label className="text-xs uppercase tracking-widest font-bold text-slate-400">
-            Comisión
-          </label>
-          <input
-            type="text"
-            placeholder="Ej. A, B, mañana, comisión única"
-            className="w-full p-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-slate-900 focus:border-[#5D9AD4] outline-none transition-all"
-            value={comision}
-            onChange={(e) => setComision(e.target.value)}
           />
         </div>
       </section>
@@ -541,3 +527,4 @@ export default function ImportarAlumnos() {
     </div>
   );
 }
+

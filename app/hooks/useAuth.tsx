@@ -89,9 +89,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         await syncUserState(data.user);
-      } catch (error) {
+      } catch {
         if (isMounted) {
-          console.error("Error loading current auth user:", error);
           await syncUserState(null);
         }
       } finally {

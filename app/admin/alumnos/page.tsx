@@ -29,23 +29,24 @@ const TIPO_EVALUACION_OPTIONS: Array<{ value: TipoEvaluacion; label: string }> =
   { value: "Parcial", label: "Parcial" },
   { value: "Recuperatorio", label: "Recuperatorio" },
 ];
+
 const SECTION_META: Record<
   ActiveSection,
   { label: string; description: string; readyLabel: string }
 > = {
   padron: {
     label: "Carga de alumnos",
-    description: "Importa o escribe el padrón y revisa la previsualización antes de guardar.",
+    description: "Importá o escribí el padrón y revisá la previsualización antes de guardar.",
     readyLabel: "Padrón listo para revisar",
   },
   notas: {
     label: "Notas",
-    description: "Carga la lista del curso, completa calificaciones y guarda en una sola acción.",
+    description: "Cargue la lista del curso, complete las calificaciones y guarde en una sola acción.",
     readyLabel: "Lista de notas cargada",
   },
   asistencias: {
     label: "Asistencias",
-    description: "Marca presente, ausente o justificado y controla la condición acumulada.",
+    description: "Marque presente, ausente o justificado y controle la condición acumulada.",
     readyLabel: "Lista de asistencia cargada",
   },
 };
@@ -134,6 +135,7 @@ export default function AlumnosPage() {
     onTipoEvaluacionChange,
     onChangeNota,
     onChangeAusente,
+    onChangeAusenteTodos,
     cargarNotas,
     guardarNotas,
   } = useNotasWorkflow({
@@ -190,13 +192,12 @@ export default function AlumnosPage() {
     resetAsistenciaState();
   };
 
-
   return (
     <div className="min-h-screen max-w-6xl mx-auto bg-white p-8">
       <header className="mb-8">
         <h1 className="text-4xl font-black tracking-tight text-slate-900">Alumnos</h1>
         <p className="mt-2 text-slate-500">
-          Gestiona padrón, notas y asistencias por materia y año desde una sola vista.
+          Gestioná padrón, notas y asistencias por materia y año desde una sola vista.
         </p>
       </header>
 
@@ -207,9 +208,9 @@ export default function AlumnosPage() {
           <p className="text-xs font-black uppercase tracking-[0.25em] text-slate-400">
             Paso 1
           </p>
-          <h2 className="mt-3 text-2xl font-black text-slate-900">Define el curso de trabajo</h2>
+          <h2 className="mt-3 text-2xl font-black text-slate-900">Defina el curso de trabajo</h2>
           <p className="mt-2 max-w-2xl text-sm text-slate-600">
-            Elige la materia y el año antes de pasar a padrón, notas o asistencias. Cada cambio
+            Seleccione la materia y el año antes de pasar a padrón, notas o asistencias. Cada cambio
             reinicia los datos cargados del módulo actual.
           </p>
 
@@ -221,9 +222,10 @@ export default function AlumnosPage() {
               <select
                 value={selectedMateriaId}
                 onChange={(event) => onMateriaChange(event.target.value)}
+                aria-label="Seleccionar materia para trabajar"
                 className="w-full rounded-2xl border-2 border-slate-100 bg-white p-4 text-slate-900 outline-none focus:border-[#5D9AD4]"
               >
-                <option value="">Seleccionar materia...</option>
+                <option value="">Seleccione una materia...</option>
                 {materias.map((materia) => (
                   <option key={materia.id} value={materia.id}>
                     {materia.nombre}
@@ -242,6 +244,7 @@ export default function AlumnosPage() {
                 max={CURRENT_YEAR + 1}
                 value={anio}
                 onChange={(event) => onAnioChange(event.target.value)}
+                aria-label="Ingresar año del curso"
                 className="w-full rounded-2xl border-2 border-slate-100 bg-white p-4 text-slate-900 outline-none focus:border-[#5D9AD4]"
               />
             </div>
@@ -274,7 +277,7 @@ export default function AlumnosPage() {
               <div className="mt-2 text-sm font-semibold text-slate-700">
                 {hasCursoConfigurado
                   ? "Curso listo para trabajar"
-                  : "Completa materia y año para desbloquear los módulos"}
+                  : "Complete la materia y el año para habilitar los módulos"}
               </div>
             </div>
           </div>
@@ -290,10 +293,10 @@ export default function AlumnosPage() {
             <div className="mt-3 flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
               <div className="max-w-2xl">
                 <h2 className="text-2xl font-black text-slate-900">
-                  Elige el bloque que quieres trabajar
+                  Seleccione el bloque que desea trabajar
                 </h2>
                 <p className="mt-2 text-sm text-slate-600">
-                  Cambia entre padrón, notas y asistencias sin perder el contexto del curso
+                  Cambiá entre padrón, notas y asistencias sin perder el contexto del curso
                   seleccionado.
                 </p>
               </div>
@@ -347,7 +350,7 @@ export default function AlumnosPage() {
                     </div>
                     <p className="mt-2 text-sm text-slate-500">{section.description}</p>
                     <p className="mt-3 text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
-                      {isReady ? section.readyLabel : "Sin cargar todavía"} · {itemCount} item(s)
+                      {isReady ? section.readyLabel : "Todavía sin cargar"} · {itemCount} item(s)
                     </p>
                   </button>
                 );
@@ -392,62 +395,63 @@ export default function AlumnosPage() {
               </div>
             </div>
 
-          {activeSection === "padron" && (
-            <PadronPanel
-              sourceMode={sourceMode}
-              isDragActive={isDragActive}
-              archivoNombre={archivo?.name ?? null}
-              manualRows={manualRows}
-              canPreview={canPreview}
-              isLoading={isLoading}
-              hasImportPlan={Boolean(importPlan)}
-              onSourceModeChange={setSourceMode}
-              onDragOver={onExcelDragOver}
-              onDragLeave={onExcelDragLeave}
-              onDrop={onExcelDrop}
-              onFileChange={onExcelFileChange}
-              onManualRowChange={onManualRowChange}
-              onAddManualRow={onAddManualRow}
-              onPreview={preview}
-              onReset={resetImportState}
-              onConfirmImport={confirmImport}
-              onDiscardImport={discardImportPreview}
-            />
-          )}
+            {activeSection === "padron" && (
+              <PadronPanel
+                sourceMode={sourceMode}
+                isDragActive={isDragActive}
+                archivoNombre={archivo?.name ?? null}
+                manualRows={manualRows}
+                canPreview={canPreview}
+                isLoading={isLoading}
+                hasImportPlan={Boolean(importPlan)}
+                onSourceModeChange={setSourceMode}
+                onDragOver={onExcelDragOver}
+                onDragLeave={onExcelDragLeave}
+                onDrop={onExcelDrop}
+                onFileChange={onExcelFileChange}
+                onManualRowChange={onManualRowChange}
+                onAddManualRow={onAddManualRow}
+                onPreview={preview}
+                onReset={resetImportState}
+                onConfirmImport={confirmImport}
+                onDiscardImport={discardImportPreview}
+              />
+            )}
 
-          {activeSection === "notas" && (
-            <NotasPanel
-              evaluacionNombre={evaluacionNombre}
-              tipoEvaluacion={tipoEvaluacion}
-              evaluacionOptions={EVALUACION_OPTIONS}
-              tipoEvaluacionOptions={TIPO_EVALUACION_OPTIONS}
-              isLoadingNotas={isLoadingNotas}
-              isNotasReady={isNotasReady}
-              notasRows={notasRows}
-              onEvaluacionNombreChange={onEvaluacionNombreChange}
-              onTipoEvaluacionChange={onTipoEvaluacionChange}
-              onCargarNotas={cargarNotas}
-              onChangeNota={onChangeNota}
-              onChangeAusente={onChangeAusente}
-              onGuardarNotas={guardarNotas}
-            />
-          )}
+            {activeSection === "notas" && (
+              <NotasPanel
+                evaluacionNombre={evaluacionNombre}
+                tipoEvaluacion={tipoEvaluacion}
+                evaluacionOptions={EVALUACION_OPTIONS}
+                tipoEvaluacionOptions={TIPO_EVALUACION_OPTIONS}
+                isLoadingNotas={isLoadingNotas}
+                isNotasReady={isNotasReady}
+                notasRows={notasRows}
+                onEvaluacionNombreChange={onEvaluacionNombreChange}
+                onTipoEvaluacionChange={onTipoEvaluacionChange}
+                onCargarNotas={cargarNotas}
+                onChangeNota={onChangeNota}
+                onChangeAusente={onChangeAusente}
+                onChangeAusenteTodos={onChangeAusenteTodos}
+                onGuardarNotas={guardarNotas}
+              />
+            )}
 
-          {activeSection === "asistencias" && (
-            <AsistenciasPanel
-              today={today}
-              fecha={fecha}
-              tema={tema}
-              isLoadingAsistencia={isLoadingAsistencia}
-              isAsistenciaReady={isAsistenciaReady}
-              asistenciaRows={asistenciaRows}
-              onFechaChange={onFechaChange}
-              onTemaChange={setTema}
-              onCargarAsistencias={cargarAsistencias}
-              onChangeAsistenciaEstado={onChangeAsistenciaEstado}
-              onGuardarAsistencia={guardarAsistencia}
-            />
-          )}
+            {activeSection === "asistencias" && (
+              <AsistenciasPanel
+                today={today}
+                fecha={fecha}
+                tema={tema}
+                isLoadingAsistencia={isLoadingAsistencia}
+                isAsistenciaReady={isAsistenciaReady}
+                asistenciaRows={asistenciaRows}
+                onFechaChange={onFechaChange}
+                onTemaChange={setTema}
+                onCargarAsistencias={cargarAsistencias}
+                onChangeAsistenciaEstado={onChangeAsistenciaEstado}
+                onGuardarAsistencia={guardarAsistencia}
+              />
+            )}
           </section>
         </section>
       )}
@@ -461,7 +465,7 @@ export default function AlumnosPage() {
       )}
 
       {rol === "docente" && !hasSelectedMateria && (
-        <p className="mt-6 text-sm text-slate-500">Selecciona una materia para continuar.</p>
+        <p className="mt-6 text-sm text-slate-500">Seleccione una materia para continuar.</p>
       )}
     </div>
   );

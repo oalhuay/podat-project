@@ -5,6 +5,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/hooks/useAuth";
 import ThemeToggle from "@/components/theme/ThemeToggle";
+import ProfileAvatar from "@/components/ui/ProfileAvatar";
+import { cx, ui } from "@/components/ui/styles";
+import { getUserProfileViewModel } from "@/lib/auth/getUserProfileViewModel";
 
 type UserAvatarMenuProps = {
   compact?: boolean;
@@ -15,21 +18,7 @@ export default function UserAvatarMenu({ compact = false }: UserAvatarMenuProps)
   const { user, role, signOut } = useAuth();
   const menuRef = useRef<HTMLDivElement | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-
-  const profileName = useMemo<string>(() => {
-    const metadata = user?.user_metadata;
-    return metadata?.full_name ?? metadata?.name ?? user?.email?.split("@")[0] ?? "Usuario";
-  }, [user]);
-
-  const profileEmail: string = user?.email ?? "Sin correo";
-  const profileAvatar: string | null =
-    user?.user_metadata?.avatar_url ?? user?.user_metadata?.picture ?? null;
-  const profileInitials = profileName
-    .split(" ")
-    .filter((word): word is string => Boolean(word))
-    .slice(0, 2)
-    .map((word) => word[0]?.toUpperCase() ?? "")
-    .join("");
+  const profile = useMemo(() => getUserProfileViewModel(user), [user]);
 
   useEffect(() => {
     if (!isMenuOpen) return;
@@ -69,28 +58,24 @@ export default function UserAvatarMenu({ compact = false }: UserAvatarMenuProps)
       <button
         type="button"
         onClick={() => setIsMenuOpen((prev) => !prev)}
-        className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white/95 px-3 py-2 shadow-sm transition-all hover:border-slate-300 hover:shadow-md"
+        className={cx(
+          "flex items-center gap-3 rounded-2xl border border-slate-200 bg-white/95 px-3 py-2 shadow-sm transition-all hover:border-slate-300 hover:shadow-md",
+          compact ? "pr-2" : ""
+        )}
         aria-haspopup="menu"
         aria-expanded={isMenuOpen}
         aria-label="Abrir menú de perfil"
       >
-        {profileAvatar ? (
-          // Google avatars are remote and not configured in next/image.
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={profileAvatar}
-            alt={profileName}
-            className="h-10 w-10 rounded-full border border-slate-200 object-cover"
-          />
-        ) : (
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#5D9AD4] text-sm font-black text-white">
-            {profileInitials || "U"}
-          </div>
-        )}
+        <ProfileAvatar
+          src={profile.avatar}
+          alt={profile.name}
+          initials={profile.initials}
+          size="sm"
+        />
 
         {!compact && (
           <div className="hidden text-left sm:block">
-            <div className="max-w-36 truncate text-sm font-bold text-slate-900">{profileName}</div>
+            <div className="max-w-36 truncate text-sm font-bold text-slate-900">{profile.name}</div>
             <div className="text-xs font-medium uppercase tracking-wider text-slate-400">
               {role ?? "sin rol"}
             </div>
@@ -100,28 +85,22 @@ export default function UserAvatarMenu({ compact = false }: UserAvatarMenuProps)
 
       {isMenuOpen && (
         <div
-          role="menu"
+          role="dialog"
+          aria-label="Panel de perfil"
           className="absolute right-0 mt-3 w-72 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl shadow-slate-200/60"
         >
           <div className="bg-[linear-gradient(135deg,_rgba(93,154,212,0.14),_rgba(251,197,88,0.18))] p-4">
             <div className="flex items-center gap-3">
-              {profileAvatar ? (
-                // Google avatars are remote and not configured in next/image.
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={profileAvatar}
-                  alt={profileName}
-                  className="h-12 w-12 rounded-full border border-white/80 object-cover"
-                />
-              ) : (
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#5D9AD4] text-base font-black text-white">
-                  {profileInitials || "U"}
-                </div>
-              )}
+              <ProfileAvatar
+                src={profile.avatar}
+                alt={profile.name}
+                initials={profile.initials}
+                size="md"
+              />
 
               <div className="min-w-0">
-                <div className="truncate text-sm font-black text-slate-900">{profileName}</div>
-                <div className="truncate text-xs text-slate-600">{profileEmail}</div>
+                <div className="truncate text-sm font-black text-slate-900">{profile.name}</div>
+                <div className="truncate text-xs text-slate-600">{profile.email}</div>
               </div>
             </div>
           </div>
@@ -141,15 +120,15 @@ export default function UserAvatarMenu({ compact = false }: UserAvatarMenuProps)
             <Link
               href="/admin/perfil"
               onClick={() => setIsMenuOpen(false)}
-              className="block w-full rounded-2xl border border-slate-200 px-4 py-3 text-center text-sm font-bold text-slate-700 transition-colors hover:bg-slate-50"
+              className={cx(ui.secondaryButton, "block w-full text-center")}
             >
-              Ir a perfil
+              Ir al perfil
             </Link>
 
             <Link
               href="/"
               onClick={() => setIsMenuOpen(false)}
-              className="block w-full rounded-2xl border border-slate-200 px-4 py-3 text-center text-sm font-bold text-slate-700 transition-colors hover:bg-slate-50"
+              className={cx(ui.secondaryButton, "block w-full text-center")}
             >
               Ir al inicio
             </Link>

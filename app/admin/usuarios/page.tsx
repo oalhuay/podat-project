@@ -96,7 +96,7 @@ export default function GestionUsuariosPage() {
     if (perfilId === currentUserId && adminCount <= 1 && nuevoRol !== "admin") {
       setStatusMessage({
         type: "error",
-        text: "No puedes quitarte el rol admin si eres el único administrador.",
+        text: "No puede quitarse el rol de administrador si es la única persona administradora.",
       });
       return;
     }
@@ -138,13 +138,13 @@ export default function GestionUsuariosPage() {
   };
 
   return (
-    <div className="p-8 max-w-5xl mx-auto min-h-screen bg-white">
+    <div className="min-h-screen max-w-5xl mx-auto bg-white p-8">
       <header className="mb-10">
         <h1 className="text-4xl font-black text-slate-900 tracking-tight">
           Gestión de Usuarios
         </h1>
-        <p className="text-slate-500 mt-2 font-medium">
-          Administra roles y accesos para docentes y administradores.
+        <p className="mt-2 font-medium text-slate-500">
+          Administrá roles y accesos para docentes y administradores.
         </p>
       </header>
 
@@ -159,19 +159,24 @@ export default function GestionUsuariosPage() {
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
           placeholder="correo@instituto.edu"
-          className="mt-2 w-full p-4 rounded-2xl border-2 border-slate-100 bg-slate-50 text-slate-900 focus:border-[#5D9AD4] outline-none transition-all"
+          aria-label="Buscar usuario por correo"
+          className="mt-2 w-full rounded-2xl border-2 border-slate-100 bg-slate-50 p-4 text-slate-900 outline-none transition-all focus:border-[#5D9AD4]"
         />
       </section>
 
-      <section className="rounded-3xl border border-slate-200 overflow-hidden">
+      <section className="overflow-hidden rounded-3xl border border-slate-200">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-slate-900">
-            <thead className="bg-slate-50 text-slate-500 uppercase text-xs">
+            <caption className="sr-only">
+              Tabla de usuarios con correo, última conexión, rol actual y selector para cambiar
+              rol.
+            </caption>
+            <thead className="bg-slate-50 text-xs uppercase text-slate-500">
               <tr>
-                <th className="text-left p-3">Correo</th>
-                <th className="text-left p-3">Última conexión</th>
-                <th className="text-left p-3">Rol actual</th>
-                <th className="text-left p-3">Cambiar rol</th>
+                <th className="p-3 text-left">Correo</th>
+                <th className="p-3 text-left">Última conexión</th>
+                <th className="p-3 text-left">Rol actual</th>
+                <th className="p-3 text-left">Cambiar rol</th>
               </tr>
             </thead>
             <tbody className="text-slate-800">
@@ -193,7 +198,8 @@ export default function GestionUsuariosPage() {
                           value === "admin" ? "admin" : value === "docente" ? "docente" : null;
                         void updateRol(perfil.id, newRol);
                       }}
-                      className="p-2 rounded-xl border border-slate-200 bg-white text-slate-900 focus:border-[#5D9AD4] outline-none"
+                      aria-label={`Cambiar rol de ${perfil.correo ?? perfil.id}`}
+                      className="rounded-xl border border-slate-200 bg-white p-2 text-slate-900 outline-none focus:border-[#5D9AD4]"
                     >
                       <option value="docente">Docente</option>
                       <option value="admin">Administrador</option>

@@ -35,7 +35,7 @@ export const options = {
   },
 };
 
-export default function () {
+export default function runLoadStressScenario() {
   const response = http.get(`${BASE_URL}/`);
 
   check(response, {     //VALIDACION-- LA RUTA DEBE RESPONDER 200 Y DEBE TARDAR MENOS DE 1 SEGUNDO

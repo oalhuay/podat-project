@@ -1,6 +1,7 @@
 "use client";
 
 import InlineSelect from "@/components/admin/InlineSelect";
+import { cx, ui } from "@/components/ui/styles";
 import type { EstadoAsistencia } from "@/lib/asistencia/rules";
 import type { EvaluacionNombre, TipoEvaluacion } from "@/lib/notas/rules";
 import type {
@@ -56,7 +57,7 @@ export function PadronPanel({
 }: PadronPanelProps) {
   return (
     <>
-      <div className="mt-6 inline-flex rounded-full border border-slate-200 bg-white p-1">
+      <div className="mt-6 inline-flex rounded-full border border-slate-200 bg-white p-1 shadow-sm shadow-slate-200/30">
         <button
           type="button"
           onClick={() => onSourceModeChange("excel")}
@@ -73,10 +74,10 @@ export function PadronPanel({
         </button>
       </div>
 
-      <div className="mt-4 rounded-2xl border border-dashed border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
+      <div className={cx(ui.mutedCard, "mt-4 px-4 py-3 text-sm text-slate-600")}>
         {sourceMode === "excel"
-          ? "Sube un archivo .xlsx con legajo, alumno, género y condición. Luego revisa la previsualización antes de aplicar."
-          : 'Completa el padrón escribiendo "Apellido, Nombre" y usa la previsualización para validar filas antes de guardar.'}
+          ? "Suba un archivo `.xlsx` con legajo, alumno, género y condición. Después revise la previsualización antes de aplicar."
+          : 'Complete el padrón escribiendo "Apellido, Nombre" y utilice la previsualización para validar filas antes de guardar.'}
       </div>
 
       {sourceMode === "excel" && (
@@ -85,7 +86,7 @@ export function PadronPanel({
           onDragOver={onDragOver}
           onDragLeave={onDragLeave}
           onDrop={(event) => void onDrop(event)}
-          className={`flex min-h-[13rem] cursor-pointer flex-col items-center justify-center rounded-[1.75rem] border-2 border-dashed text-center ${isDragActive ? "border-[#5D9AD4] bg-[#5D9AD4]/10" : "border-slate-200 bg-slate-50"}`}
+          className={`flex min-h-[13rem] cursor-pointer flex-col items-center justify-center rounded-[1.75rem] border-2 border-dashed text-center transition-all ${isDragActive ? "border-[#5D9AD4] bg-[#5D9AD4]/10" : "border-slate-200 bg-slate-50 hover:border-slate-300"}`}
         >
           <input
             id="alumnos-file"
@@ -101,30 +102,30 @@ export function PadronPanel({
       )}
 
       {sourceMode === "manual" && (
-        <div className="space-y-3 rounded-[1.75rem] border border-slate-200 bg-white p-4">
+        <div className="space-y-3 rounded-[1.75rem] border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/30">
           {manualRows.map((row) => (
             <div key={row.id} className="grid gap-2 md:grid-cols-4">
               <input
                 value={row.legajo}
                 placeholder="Legajo"
-                className="rounded-xl border p-3"
+                className={ui.input}
                 onChange={(event) => onManualRowChange(row.id, "legajo", event.target.value)}
               />
               <input
                 value={row.alumno}
                 placeholder="Alumno (Apellido, Nombre)"
-                className="rounded-xl border p-3"
+                className={ui.input}
                 onChange={(event) => onManualRowChange(row.id, "alumno", event.target.value)}
               />
               <input
                 value={row.genero}
                 placeholder="Género"
-                className="rounded-xl border p-3"
+                className={ui.input}
                 onChange={(event) => onManualRowChange(row.id, "genero", event.target.value)}
               />
               <select
                 value={row.condicion}
-                className="rounded-xl border p-3"
+                className={ui.select}
                 onChange={(event) => onManualRowChange(row.id, "condicion", event.target.value)}
               >
                 <option value="Regular">Regular</option>
@@ -132,11 +133,7 @@ export function PadronPanel({
               </select>
             </div>
           ))}
-          <button
-            type="button"
-            className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-black text-white"
-            onClick={onAddManualRow}
-          >
+          <button type="button" className={ui.secondaryButton} onClick={onAddManualRow}>
             Agregar fila
           </button>
         </div>
@@ -147,7 +144,7 @@ export function PadronPanel({
           type="button"
           onClick={() => void onPreview()}
           disabled={!canPreview || isLoading}
-          className="rounded-2xl bg-[#5D9AD4] p-4 text-lg font-black text-white disabled:opacity-60"
+          className={cx(ui.primaryButton, "p-4 text-lg")}
         >
           {isLoading ? "ANALIZANDO..." : "REVISAR IMPORTACIÓN"}
         </button>
@@ -155,7 +152,7 @@ export function PadronPanel({
           type="button"
           onClick={onReset}
           disabled={isLoading}
-          className="rounded-2xl bg-slate-200 p-4 text-lg font-black text-slate-800 disabled:opacity-60"
+          className={cx(ui.ghostButton, "p-4 text-lg font-black text-slate-800")}
         >
           LIMPIAR FORMULARIO
         </button>
@@ -167,14 +164,14 @@ export function PadronPanel({
             type="button"
             onClick={() => void onConfirmImport()}
             disabled={isLoading}
-            className="rounded-2xl bg-green-600 p-4 text-lg font-black text-white disabled:opacity-60"
+            className={cx(ui.successButton, "p-4 text-lg")}
           >
             {isLoading ? "APLICANDO..." : "CONFIRMAR IMPORTACIÓN"}
           </button>
           <button
             type="button"
             onClick={onDiscardImport}
-            className="rounded-2xl bg-slate-200 p-4 text-lg font-black text-slate-800"
+            className={cx(ui.ghostButton, "p-4 text-lg font-black text-slate-800")}
           >
             DESCARTAR IMPORTACIÓN
           </button>
@@ -197,6 +194,7 @@ type NotasPanelProps = {
   onCargarNotas: () => Promise<void>;
   onChangeNota: (alumnoId: number, nota: string) => void;
   onChangeAusente: (alumnoId: number, checked: boolean) => void;
+  onChangeAusenteTodos: (checked: boolean) => void;
   onGuardarNotas: () => Promise<void>;
 };
 
@@ -213,10 +211,15 @@ export function NotasPanel({
   onCargarNotas,
   onChangeNota,
   onChangeAusente,
+  onChangeAusenteTodos,
   onGuardarNotas,
 }: NotasPanelProps) {
+  const alumnosHabilitados = notasRows.filter((row) => row.habilitado);
+  const allAusentes =
+    alumnosHabilitados.length > 0 && alumnosHabilitados.every((row) => row.ausente);
+
   return (
-    <div className="space-y-4 rounded-[1.75rem] border border-slate-200 bg-white p-5">
+    <div className="space-y-4 rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/30">
       <div className="grid gap-3 md:grid-cols-3">
         <div>
           <label className="text-xs font-black uppercase tracking-[0.22em] text-slate-400">
@@ -243,15 +246,15 @@ export function NotasPanel({
             type="button"
             onClick={() => void onCargarNotas()}
             disabled={isLoadingNotas}
-            className="w-full rounded-xl bg-[#5D9AD4] p-3 text-sm font-black text-white disabled:opacity-60"
+            className={cx(ui.primaryButton, "w-full")}
           >
             {isLoadingNotas ? "CARGANDO..." : "CARGAR LISTA DEL CURSO"}
           </button>
         </div>
       </div>
 
-      <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-        Primero carga la lista del curso. Después podrás ingresar notas, marcar ausencias y
+      <div className={cx(ui.mutedCard, "px-4 py-3 text-sm text-slate-600")}>
+        Primero cargá la lista del curso. Después podrás ingresar notas, marcar ausencias y
         guardar todos los cambios.
       </div>
 
@@ -265,13 +268,27 @@ export function NotasPanel({
         <>
           <div className="overflow-x-auto rounded-2xl border border-slate-200">
             <table className="w-full text-sm">
+              <caption className="sr-only">
+                Tabla de notas por alumno con controles para registrar calificacion y ausencia.
+              </caption>
               <thead className="bg-slate-50 text-xs uppercase text-slate-500">
                 <tr>
                   <th className="p-3 text-left">Legajo</th>
                   <th className="p-3 text-left">Apellido</th>
                   <th className="p-3 text-left">Nombre</th>
                   <th className="p-3 text-left">Nota (1-10)</th>
-                  <th className="p-3 text-left">Ausente</th>
+                  <th className="p-3 text-left">
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={allAusentes}
+                        disabled={alumnosHabilitados.length === 0 || isLoadingNotas}
+                        onChange={(event) => onChangeAusenteTodos(event.target.checked)}
+                        aria-label="Marcar ausente a todos los alumnos habilitados"
+                      />
+                      <span>Ausente</span>
+                    </label>
+                  </th>
                   <th className="p-3 text-left">Alerta</th>
                 </tr>
               </thead>
@@ -295,7 +312,8 @@ export function NotasPanel({
                         value={row.nota}
                         disabled={!row.habilitado || row.ausente || isLoadingNotas}
                         onChange={(event) => onChangeNota(row.alumnoId, event.target.value)}
-                        className="w-28 rounded-xl border border-slate-200 p-2"
+                        className={cx(ui.input, "w-28 px-3 py-2")}
+                        aria-label={`Nota de ${row.apellido} ${row.nombre}`}
                       />
                     </td>
                     <td className="p-3">
@@ -304,6 +322,7 @@ export function NotasPanel({
                         checked={row.ausente}
                         disabled={!row.habilitado || isLoadingNotas}
                         onChange={(event) => onChangeAusente(row.alumnoId, event.target.checked)}
+                        aria-label={`Marcar ausente a ${row.apellido} ${row.nombre}`}
                       />
                     </td>
                     <td className="p-3">
@@ -331,7 +350,7 @@ export function NotasPanel({
             type="button"
             onClick={() => void onGuardarNotas()}
             disabled={isLoadingNotas}
-            className="w-full rounded-xl bg-green-600 p-3 text-sm font-black text-white disabled:opacity-60"
+            className={cx(ui.successButton, "w-full")}
           >
             {isLoadingNotas ? "GUARDANDO..." : "GUARDAR CAMBIOS"}
           </button>
@@ -369,7 +388,7 @@ export function AsistenciasPanel({
   onGuardarAsistencia,
 }: AsistenciasPanelProps) {
   return (
-    <div className="space-y-4 rounded-[1.75rem] border border-slate-200 bg-white p-5">
+    <div className="space-y-4 rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/30">
       <div className="grid gap-3 md:grid-cols-3">
         <div>
           <label className="text-xs font-black uppercase tracking-[0.22em] text-slate-400">
@@ -380,7 +399,7 @@ export function AsistenciasPanel({
             max={today}
             value={fecha}
             onChange={(event) => onFechaChange(event.target.value)}
-            className="mt-2 w-full rounded-xl border border-slate-200 p-3"
+            className={cx(ui.input, "mt-2")}
           />
         </div>
         <div>
@@ -391,7 +410,7 @@ export function AsistenciasPanel({
             value={tema}
             onChange={(event) => onTemaChange(event.target.value)}
             placeholder="Unidad o clase"
-            className="mt-2 w-full rounded-xl border border-slate-200 p-3"
+            className={cx(ui.input, "mt-2")}
           />
         </div>
         <div className="flex items-end">
@@ -399,15 +418,15 @@ export function AsistenciasPanel({
             type="button"
             onClick={() => void onCargarAsistencias()}
             disabled={isLoadingAsistencia || !fecha}
-            className="w-full rounded-xl bg-[#5D9AD4] p-3 text-sm font-black text-white disabled:opacity-60"
+            className={cx(ui.primaryButton, "w-full")}
           >
             {isLoadingAsistencia ? "CARGANDO..." : "CARGAR LISTA DEL CURSO"}
           </button>
         </div>
       </div>
 
-      <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-        Carga la clase del día y revisa la condición acumulada antes de guardar la asistencia
+      <div className={cx(ui.mutedCard, "px-4 py-3 text-sm text-slate-600")}>
+        Cargue la clase del día y revise la condición acumulada antes de guardar la asistencia
         definitiva.
       </div>
 
@@ -421,6 +440,9 @@ export function AsistenciasPanel({
         <>
           <div className="overflow-x-auto rounded-2xl border border-slate-200">
             <table className="w-full text-sm">
+              <caption className="sr-only">
+                Tabla de asistencias por alumno con selector de estado y condicion acumulada.
+              </caption>
               <thead className="bg-slate-50 text-xs uppercase text-slate-500">
                 <tr>
                   <th className="p-3 text-left">Legajo</th>
@@ -446,7 +468,8 @@ export function AsistenciasPanel({
                             event.target.value as EstadoAsistencia
                           )
                         }
-                        className="rounded-xl border border-slate-200 p-2"
+                        className={cx(ui.select, "min-w-40 px-3 py-2")}
+                        aria-label={`Estado de asistencia de ${row.apellido} ${row.nombre}`}
                       >
                         <option value="presente">Presente</option>
                         <option value="ausente">Ausente</option>
@@ -485,7 +508,7 @@ export function AsistenciasPanel({
             type="button"
             onClick={() => void onGuardarAsistencia()}
             disabled={isLoadingAsistencia}
-            className="w-full rounded-xl bg-green-600 p-3 text-sm font-black text-white disabled:opacity-60"
+            className={cx(ui.successButton, "w-full")}
           >
             {isLoadingAsistencia ? "GUARDANDO..." : "GUARDAR CAMBIOS"}
           </button>

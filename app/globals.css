@@ -3,6 +3,8 @@
 :root {
   --background: #f5f8fc;
   --foreground: #0f172a;
+  --font-geist-sans: "Segoe UI";
+  --font-geist-mono: "Consolas";
   --surface-0: #ffffff;
   --surface-1: #f8fafc;
   --surface-2: #e2e8f0;
@@ -182,6 +184,95 @@ button {
     linear-gradient(180deg, #08111f 0%, #0b1325 100%) !important;
 }
 
+[data-theme-resolved="dark"] .auth-shell {
+  border-color: rgba(148, 163, 184, 0.2) !important;
+  background:
+    linear-gradient(180deg, rgba(15, 23, 42, 0.94), rgba(11, 19, 37, 0.96)) !important;
+  box-shadow:
+    0 28px 70px rgba(2, 6, 23, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+[data-theme-resolved="dark"] .auth-guided-panel {
+  border-color: rgba(148, 163, 184, 0.2) !important;
+  background:
+    linear-gradient(135deg, rgba(93, 154, 212, 0.2), rgba(251, 197, 88, 0.12)) !important;
+}
+
+[data-theme-resolved="dark"] .auth-guided-note {
+  border-color: rgba(148, 163, 184, 0.18) !important;
+  background-color: rgba(8, 17, 31, 0.46) !important;
+  color: #dbe4f2 !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.03),
+    0 12px 26px rgba(2, 6, 23, 0.18);
+}
+
+[data-theme-resolved="dark"] .auth-role-card {
+  background:
+    linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(17, 28, 50, 0.98)) !important;
+  box-shadow:
+    0 18px 42px rgba(2, 6, 23, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+[data-theme-resolved="dark"] .auth-role-overlay {
+  background: radial-gradient(
+    circle at center,
+    rgba(15, 23, 42, 0.08),
+    rgba(15, 23, 42, 0.66) 38%,
+    rgba(8, 17, 31, 0.92) 72%
+  ) !important;
+}
+
+[data-theme-resolved="dark"] .auth-google-badge {
+  background-color: rgba(248, 250, 252, 0.98) !important;
+  box-shadow:
+    0 18px 36px rgba(2, 6, 23, 0.34),
+    0 0 0 1px rgba(148, 163, 184, 0.14) !important;
+}
+
+[data-theme-resolved="dark"] .splash-chip {
+  background-color: rgba(15, 23, 42, 0.78) !important;
+  color: #c7d7ee !important;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+}
+
+[data-theme-resolved="dark"] .splash-logo-shell {
+  background:
+    linear-gradient(180deg, rgba(15, 23, 42, 0.98), rgba(17, 28, 50, 0.96)) !important;
+  box-shadow:
+    0 20px 44px rgba(2, 6, 23, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
+}
+
+[data-theme-resolved="dark"] .splash-card {
+  border-color: rgba(148, 163, 184, 0.18) !important;
+  background:
+    linear-gradient(180deg, rgba(15, 23, 42, 0.88), rgba(17, 28, 50, 0.92)) !important;
+  box-shadow:
+    0 24px 48px rgba(2, 6, 23, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03) !important;
+}
+
+[data-theme-resolved="dark"] .splash-card-title {
+  color: #f8fafc !important;
+}
+
+[data-theme-resolved="dark"] .splash-card-meta {
+  color: #9fb1c9 !important;
+}
+
+[data-theme-resolved="dark"] .splash-retry {
+  border-color: rgba(148, 163, 184, 0.18) !important;
+  background-color: rgba(15, 23, 42, 0.9) !important;
+  color: #e2e8f0 !important;
+}
+
+[data-theme-resolved="dark"] .splash-retry:hover {
+  background-color: #172338 !important;
+}
+
 a[href],
 button:not(:disabled),
 [role="button"]:not(:disabled),
@@ -203,6 +294,41 @@ textarea:disabled {
   cursor: not-allowed;
 }
 
+.admin-sidebar-scroll {
+  scrollbar-color: transparent transparent;
+  scrollbar-width: thin;
+}
+
+.admin-sidebar-scroll:hover {
+  scrollbar-color: rgba(93, 154, 212, 0.45) transparent;
+}
+
+.admin-sidebar-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.admin-sidebar-scroll::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.admin-sidebar-scroll::-webkit-scrollbar-track {
+  background: transparent;
+  margin-block: 22px;
+}
+
+.admin-sidebar-scroll::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border-radius: 999px;
+  transition: background-color 350ms ease;
+}
+
+.admin-sidebar-scroll:hover::-webkit-scrollbar-thumb,
+.admin-sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(93, 154, 212, 0.55);
+}
+
 .brand-mark {
   animation: brand-mark-enter 480ms cubic-bezier(0.22, 1, 0.36, 1);
   transform-origin: center;
@@ -222,26 +348,98 @@ textarea:disabled {
 
 .brand-logo__outer-ring,
 .brand-logo__inner-ring,
-.brand-logo__core {
+.brand-logo__outer-orbit,
+.brand-logo__inner-orbit,
+.brand-logo__core,
+.brand-logo__node,
+.brand-logo__segment {
   transform-box: fill-box;
   transform-origin: center;
 }
 
+.brand-logo__outer-orbit,
+.brand-logo__inner-orbit {
+  transform-box: view-box;
+  transform-origin: 120px 120px;
+}
+
 .brand-logo__outer-ring {
-  animation: brand-logo-spin-cw 8s linear infinite;
+  animation: none;
 }
 
 .brand-logo__inner-ring {
+  animation: none;
+}
+
+.brand-logo__outer-orbit {
+  animation: brand-logo-spin-cw 8s linear infinite;
+}
+
+.brand-logo__inner-orbit {
   animation: brand-logo-spin-ccw 10s linear infinite;
 }
 
+.brand-logo--stable-rings .brand-logo__outer-ring,
+.brand-logo--stable-rings .brand-logo__inner-ring {
+  animation: none;
+}
+
 .brand-logo__core {
-  animation: brand-logo-core 4.6s ease-in-out infinite;
+  animation: brand-logo-core-direction 20s cubic-bezier(0.22, 1, 0.36, 1) infinite;
 }
 
 .brand-logo__core line,
 .brand-logo__core circle {
   animation: brand-logo-core-glow 4.6s ease-in-out infinite;
+}
+
+.brand-logo__node--a {
+  animation: brand-logo-node-a 20s ease-in-out infinite;
+}
+
+.brand-logo__node--b {
+  animation: brand-logo-node-b 20s ease-in-out infinite;
+}
+
+.brand-logo__node--c {
+  animation: brand-logo-node-c 20s ease-in-out infinite;
+}
+
+.brand-logo__node--d {
+  animation: brand-logo-node-d 20s ease-in-out infinite;
+}
+
+.brand-logo__node--e {
+  animation: brand-logo-node-e 20s ease-in-out infinite;
+}
+
+.brand-logo__segment--ab {
+  animation: brand-logo-segment-ab 20s ease-in-out infinite;
+}
+
+.brand-logo__segment--bc {
+  animation: brand-logo-segment-bc 20s ease-in-out infinite;
+}
+
+.brand-logo__segment--ad {
+  animation: brand-logo-segment-ad 20s ease-in-out infinite;
+}
+
+.brand-logo__segment--de {
+  animation: brand-logo-segment-de 20s ease-in-out infinite;
+}
+
+.brand-logo__segment--ec {
+  animation: brand-logo-segment-ec 20s ease-in-out infinite;
+}
+
+.auth-role-overlay {
+  background: radial-gradient(
+    circle at center,
+    rgba(255, 255, 255, 0.97),
+    rgba(255, 255, 255, 0.82) 42%,
+    transparent 76%
+  );
 }
 
 @keyframes brand-mark-enter {
@@ -276,16 +474,57 @@ textarea:disabled {
   }
 }
 
-@keyframes brand-logo-core {
-  0%,
-  100% {
-    transform: translateY(0) scale(1) rotate(0deg);
-    opacity: 0.95;
+@keyframes brand-logo-core-direction {
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+
+  10% {
+    transform: rotate(8deg) scale(1.015);
+  }
+
+  18% {
+    transform: rotate(-4deg) scale(0.99);
+  }
+
+  25% {
+    transform: rotate(72deg) scale(1.01);
+  }
+
+  35% {
+    transform: rotate(80deg) scale(1.02);
+  }
+
+  43% {
+    transform: rotate(66deg) scale(0.992);
   }
 
   50% {
-    transform: translateY(-2px) scale(1.04) rotate(3deg);
-    opacity: 1;
+    transform: rotate(144deg) scale(1);
+  }
+
+  60% {
+    transform: rotate(152deg) scale(1.016);
+  }
+
+  68% {
+    transform: rotate(138deg) scale(0.992);
+  }
+
+  75% {
+    transform: rotate(-72deg) scale(1.01);
+  }
+
+  85% {
+    transform: rotate(-62deg) scale(1.018);
+  }
+
+  93% {
+    transform: rotate(-80deg) scale(0.992);
+  }
+
+  100% {
+    transform: rotate(0deg) scale(1);
   }
 }
 
@@ -302,6 +541,356 @@ textarea:disabled {
   }
 }
 
+@keyframes brand-logo-node-a {
+  0%,
+  25%,
+  50%,
+  75%,
+  100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+
+  10%,
+  35%,
+  60%,
+  85% {
+    transform: translate(-4px, 2px) scale(1.04);
+    opacity: 0.94;
+  }
+
+  18%,
+  43%,
+  68%,
+  93% {
+    transform: translate(2px, -1px) scale(0.98);
+    opacity: 0.96;
+  }
+
+  21%,
+  46%,
+  71%,
+  96% {
+    transform: translate(-18px, -6px) scale(0.88);
+    opacity: 0.72;
+  }
+}
+
+@keyframes brand-logo-node-b {
+  0%,
+  25%,
+  50%,
+  75%,
+  100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+
+  10%,
+  35%,
+  60%,
+  85% {
+    transform: translate(0, -4px) scale(1.05);
+    opacity: 0.95;
+  }
+
+  18%,
+  43%,
+  68%,
+  93% {
+    transform: translate(1px, 2px) scale(0.98);
+    opacity: 0.96;
+  }
+
+  21%,
+  46%,
+  71%,
+  96% {
+    transform: translate(0, -20px) scale(1.12);
+    opacity: 0.8;
+  }
+}
+
+@keyframes brand-logo-node-c {
+  0%,
+  25%,
+  50%,
+  75%,
+  100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+
+  10%,
+  35%,
+  60%,
+  85% {
+    transform: translate(4px, 1px) scale(1.03);
+    opacity: 0.95;
+  }
+
+  18%,
+  43%,
+  68%,
+  93% {
+    transform: translate(-2px, -1px) scale(0.985);
+    opacity: 0.96;
+  }
+
+  21%,
+  46%,
+  71%,
+  96% {
+    transform: translate(18px, -4px) scale(0.92);
+    opacity: 0.76;
+  }
+}
+
+@keyframes brand-logo-node-d {
+  0%,
+  25%,
+  50%,
+  75%,
+  100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+
+  10%,
+  35%,
+  60%,
+  85% {
+    transform: translate(-3px, 4px) scale(1.03);
+    opacity: 0.95;
+  }
+
+  18%,
+  43%,
+  68%,
+  93% {
+    transform: translate(2px, -2px) scale(0.985);
+    opacity: 0.96;
+  }
+
+  21%,
+  46%,
+  71%,
+  96% {
+    transform: translate(-14px, 18px) scale(0.9);
+    opacity: 0.74;
+  }
+}
+
+@keyframes brand-logo-node-e {
+  0%,
+  25%,
+  50%,
+  75%,
+  100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+
+  10%,
+  35%,
+  60%,
+  85% {
+    transform: translate(3px, 3px) scale(1.04);
+    opacity: 0.95;
+  }
+
+  18%,
+  43%,
+  68%,
+  93% {
+    transform: translate(-2px, -1px) scale(0.985);
+    opacity: 0.96;
+  }
+
+  21%,
+  46%,
+  71%,
+  96% {
+    transform: translate(14px, 16px) scale(1.06);
+    opacity: 0.8;
+  }
+}
+
+@keyframes brand-logo-segment-ab {
+  0%,
+  25%,
+  50%,
+  75%,
+  100% {
+    transform: translate(0, 0) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+
+  10%,
+  35%,
+  60%,
+  85% {
+    transform: translate(-3px, -1px) rotate(-6deg) scaleX(1.03);
+    opacity: 0.88;
+  }
+
+  18%,
+  43%,
+  68%,
+  93% {
+    transform: translate(2px, 1px) rotate(4deg) scaleX(0.98);
+    opacity: 0.92;
+  }
+
+  21%,
+  46%,
+  71%,
+  96% {
+    transform: translate(16px, -8px) rotate(32deg) scaleX(1.16);
+    opacity: 0.4;
+  }
+}
+
+@keyframes brand-logo-segment-bc {
+  0%,
+  25%,
+  50%,
+  75%,
+  100% {
+    transform: translate(0, 0) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+
+  10%,
+  35%,
+  60%,
+  85% {
+    transform: translate(3px, -1px) rotate(6deg) scaleX(1.03);
+    opacity: 0.88;
+  }
+
+  18%,
+  43%,
+  68%,
+  93% {
+    transform: translate(-2px, 1px) rotate(-4deg) scaleX(0.98);
+    opacity: 0.92;
+  }
+
+  21%,
+  46%,
+  71%,
+  96% {
+    transform: translate(-16px, 8px) rotate(-34deg) scaleX(1.18);
+    opacity: 0.38;
+  }
+}
+
+@keyframes brand-logo-segment-ad {
+  0%,
+  25%,
+  50%,
+  75%,
+  100% {
+    transform: translate(0, 0) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+
+  10%,
+  35%,
+  60%,
+  85% {
+    transform: translate(-2px, 3px) rotate(-5deg) scaleY(1.03);
+    opacity: 0.88;
+  }
+
+  18%,
+  43%,
+  68%,
+  93% {
+    transform: translate(1px, -2px) rotate(4deg) scaleY(0.98);
+    opacity: 0.92;
+  }
+
+  21%,
+  46%,
+  71%,
+  96% {
+    transform: translate(12px, -12px) rotate(34deg) scaleY(1.14);
+    opacity: 0.38;
+  }
+}
+
+@keyframes brand-logo-segment-de {
+  0%,
+  25%,
+  50%,
+  75%,
+  100% {
+    transform: translate(0, 0) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+
+  10%,
+  35%,
+  60%,
+  85% {
+    transform: translate(0, 3px) rotate(4deg) scaleX(1.03);
+    opacity: 0.88;
+  }
+
+  18%,
+  43%,
+  68%,
+  93% {
+    transform: translate(0, -2px) rotate(-4deg) scaleX(0.985);
+    opacity: 0.92;
+  }
+
+  21%,
+  46%,
+  71%,
+  96% {
+    transform: translate(-18px, -4px) rotate(-32deg) scaleX(1.18);
+    opacity: 0.36;
+  }
+}
+
+@keyframes brand-logo-segment-ec {
+  0%,
+  25%,
+  50%,
+  75%,
+  100% {
+    transform: translate(0, 0) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+
+  10%,
+  35%,
+  60%,
+  85% {
+    transform: translate(2px, 3px) rotate(5deg) scaleY(1.03);
+    opacity: 0.88;
+  }
+
+  18%,
+  43%,
+  68%,
+  93% {
+    transform: translate(-1px, -2px) rotate(-4deg) scaleY(0.985);
+    opacity: 0.92;
+  }
+
+  21%,
+  46%,
+  71%,
+  96% {
+    transform: translate(10px, 14px) rotate(28deg) scaleY(1.16);
+    opacity: 0.4;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .brand-mark {
     animation: none;
@@ -314,7 +903,9 @@ textarea:disabled {
 
   .brand-logo__outer-ring,
   .brand-logo__inner-ring,
-  .brand-logo__core {
+  .brand-logo__core,
+  .brand-logo__node,
+  .brand-logo__segment {
     animation: none;
   }
 }

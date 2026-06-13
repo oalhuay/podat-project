@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { parseEstadisticasFromFile } from "@/lib/import/estadisticas/parseExcel";
-import type { ParsedEstadisticaRow } from "@/lib/import/estadisticas/parseExcel";
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
+import {
+  parseEstadisticasFromFile,
+  type ParsedEstadisticaRow,
+} from "@/lib/import/estadisticas/parseExcel";
 import type { EstadisticaImportStatus } from "@/lib/import/estadisticas/types";
 import type { Materia } from "@/lib/materias";
 import {
@@ -43,6 +45,7 @@ export function useEstadisticasImport({
     () => buildEstadisticaPreviewRows(parsedRows, materias, importDefaults, messages),
     [importDefaults, materias, messages, parsedRows]
   );
+  const deferredPreviewRows = useDeferredValue(previewRows);
 
   const summary = useMemo(
     () => (previewRows.length > 0 ? buildEstadisticaImportSummary(previewRows) : null),
@@ -56,16 +59,23 @@ export function useEstadisticasImport({
 
   useEffect(() => {
     let isCancelled = false;
+    let loadingIndicatorTimer: number | null = null;
 
     const syncChangeSummary = async () => {
-      if (previewRows.length === 0) {
+      if (deferredPreviewRows.length === 0) {
         setChangeSummary(null);
+        setIsCheckingChanges(false);
         return;
       }
 
-      setIsCheckingChanges(true);
+      loadingIndicatorTimer = window.setTimeout(() => {
+        if (!isCancelled) {
+          setIsCheckingChanges(true);
+        }
+      }, 120);
+
       try {
-        const nextSummary = await computeEstadisticaChangeSummary(previewRows);
+        const nextSummary = await computeEstadisticaChangeSummary(deferredPreviewRows);
         if (!isCancelled) {
           setChangeSummary(nextSummary);
         }
@@ -83,21 +93,24 @@ export function useEstadisticasImport({
           });
         }
       } finally {
+        if (loadingIndicatorTimer !== null) {
+          window.clearTimeout(loadingIndicatorTimer);
+        }
         if (!isCancelled) {
           setIsCheckingChanges(false);
         }
       }
     };
 
-    const timeoutId = window.setTimeout(() => {
-      void syncChangeSummary();
-    }, 0);
+    void syncChangeSummary();
 
     return () => {
       isCancelled = true;
-      window.clearTimeout(timeoutId);
+      if (loadingIndicatorTimer !== null) {
+        window.clearTimeout(loadingIndicatorTimer);
+      }
     };
-  }, [onStatusMessage, previewRows]);
+  }, [deferredPreviewRows, onStatusMessage]);
 
   const processFile = async (file: File) => {
     setArchivo(file);
