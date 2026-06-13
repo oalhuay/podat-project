@@ -2,6 +2,13 @@
 
 # dependencies
 /node_modules
+**/.venv/
+**/venv/
+**/__pycache__/
+*.py[cod]
+*$py.class
+*.pyd
+*.pyo
 /.pnp
 .pnp.*
 .yarn/*
