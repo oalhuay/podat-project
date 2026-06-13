@@ -14,8 +14,11 @@ import { Line } from "react-chartjs-2";
 import { useAuth } from "@/app/hooks/useAuth";
 import { useEstadisticasImport } from "@/app/hooks/useEstadisticasImport";
 import { useTheme } from "@/app/hooks/useTheme";
-import { supabase } from "@/lib/supabase";
 import StatusBanner from "@/components/admin/StatusBanner";
+import {
+  createMissingMaterias,
+  fetchEstadisticas,
+} from "@/lib/academicApi";
 import { getChartPalette } from "@/lib/charts/theme";
 import {
   ALL_INDICATORS,
@@ -184,21 +187,11 @@ export default function EstadisticasPage() {
         return;
       }
 
-      const payload = faltantes.map((nombre) => ({ nombre }));
-      const { error } = await supabase.from("materias").insert(payload);
-      if (error) throw error;
-
-      const { data: refreshed, error: refreshError } = await supabase
-        .from("materias")
-        .select("id, nombre")
-        .order("nombre", { ascending: true });
-      if (refreshError) throw refreshError;
-
-      const materiasList = (refreshed ?? []) as Materia[];
-      setMaterias(materiasList);
+      const response = await createMissingMaterias(faltantes);
+      setMaterias(response.materias);
       setStatusMessage({
         type: "success",
-        text: `Materias creadas: ${faltantes.length}.`,
+        text: `Materias creadas: ${response.creadas}.`,
       });
     } catch (error: unknown) {
       const message =
@@ -226,17 +219,13 @@ export default function EstadisticasPage() {
     setIsLoadingStats(true);
 
     try {
-      const { data, error } = await supabase
-        .from("estadisticas")
-        .select("anio, indicador, valor")
-        .eq("materia_id", Number(selectedMateriaId))
-        .gte("anio", Number(yearFrom))
-        .lte("anio", Number(yearTo))
-        .order("anio", { ascending: true });
+      const data = await fetchEstadisticas({
+        materiaId: Number(selectedMateriaId),
+        anioDesde: Number(yearFrom),
+        anioHasta: Number(yearTo),
+      });
 
-      if (error) throw error;
-
-      const cleaned = (data ?? [])
+      const cleaned = data
         .map((row) => ({
           anio: Number(row.anio),
           indicador: row.indicador as IndicatorCode,

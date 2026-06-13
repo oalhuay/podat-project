@@ -1,7 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -18,7 +17,7 @@ import {
 import { Bar, Chart, Doughnut, Line, Radar, Scatter } from "react-chartjs-2";
 import { useAuth } from "@/app/hooks/useAuth";
 import { useTheme } from "@/app/hooks/useTheme";
-import { supabase } from "@/lib/supabase";
+import { fetchEstadisticas } from "@/lib/academicApi";
 import StatusBanner from "@/components/admin/StatusBanner";
 import { getChartPalette } from "@/lib/charts/theme";
 import {
@@ -275,16 +274,12 @@ export default function EstadisticasDashboardPage() {
       setIsLoadingStats(true);
 
       try {
-        const { data, error } = await supabase
-          .from("estadisticas")
-          .select("materia_id, anio, indicador, valor")
-          .in("materia_id", distinctMateriaIds)
-          .lte("anio", yearLimit)
-          .order("anio", { ascending: true });
+        const data = await fetchEstadisticas({
+          materiaIds: distinctMateriaIds,
+          anioHasta: yearLimit,
+        });
 
-        if (error) throw error;
-
-        const cleaned = (data ?? [])
+        const cleaned = data
           .map((row) => ({
             materia_id: Number(row.materia_id),
             anio: Number(row.anio),

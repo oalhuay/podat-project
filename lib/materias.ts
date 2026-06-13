@@ -1,4 +1,7 @@
-import { supabase } from "@/lib/supabase";
+import {
+  fetchAccessibleMaterias,
+  fetchMateriaAssignments,
+} from "@/lib/academicApi";
 import type { Rol } from "@/types/database";
 
 export type Materia = {
@@ -31,48 +34,19 @@ export const getAccessibleMaterias = async (
   userId: string | null,
   rol: Rol
 ): Promise<Materia[]> => {
-  if (rol === "admin") {
-    const { data, error } = await supabase
-      .from("materias")
-      .select("id, nombre, codigo")
-      .order("nombre", { ascending: true });
-
-    if (error) {
-      throw error;
-    }
-
-    return (data ?? []) as Materia[];
-  }
-
-  if (!userId || rol !== "docente") {
+  if (!userId || !rol) {
     return [];
   }
 
-  const { data, error } = await supabase
-    .from("materias_docentes")
-    .select("id, materia_id, user_id, comision, materias(id, nombre, codigo)")
-    .eq("user_id", userId)
-    .order("id", { ascending: false });
-
-  if (error) {
-    throw error;
-  }
-
-  return extractMateriasFromAssignments((data ?? []) as MateriaDocenteAssignment[]);
+  return fetchAccessibleMaterias();
 };
 
 export const getMateriaAssignmentsForUser = async (
   userId: string
 ): Promise<MateriaDocenteAssignment[]> => {
-  const { data, error } = await supabase
-    .from("materias_docentes")
-    .select("id, materia_id, user_id, comision, materias(id, nombre, codigo)")
-    .eq("user_id", userId)
-    .order("id", { ascending: false });
-
-  if (error) {
-    throw error;
+  if (!userId) {
+    return [];
   }
 
-  return (data ?? []) as MateriaDocenteAssignment[];
+  return fetchMateriaAssignments();
 };

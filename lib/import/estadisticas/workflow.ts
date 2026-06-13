@@ -1,4 +1,7 @@
-import { supabase } from "@/lib/supabase";
+import {
+  fetchEstadisticaChangeSummary,
+  saveEstadisticas,
+} from "@/lib/academicApi";
 import { getIndicatorFromLabel } from "@/lib/estadisticas/catalog";
 import type { ParsedEstadisticaRow } from "@/lib/import/estadisticas/parseExcel";
 import type {
@@ -178,7 +181,7 @@ export const getValidEstadisticaPayload = (rows: EstadisticaPreviewRow[]) =>
       materia_id: row.materiaId as number,
       anio: row.anio as number,
       indicador: row.indicadorCode!,
-      valor: row.valor,
+      valor: Number(row.valor),
     }));
 
 export const computeEstadisticaChangeSummary = async (
@@ -189,52 +192,7 @@ export const computeEstadisticaChangeSummary = async (
     return null;
   }
 
-  const materiaIds = Array.from(new Set(validRows.map((row) => row.materia_id)));
-  const years = Array.from(new Set(validRows.map((row) => row.anio)));
-  const indicators = Array.from(new Set(validRows.map((row) => row.indicador)));
-
-  const { data, error } = await supabase
-    .from("estadisticas")
-    .select("materia_id, anio, indicador, valor")
-    .in("materia_id", materiaIds)
-    .in("anio", years)
-    .in("indicador", indicators);
-
-  if (error) {
-    throw error;
-  }
-
-  const existingMap = new Map<string, number>();
-  (data ?? []).forEach((row) => {
-    existingMap.set(`${row.materia_id}|${row.anio}|${row.indicador}`, Number(row.valor));
-  });
-
-  let nuevos = 0;
-  let actualizados = 0;
-  let sinCambios = 0;
-
-  validRows.forEach((row) => {
-    const key = `${row.materia_id}|${row.anio}|${row.indicador}`;
-    const existing = existingMap.get(key);
-    if (existing === undefined) {
-      nuevos += 1;
-      return;
-    }
-
-    const diff = Math.abs(existing - (row.valor ?? 0));
-    if (diff > 1e-6) {
-      actualizados += 1;
-    } else {
-      sinCambios += 1;
-    }
-  });
-
-  return {
-    revisados: validRows.length,
-    nuevos,
-    actualizados,
-    sinCambios,
-  };
+  return fetchEstadisticaChangeSummary(validRows);
 };
 
 export const saveEstadisticaPreviewRows = async (rows: EstadisticaPreviewRow[]) => {
@@ -243,15 +201,8 @@ export const saveEstadisticaPreviewRows = async (rows: EstadisticaPreviewRow[]) 
     return 0;
   }
 
-  const { error } = await supabase
-    .from("estadisticas")
-    .upsert(payload, { onConflict: "materia_id,anio,indicador" });
-
-  if (error) {
-    throw error;
-  }
-
-  return payload.length;
+  const response = await saveEstadisticas(payload);
+  return response.guardadas;
 };
 
 export const getMissingMateriaNames = (
