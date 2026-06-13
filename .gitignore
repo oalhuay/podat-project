@@ -19,6 +19,9 @@
 
 # testing
 /coverage
+/playwright/.auth/
+/playwright-report/
+/test-results/
 
 # next.js
 /.next/
@@ -40,6 +43,7 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 !.env.example
+/.env.playwright.local
 
 # vercel
 .vercel

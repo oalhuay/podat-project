@@ -8,7 +8,13 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "test:ui:login": "playwright codegen --target=playwright-test --save-storage=playwright/.auth/user.json https://podat-project.vercel.app",
+    "test:ui:inject": "node scripts/playwright-auth.mjs",
+    "test:ui:inject:test": "node --test scripts/playwright-auth.test.mjs",
+    "test:ui": "playwright test tests/interface",
+    "test:ui:record": "node scripts/playwright-record.mjs",
+    "test:ui:record:clipboard": "node scripts/playwright-record-clipboard.mjs"
   },
   "overrides": {
     "postcss": "^8.5.10"
@@ -24,6 +30,7 @@
     "react-dom": "^19.2.6"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "@resvg/resvg-js": "^2.6.2",
     "@tailwindcss/postcss": "^4.3.0",
     "@testing-library/react": "^16.3.2",
