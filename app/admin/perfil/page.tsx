@@ -380,7 +380,7 @@ export default function PerfilPage() {
             <div className="text-xs font-black uppercase tracking-[0.28em] text-slate-400">
               Materias asignadas oficialmente
             </div>
-            <div className="mt-4 space-y-3">
+            <div className="mt-4 space-y-3 max-h-[26rem] overflow-y-auto pr-2">
               {assignedSubjects.length === 0 ? (
                 <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-500">
                   Todavía no tiene materias asignadas por administración.
