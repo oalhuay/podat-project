@@ -278,7 +278,14 @@ export default function EstadisticasDashboardPage() {
     createInitialSelections(""),
   );
   const [loadedStatsRows, setLoadedStatsRows] = useState<StatRow[]>([]);
-  const [isLoadingStats, setIsLoadingStats] = useState(false);
+  const [loadingCharts, setLoadingCharts] = useState<Record<ChartKey, boolean>>({
+    linea: false,
+    area: false,
+    estado: false,
+    participacion: false,
+    genero: false,
+    combinado: false,
+  });
   const [statusMessage, setStatusMessage] = useState<StatusMessage | null>(
     null,
   );
@@ -308,18 +315,21 @@ export default function EstadisticasDashboardPage() {
         }
 
         const defaultMateriaId = uniqueMaterias[0]?.id ?? "";
+        let finalSelections = createInitialSelections(defaultMateriaId);
+
         setChartSelections((current) => {
           const hasExistingSelection = CHART_KEYS.some(
             (key) => current[key] !== "",
           );
           if (!hasExistingSelection) {
-            return createInitialSelections(defaultMateriaId);
+            finalSelections = createInitialSelections(defaultMateriaId);
+            return finalSelections;
           }
 
           const availableIds = new Set(
             uniqueMaterias.map((materia) => materia.id),
           );
-          return CHART_KEYS.reduce((acc, key) => {
+          finalSelections = CHART_KEYS.reduce((acc, key) => {
             const currentValue = current[key];
             acc[key] =
               currentValue !== "" && availableIds.has(currentValue)
@@ -327,7 +337,20 @@ export default function EstadisticasDashboardPage() {
                 : defaultMateriaId;
             return acc;
           }, {} as ChartSelections);
+          return finalSelections;
         });
+
+        const distinctIds = Array.from(
+          new Set(
+            Object.values(finalSelections).filter(
+              (value): value is number => typeof value === "number",
+            ),
+          ),
+        );
+
+        if (distinctIds.length > 0) {
+          void loadAllStats(distinctIds, Number(selectedYear));
+        }
       } catch (error: unknown) {
         const message =
           typeof error === "object" && error !== null && "message" in error
@@ -347,77 +370,134 @@ export default function EstadisticasDashboardPage() {
     return () => window.clearTimeout(timeoutId);
   }, [isLoadingProfile, role, user?.id]);
 
-  const distinctMateriaIds = useMemo(
-    () =>
-      Array.from(
-        new Set(
-          Object.values(chartSelections).filter(
-            (value): value is number => typeof value === "number",
-          ),
-        ),
-      ),
-    [chartSelections],
-  );
+  const loadStatsForMateria = async (materiaId: number, chartKeys: ChartKey[]) => {
+    setLoadingCharts((prev) => {
+      const next = { ...prev };
+      chartKeys.forEach((key) => {
+        next[key] = true;
+      });
+      return next;
+    });
 
-  const shouldQueryStats =
-    Number.isFinite(Number(selectedYear)) && distinctMateriaIds.length > 0;
+    try {
+      const yearLimit = Number(selectedYear);
+      const data = await fetchEstadisticas({
+        materiaId,
+        anioHasta: yearLimit,
+      });
+
+      const cleaned = data
+        .map((row) => ({
+          materia_id: Number(row.materia_id),
+          anio: Number(row.anio),
+          indicador: row.indicador as IndicatorCode,
+          valor: Number(row.valor),
+        }))
+        .filter(
+          (row) =>
+            Number.isFinite(row.materia_id) &&
+            Number.isFinite(row.anio) &&
+            Number.isFinite(row.valor),
+        );
+
+      setLoadedStatsRows((prev) => {
+        const filtered = prev.filter((row) => row.materia_id !== materiaId);
+        return [...filtered, ...cleaned];
+      });
+    } catch (error: unknown) {
+      const message =
+        typeof error === "object" && error !== null && "message" in error
+          ? String((error as { message: unknown }).message)
+          : "Error desconocido";
+      setStatusMessage({
+        type: "error",
+        text: `No se pudieron cargar estadísticas para la materia: ${message}`,
+      });
+    } finally {
+      setLoadingCharts((prev) => {
+        const next = { ...prev };
+        chartKeys.forEach((key) => {
+          next[key] = false;
+        });
+        return next;
+      });
+    }
+  };
+
+  const loadAllStats = async (materiaIds: number[], yearLimit: number) => {
+    if (materiaIds.length === 0) return;
+
+    setLoadingCharts({
+      linea: true,
+      area: true,
+      estado: true,
+      participacion: true,
+      genero: true,
+      combinado: true,
+    });
+
+    try {
+      const data = await fetchEstadisticas({
+        materiaIds,
+        anioHasta: yearLimit,
+      });
+
+      const cleaned = data
+        .map((row) => ({
+          materia_id: Number(row.materia_id),
+          anio: Number(row.anio),
+          indicador: row.indicador as IndicatorCode,
+          valor: Number(row.valor),
+        }))
+        .filter(
+          (row) =>
+            Number.isFinite(row.materia_id) &&
+            Number.isFinite(row.anio) &&
+            Number.isFinite(row.valor),
+        );
+
+      setLoadedStatsRows(cleaned);
+    } catch (error: unknown) {
+      const message =
+        typeof error === "object" && error !== null && "message" in error
+          ? String((error as { message: unknown }).message)
+          : "Error desconocido";
+      setStatusMessage({
+        type: "error",
+        text: `No se pudieron cargar estadísticas: ${message}`,
+      });
+    } finally {
+      setLoadingCharts({
+        linea: false,
+        area: false,
+        estado: false,
+        participacion: false,
+        genero: false,
+        combinado: false,
+      });
+    }
+  };
 
   useEffect(() => {
-    if (!shouldQueryStats) {
-      return;
+    if (!Number.isFinite(Number(selectedYear))) return;
+
+    const ids = Array.from(
+      new Set(
+        Object.values(chartSelections).filter(
+          (value): value is number => typeof value === "number",
+        ),
+      ),
+    );
+
+    if (ids.length > 0) {
+      const timeoutId = window.setTimeout(() => {
+        void loadAllStats(ids, Number(selectedYear));
+      }, 0);
+      return () => window.clearTimeout(timeoutId);
     }
+  }, [selectedYear]);
 
-    const yearLimit = Number(selectedYear);
-
-    const loadStats = async () => {
-      setIsLoadingStats(true);
-
-      try {
-        const data = await fetchEstadisticas({
-          materiaIds: distinctMateriaIds,
-          anioHasta: yearLimit,
-        });
-
-        const cleaned = data
-          .map((row) => ({
-            materia_id: Number(row.materia_id),
-            anio: Number(row.anio),
-            indicador: row.indicador as IndicatorCode,
-            valor: Number(row.valor),
-          }))
-          .filter(
-            (row) =>
-              Number.isFinite(row.materia_id) &&
-              Number.isFinite(row.anio) &&
-              Number.isFinite(row.valor),
-          );
-
-        setLoadedStatsRows(cleaned);
-      } catch (error: unknown) {
-        const message =
-          typeof error === "object" && error !== null && "message" in error
-            ? String((error as { message: unknown }).message)
-            : "Error desconocido";
-        setStatusMessage({
-          type: "error",
-          text: `No se pudieron cargar estadísticas: ${message}`,
-        });
-      } finally {
-        setIsLoadingStats(false);
-      }
-    };
-
-    const timeoutId = window.setTimeout(() => {
-      void loadStats();
-    }, 0);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [distinctMateriaIds, selectedYear, shouldQueryStats]);
-
-  const statsRows = useMemo(
-    () => (shouldQueryStats ? loadedStatsRows : []),
-    [loadedStatsRows, shouldQueryStats],
-  );
+  const statsRows = loadedStatsRows;
 
   const statsByMateria = useMemo(() => {
     const map = new Map<number, StatRow[]>();
@@ -525,6 +605,10 @@ export default function EstadisticasDashboardPage() {
       ...current,
       [chartKey]: value,
     }));
+
+    if (value !== "") {
+      void loadStatsForMateria(value, [chartKey]);
+    }
   };
 
   const chartPalette = useMemo(
@@ -753,8 +837,8 @@ export default function EstadisticasDashboardPage() {
     });
   };
 
-  const renderLoadingOrEmpty = (materiaId: number | "", years: number[]) => {
-    if (isLoadingStats) {
+  const renderLoadingOrEmpty = (chartKey: ChartKey, materiaId: number | "", years: number[]) => {
+    if (loadingCharts[chartKey]) {
       return <EmptyChartState text="Cargando gráfico..." />;
     }
 
@@ -831,7 +915,7 @@ export default function EstadisticasDashboardPage() {
           materias={materias}
           onMateriaChange={(value) => handleSelectionChange("linea", value)}
         >
-          {renderLoadingOrEmpty(lineaMateriaId, lineaYears) ?? (
+          {renderLoadingOrEmpty("linea", lineaMateriaId, lineaYears) ?? (
             <Line
               data={{
                 labels: lineaYears.map(String),
@@ -875,7 +959,7 @@ export default function EstadisticasDashboardPage() {
           materias={materias}
           onMateriaChange={(value) => handleSelectionChange("area", value)}
         >
-          {isLoadingStats ? (
+          {loadingCharts.area ? (
             <EmptyChartState text="Cargando gráfico..." />
           ) : areaMateriaId === "" ? (
             <EmptyChartState text="Selecciona una materia para visualizar el gráfico." />
@@ -925,7 +1009,7 @@ export default function EstadisticasDashboardPage() {
           onMateriaChange={(value) => handleSelectionChange("estado", value)}
 
         >
-          {isLoadingStats ? (
+          {loadingCharts.estado ? (
             <EmptyChartState text="Cargando gráfico..." />
           ) : estadoMateriaId === "" ? (
             <EmptyChartState text="Selecciona una materia para visualizar el gráfico." />
@@ -968,7 +1052,7 @@ export default function EstadisticasDashboardPage() {
             handleSelectionChange("participacion", value)
           }
         >
-          {renderLoadingOrEmpty(participacionMateriaId, participacionYears) ?? (
+          {renderLoadingOrEmpty("participacion", participacionMateriaId, participacionYears) ?? (
             <Bar
               data={{
                 labels: participacionYears.map(String),
@@ -1014,7 +1098,7 @@ export default function EstadisticasDashboardPage() {
           materias={materias}
           onMateriaChange={(value) => handleSelectionChange("genero", value)}
         >
-          {renderLoadingOrEmpty(generoMateriaId, generoYears) ?? (
+          {renderLoadingOrEmpty("genero", generoMateriaId, generoYears) ?? (
             <Doughnut
               data={{
                 labels: ["Varones", "Mujeres"],
@@ -1042,7 +1126,7 @@ export default function EstadisticasDashboardPage() {
           materias={materias}
           onMateriaChange={(value) => handleSelectionChange("combinado", value)}
         >
-          {renderLoadingOrEmpty(combinadoMateriaId, combinadoYears) ?? (
+          {renderLoadingOrEmpty("combinado", combinadoMateriaId, combinadoYears) ?? (
             <Bubble
               data={{
                 datasets: [
