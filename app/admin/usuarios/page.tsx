@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { isAuthSessionMissingError } from "@/lib/auth/isAuthSessionMissingError";
-import { supabase } from "@/lib/supabase";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useAuth } from "@/app/hooks/useAuth";
+import { apiClient } from "@/lib/apiClient";
 import StatusBanner from "@/components/admin/StatusBanner";
 import type { Rol } from "@/types/database";
-import LoaderOverlay from "@/components/ui/LoaderOverlay";
 
 type PerfilRow = {
   id: string;
@@ -29,6 +28,7 @@ const formatLastLogin = (value: string | null): string => {
 const rolLabel = (rol: Rol): string => (rol === null ? "Pendiente" : rol);
 
 export default function GestionUsuariosPage() {
+  const { user } = useAuth();
   const [perfiles, setPerfiles] = useState<PerfilRow[]>([]);
   const [statusMessage, setStatusMessage] = useState<StatusMessage | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -42,18 +42,13 @@ export default function GestionUsuariosPage() {
     return perfiles.filter((p) => (p.correo ?? "").toLowerCase().includes(query));
   }, [busqueda, perfiles]);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const { data: userData, error: userError } = await supabase.auth.getUser();
-      if (userError && !isAuthSessionMissingError(userError)) {
-        throw userError;
-      }
-
-      const userId = userData.user?.id ?? null;
+      const userId = user?.id ?? null;
       setCurrentUserId(userId);
 
-      const { data, error } = await supabase
+      const { data, error } = await apiClient
         .from("perfiles")
         .select("id, correo, rol, last_login_at")
         .order("last_login_at", { ascending: false, nullsFirst: false });
@@ -83,7 +78,7 @@ export default function GestionUsuariosPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -91,7 +86,7 @@ export default function GestionUsuariosPage() {
     }, 0);
 
     return () => window.clearTimeout(timeoutId);
-  }, []);
+  }, [loadData]);
 
   const updateRol = async (perfilId: string, nuevoRol: Rol) => {
     if (perfilId === currentUserId && adminCount <= 1 && nuevoRol !== "admin") {
@@ -104,7 +99,7 @@ export default function GestionUsuariosPage() {
 
     setIsLoading(true);
     try {
-      const { error } = await supabase.rpc("set_user_role", {
+      const { error } = await apiClient.rpc("set_user_role", {
         p_user_id: perfilId,
         p_new_role: nuevoRol ?? "pendiente",
       });
@@ -165,8 +160,7 @@ export default function GestionUsuariosPage() {
         />
       </section>
 
-      <section className="relative overflow-hidden rounded-3xl border border-slate-200">
-        <LoaderOverlay isLoading={isLoading} message="Actualizando..." className="rounded-3xl" />
+      <section className="overflow-hidden rounded-3xl border border-slate-200">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-slate-900">
             <caption className="sr-only">

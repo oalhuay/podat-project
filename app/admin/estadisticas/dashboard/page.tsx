@@ -16,6 +16,7 @@ import {
   RadarController,
   BubbleController,
   type ScriptableContext,
+  type TooltipItem,
 } from "chart.js";
 import { Bar, Bubble, Doughnut, Line, PolarArea, Radar } from "react-chartjs-2";
 import { useAuth } from "@/app/hooks/useAuth";
@@ -67,7 +68,6 @@ type ChartKey =
 type ChartSelections = Record<ChartKey, number | "">;
 
 const CURRENT_YEAR = new Date().getFullYear();
-const NUMBER_FORMATTER = new Intl.NumberFormat("es-AR");
 const CHART_KEYS: ChartKey[] = [
   "linea",
   "area",
@@ -258,61 +258,6 @@ function ChartCard({
       <div className="h-64">{children}</div>
       {footer && <div className="mt-4">{footer}</div>}
     </article>
-  );
-}
-
-function VisibleDataTable({
-  title,
-  columns,
-  rows,
-}: {
-  title: string;
-  columns: string[];
-  rows: Array<Array<string | number>>;
-}) {
-  return (
-    <div className="border-t border-slate-200 pt-4">
-      <p className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">
-        {title}
-      </p>
-      <div className="mt-3 overflow-x-auto">
-        <table className="min-w-full text-left text-xs text-slate-600">
-          <thead className="text-[10px] uppercase tracking-[0.16em] text-slate-400">
-            <tr>
-              {columns.map((column) => (
-                <th
-                  key={column}
-                  className="whitespace-nowrap border-b border-slate-200 px-3 py-2"
-                >
-                  {column}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row, rowIndex) => (
-              <tr
-                key={rowIndex}
-                className="border-b border-slate-100 last:border-0"
-              >
-                {row.map((cell, cellIndex) => (
-                  <td
-                    key={`${rowIndex}-${cellIndex}`}
-                    className={`whitespace-nowrap px-3 py-2 ${
-                      cellIndex === 0
-                        ? "font-bold text-slate-800"
-                        : "font-semibold"
-                    }`}
-                  >
-                    {cell}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
   );
 }
 
@@ -631,37 +576,6 @@ export default function EstadisticasDashboardPage() {
     } as const;
   };
 
-  const barChartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        position: "bottom" as const,
-        labels: {
-          color: chartPalette.text,
-        },
-      },
-    },
-    scales: {
-      x: {
-        ticks: {
-          color: chartPalette.mutedText,
-        },
-        grid: {
-          color: chartPalette.grid,
-        },
-      },
-      y: {
-        beginAtZero: true,
-        ticks: {
-          color: chartPalette.mutedText,
-        },
-        grid: {
-          color: chartPalette.grid,
-        },
-      },
-    },
-  } as const;
   const percentStackedBarOptions = {
     responsive: true,
     maintainAspectRatio: false,
@@ -793,8 +707,8 @@ export default function EstadisticasDashboardPage() {
       },
       tooltip: {
         callbacks: {
-          label: (context: any) => {
-            const dataPoint = context.raw;
+          label: (context: TooltipItem<"bubble">) => {
+            const dataPoint = context.raw as { x: number; y: number; r: number };
             const year = dataPoint.x;
             const total = dataPoint.y;
             const radius = dataPoint.r;
@@ -879,10 +793,6 @@ export default function EstadisticasDashboardPage() {
   const generoYears = yearsForMateria(generoMateriaId);
   const combinadoMateriaId = chartSelections.combinado;
   const combinadoYears = yearsForMateria(combinadoMateriaId);
-  const estadoVisibleRows = estadoChartValues.map((metric) => [
-    metric.label,
-    NUMBER_FORMATTER.format(metric.value),
-  ]);
   return (
     <div className="space-y-10">
       <header className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">

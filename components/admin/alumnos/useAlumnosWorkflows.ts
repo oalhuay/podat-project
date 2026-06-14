@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
-import { supabase } from "@/lib/supabase";
+import { apiClient } from "@/lib/apiClient";
 import { parseAlumnoDisplay, parseAlumnosFromFile } from "@/lib/import/alumnos/parseExcel";
 import type { ImportResult, ImportStatus, ParsedAlumnoRow } from "@/lib/import/alumnos/types";
 import {
@@ -111,7 +111,7 @@ export function usePadronImport({
   const [importPlan, setImportPlan] = useState<ImportPlan | null>(null);
   const [statusFilter, setStatusFilter] = useState<"todos" | ImportStatus>("todos");
   const importDbClient = useMemo(
-    () => toImportAlumnosDbClient(supabase, { supportsGenero: true }),
+    () => toImportAlumnosDbClient(apiClient, { supportsGenero: true }),
     []
   );
 
@@ -196,7 +196,7 @@ export function usePadronImport({
     const legajos = Array.from(new Set(plan.aplicables.map((row) => row.legajo).filter(Boolean)));
     if (legajos.length === 0) return;
 
-    const { data: alumnosData, error: alumnosError } = await supabase
+    const { data: alumnosData, error: alumnosError } = await apiClient
       .from("alumnos")
       .select("id, legajo")
       .in("legajo", legajos);
@@ -230,7 +230,7 @@ export function usePadronImport({
 
     if (payload.length === 0) return;
 
-    const { error: upsertError } = await supabase
+    const { error: upsertError } = await apiClient
       .from("alumno_materia_anio")
       .upsert(payload, { onConflict: "alumno_id,materia_id,anio" });
     if (upsertError) throw upsertError;
@@ -425,7 +425,7 @@ export function useNotasWorkflow({
       const materiaId = Number(selectedMateriaId);
       const anioValue = Number(anio);
 
-      const { data: alumnosData, error: alumnosError } = await supabase
+      const { data: alumnosData, error: alumnosError } = await apiClient
         .from("alumno_materia_anio")
         .select("alumno_id, alumnos(id, legajo, nombre, apellido)")
         .eq("materia_id", materiaId)
@@ -460,7 +460,7 @@ export function useNotasWorkflow({
         return;
       }
 
-      const { data: evaluacionActual, error: evaluacionActualError } = await supabase
+      const { data: evaluacionActual, error: evaluacionActualError } = await apiClient
         .from("evaluaciones")
         .select("id")
         .eq("materia_id", materiaId)
@@ -472,7 +472,7 @@ export function useNotasWorkflow({
 
       const notasActualMap = new Map<number, { nota: number | null; ausente: boolean }>();
       if (evaluacionActual?.id) {
-        const { data: notasActuales, error: notasActualesError } = await supabase
+        const { data: notasActuales, error: notasActualesError } = await apiClient
           .from("notas")
           .select("alumno_id, nota, ausente")
           .eq("evaluacion_id", Number(evaluacionActual.id));
@@ -487,7 +487,7 @@ export function useNotasWorkflow({
 
       const notasParcialBaseMap = new Map<number, { nota: number | null; ausente: boolean }>();
       if (tipoEvaluacion === "Recuperatorio") {
-        const { data: evalParcial, error: evalParcialError } = await supabase
+        const { data: evalParcial, error: evalParcialError } = await apiClient
           .from("evaluaciones")
           .select("id")
           .eq("materia_id", materiaId)
@@ -498,7 +498,7 @@ export function useNotasWorkflow({
         if (evalParcialError) throw evalParcialError;
 
         if (evalParcial?.id) {
-          const { data: notasParcial, error: notasParcialError } = await supabase
+          const { data: notasParcial, error: notasParcialError } = await apiClient
             .from("notas")
             .select("alumno_id, nota, ausente")
             .eq("evaluacion_id", Number(evalParcial.id));
@@ -601,7 +601,7 @@ export function useNotasWorkflow({
     try {
       const materiaId = Number(selectedMateriaId);
       const anioValue = Number(anio);
-      const { data: evalExistente, error: evalSelectError } = await supabase
+      const { data: evalExistente, error: evalSelectError } = await apiClient
         .from("evaluaciones")
         .select("id")
         .eq("materia_id", materiaId)
@@ -613,7 +613,7 @@ export function useNotasWorkflow({
 
       let evaluacionId = Number(evalExistente?.id ?? 0);
       if (!evaluacionId) {
-        const { data: evalNueva, error: evalInsertError } = await supabase
+        const { data: evalNueva, error: evalInsertError } = await apiClient
           .from("evaluaciones")
           .insert({
             materia_id: materiaId,
@@ -634,7 +634,7 @@ export function useNotasWorkflow({
         ausente: row.ausente,
       }));
 
-      const { error: upsertError } = await supabase
+      const { error: upsertError } = await apiClient
         .from("notas")
         .upsert(payload, { onConflict: "evaluacion_id,alumno_id" });
       if (upsertError) throw upsertError;
@@ -748,7 +748,7 @@ export function useAsistenciasWorkflow({
       const materiaId = Number(selectedMateriaId);
       const anioValue = Number(anio);
 
-      const { data: claseData, error: claseError } = await supabase
+      const { data: claseData, error: claseError } = await apiClient
         .from("clases")
         .select("id")
         .eq("materia_id", materiaId)
@@ -760,7 +760,7 @@ export function useAsistenciasWorkflow({
       const currentClaseId = claseData?.id ? String(claseData.id) : null;
       setClaseIdAsistencia(currentClaseId);
 
-      const { data: alumnosData, error: alumnosError } = await supabase
+      const { data: alumnosData, error: alumnosError } = await apiClient
         .from("alumno_materia_anio")
         .select("alumno_id, alumnos(id, legajo, nombre, apellido)")
         .eq("materia_id", materiaId)
@@ -796,7 +796,7 @@ export function useAsistenciasWorkflow({
 
       const asistenciasMap = new Map<number, EstadoAsistencia>();
       if (currentClaseId) {
-        const { data: asistenciasData, error: asistenciasError } = await supabase
+        const { data: asistenciasData, error: asistenciasError } = await apiClient
           .from("asistencias")
           .select("alumno_id, estado")
           .eq("clase_id", currentClaseId);
@@ -807,7 +807,7 @@ export function useAsistenciasWorkflow({
         });
       }
 
-      const { data: clasesData, error: clasesDataError } = await supabase
+      const { data: clasesData, error: clasesDataError } = await apiClient
         .from("clases")
         .select("id")
         .eq("materia_id", materiaId)
@@ -824,7 +824,7 @@ export function useAsistenciasWorkflow({
         : clasesIds;
 
       if (claseIdsSinActual.length > 0) {
-        const { data: asistenciasHistoricas, error: asistenciasHistoricasError } = await supabase
+        const { data: asistenciasHistoricas, error: asistenciasHistoricasError } = await apiClient
           .from("asistencias")
           .select("alumno_id, estado")
           .in(
@@ -892,7 +892,7 @@ export function useAsistenciasWorkflow({
       const anioValue = Number(anio);
       let currentClaseId = claseIdAsistencia;
       if (!currentClaseId) {
-        const { data: nuevaClase, error: nuevaClaseError } = await supabase
+        const { data: nuevaClase, error: nuevaClaseError } = await apiClient
           .from("clases")
           .insert({
             materia_id: materiaId,
@@ -913,7 +913,7 @@ export function useAsistenciasWorkflow({
         estado: row.estado,
       }));
 
-      const { error: upsertError } = await supabase
+      const { error: upsertError } = await apiClient
         .from("asistencias")
         .upsert(payload, { onConflict: "clase_id,alumno_id" });
       if (upsertError) throw upsertError;

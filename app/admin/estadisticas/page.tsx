@@ -33,7 +33,6 @@ import {
   type StatusMessage,
 } from "@/lib/import/estadisticas/workflow";
 import { getAccessibleMaterias, type Materia } from "@/lib/materias";
-import { supabase } from "@/lib/supabase";
 import type { Rol } from "@/types/database";
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend);

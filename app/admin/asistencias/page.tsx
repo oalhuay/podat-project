@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/app/hooks/useAuth";
-import { supabase } from "@/lib/supabase";
+import { apiClient } from "@/lib/apiClient";
 import StatusBanner from "@/components/admin/StatusBanner";
 import {
   CondicionAsistencia,
@@ -139,7 +139,7 @@ export default function CargarAsistenciaPage() {
       const materiaIdNum = Number(materiaId);
       const anioValue = Number(anio);
 
-      const { data: claseData, error: claseError } = await supabase
+      const { data: claseData, error: claseError } = await apiClient
         .from("clases")
         .select("id")
         .eq("materia_id", materiaIdNum)
@@ -152,7 +152,7 @@ export default function CargarAsistenciaPage() {
       const claseIdValue = claseData?.id ? String(claseData.id) : null;
       setClaseId(claseIdValue);
 
-      const { data: alumnosData, error: alumnosError } = await supabase
+      const { data: alumnosData, error: alumnosError } = await apiClient
         .from("alumno_materia_anio")
         .select("alumno_id, alumnos(id, legajo, nombre, apellido)")
         .eq("materia_id", materiaIdNum)
@@ -188,7 +188,7 @@ export default function CargarAsistenciaPage() {
 
       const asistenciasMap = new Map<number, EstadoAsistencia>();
       if (claseIdValue) {
-        const { data: asistenciasData, error: asistenciasError } = await supabase
+        const { data: asistenciasData, error: asistenciasError } = await apiClient
           .from("asistencias")
           .select("alumno_id, estado")
           .eq("clase_id", claseIdValue);
@@ -200,7 +200,7 @@ export default function CargarAsistenciaPage() {
         });
       }
 
-      const { data: clasesData, error: clasesDataError } = await supabase
+      const { data: clasesData, error: clasesDataError } = await apiClient
         .from("clases")
         .select("id")
         .eq("materia_id", materiaIdNum)
@@ -219,7 +219,7 @@ export default function CargarAsistenciaPage() {
           : clasesIds;
 
         if (claseIdsSinActual.length > 0) {
-          const { data: asistenciasHistoricas, error: asistenciasHistoricasError } = await supabase
+          const { data: asistenciasHistoricas, error: asistenciasHistoricasError } = await apiClient
             .from("asistencias")
             .select("alumno_id, estado")
             .in(
@@ -302,7 +302,7 @@ export default function CargarAsistenciaPage() {
     try {
       let claseIdValue = claseId;
       if (!claseIdValue) {
-        const { data: nuevaClase, error: insertClaseError } = await supabase
+        const { data: nuevaClase, error: insertClaseError } = await apiClient
           .from("clases")
           .insert({
             materia_id: Number(materiaId),
@@ -324,7 +324,7 @@ export default function CargarAsistenciaPage() {
         estado: alumno.estado,
       }));
 
-      const { error } = await supabase
+      const { error } = await apiClient
         .from("asistencias")
         .upsert(payload, { onConflict: "clase_id,alumno_id" });
 

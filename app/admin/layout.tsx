@@ -2,13 +2,49 @@
 
 import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import BrandLogo from "@/components/brand/BrandLogo";
 import { useAuth } from "@/app/hooks/useAuth";
+import SplashScreen from "@/components/system/SplashScreen";
+
+const adminOnlyPrefixes = ["/admin/usuarios", "/admin/importar", "/admin/materias"];
+const docenteAllowedPrefixes = [
+  "/admin/perfil",
+  "/admin/notas",
+  "/admin/asistencias",
+  "/admin/estadisticas",
+  "/admin/importar-archivo",
+  "/admin/alumnos",
+  "/admin/mis-materias",
+];
+const matchesPrefix = (pathname: string, prefix: string) =>
+  pathname === prefix || pathname.startsWith(`${prefix}/`);
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
-  const { role } = useAuth();
+  const router = useRouter();
+  const pathname = usePathname();
+  const { user, role, isLoadingAuth, isLoadingProfile } = useAuth();
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+
+  const isAdminOnly = adminOnlyPrefixes.some((prefix) =>
+    matchesPrefix(pathname, prefix)
+  );
+  const isDocenteAllowed = docenteAllowedPrefixes.some((prefix) =>
+    matchesPrefix(pathname, prefix)
+  );
+  const isAllowed = Boolean(
+    user &&
+      !isAdminOnly &&
+      (role === "admin" || (role === "docente" && isDocenteAllowed))
+  ) || Boolean(
+    user && role === "admin" && isAdminOnly
+  );
+
+  useEffect(() => {
+    if (isLoadingAuth || isLoadingProfile || isAllowed) return;
+    router.replace("/?auth_status=error&auth_error=forbidden");
+  }, [isAllowed, isLoadingAuth, isLoadingProfile, router]);
 
   useEffect(() => {
     if (!isMobileSidebarOpen) return;
@@ -20,6 +56,10 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       document.body.style.overflow = previousOverflow;
     };
   }, [isMobileSidebarOpen]);
+
+  if (isLoadingAuth || isLoadingProfile || !isAllowed) {
+    return <SplashScreen message="Validando acceso" overlay />;
+  }
 
   const panelLabel = role === "docente" ? "Panel docente" : "Panel de gestión";
 

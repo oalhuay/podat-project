@@ -6,7 +6,6 @@ import { useAuth } from "@/app/hooks/useAuth";
 import StatusBanner from "@/components/admin/StatusBanner";
 import { getUserProfileViewModel } from "@/lib/auth/getUserProfileViewModel";
 import { getAccessibleMaterias, type Materia } from "@/lib/materias";
-import { supabase } from "@/lib/supabase";
 
 type StatusMessage = {
   type: "success" | "error" | "info";
@@ -22,7 +21,7 @@ type EditableProfile = {
 };
 
 export default function PerfilPage() {
-  const { user, role, isLoadingProfile } = useAuth();
+  const { user, role, isLoadingProfile, updateUserMetadata } = useAuth();
   const hydratedUserIdRef = useRef<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<StatusMessage | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -156,11 +155,7 @@ export default function PerfilPage() {
         declared_subjects: declaredSubjectsList,
       };
 
-      const { error } = await supabase.auth.updateUser({
-        data: nextMetadata,
-      });
-
-      if (error) throw error;
+      await updateUserMetadata(nextMetadata);
 
       setStatusMessage({
         type: "success",

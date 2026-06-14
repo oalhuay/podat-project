@@ -1,6 +1,6 @@
 # PODAT
 
-Plataforma académica construida con Next.js y Supabase para gestionar usuarios, materias, alumnos, notas, asistencias e importación de estadísticas desde Excel.
+Plataforma académica construida con Next.js y una API FastAPI independiente para gestionar usuarios, materias, alumnos, notas, asistencias e importación de estadísticas desde Excel.
 
 ## Stack
 
@@ -8,7 +8,8 @@ Plataforma académica construida con Next.js y Supabase para gestionar usuarios,
 - React 19
 - TypeScript
 - Tailwind CSS 4
-- Supabase Auth + Postgres + RLS
+- API FastAPI desplegada en `https://podat-backend.vercel.app`
+- Supabase Auth + Postgres + RLS, accesibles solo desde el backend
 - ExcelJS para lectura de archivos `.xlsx`
 - Chart.js + react-chartjs-2 para dashboards
 - Vitest para tests unitarios
@@ -38,11 +39,11 @@ Plataforma académica construida con Next.js y Supabase para gestionar usuarios,
 Crea un archivo `.env.local` con:
 
 ```env
-NEXT_PUBLIC_SUPABASE_URL=...
-NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+NEXT_PUBLIC_API_URL=https://podat-backend.vercel.app
 ```
 
-La app usa esas variables tanto en cliente como en callback de autenticación.
+El frontend envía autenticación y operaciones de datos a la API. Las credenciales
+de Supabase se configuran únicamente en el repositorio `backend-podat`.
 
 ## Puesta en marcha
 
@@ -80,8 +81,8 @@ hacia el modelo actual por `materia_id + anio`.
 
 La app ya incluye:
 
-- auth centralizada en cliente
-- control de acceso por rol para rutas `/admin`
+- auth centralizada mediante la API backend
+- control de acceso por rol en el layout y en los endpoints protegidos
 - helpers compartidos para resolver materias accesibles según rol
 - tests para importación de alumnos, parseo de Excel y reglas de notas
 
@@ -90,4 +91,4 @@ La app ya incluye:
 - Consolidar migraciones SQL en una historia única y reproducible
 - Seguir partiendo páginas grandes como `app/admin/alumnos/page.tsx`
 - Agregar tests para flujos de páginas y acceso a datos
-- Tipar con más precisión la respuesta real de Supabase
+- Reemplazar gradualmente la pasarela CRUD genérica por endpoints de dominio

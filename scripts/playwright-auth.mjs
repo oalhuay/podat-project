@@ -3,12 +3,13 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { createClient } from "@supabase/supabase-js";
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const projectDirectory = path.resolve(scriptDirectory, "..");
 const authDirectory = path.join(projectDirectory, "playwright", ".auth");
 const storageStatePath = path.join(authDirectory, "user.json");
+const sessionStorageKey = "podat-backend-session";
+const defaultBackendUrl = "https://podat-backend.vercel.app";
 const frontendOrigins = [
   "https://podat-project.vercel.app",
   "https://podat-app.vercel.app",
@@ -56,14 +57,13 @@ const decodeJwtPayload = (token) => {
   if (!payload) {
     throw new Error("PLAYWRIGHT_ACCESS_TOKEN no tiene formato JWT.");
   }
-
   return JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
 };
 
-const decodeSupabaseCookie = (encodedCookie) => {
+const decodeLegacyCookie = (encodedCookie) => {
   const normalizedCookie = encodedCookie.trim();
   if (!normalizedCookie.startsWith("base64-")) {
-    throw new Error("La cookie de Supabase no comienza con base64-.");
+    throw new Error("La cookie copiada no comienza con base64-.");
   }
 
   try {
@@ -73,7 +73,7 @@ const decodeSupabaseCookie = (encodedCookie) => {
       )
     );
   } catch {
-    throw new Error("No se pudo decodificar la cookie de sesion de Supabase.");
+    throw new Error("No se pudo decodificar la cookie de sesion.");
   }
 };
 
@@ -84,10 +84,7 @@ export const parseSupabaseCredential = (rawCredential) => {
   }
 
   if (credential.split(".").length === 3 && credential.startsWith("ey")) {
-    return {
-      accessToken: credential,
-      refreshToken: "",
-    };
+    return { accessToken: credential, refreshToken: "" };
   }
 
   if (credential.startsWith("{")) {
@@ -112,7 +109,7 @@ export const parseSupabaseCredential = (rawCredential) => {
       .sort((left, right) => Number(left[1] ?? 0) - Number(right[1] ?? 0))
       .map((part) => part[2])
       .join("");
-    const session = decodeSupabaseCookie(joinedCookie);
+    const session = decodeLegacyCookie(joinedCookie);
     return {
       accessToken: session.access_token ?? "",
       refreshToken: session.refresh_token ?? "",
@@ -120,7 +117,7 @@ export const parseSupabaseCredential = (rawCredential) => {
   }
 
   if (credential.startsWith("base64-")) {
-    const session = decodeSupabaseCookie(credential);
+    const session = decodeLegacyCookie(credential);
     return {
       accessToken: session.access_token ?? "",
       refreshToken: session.refresh_token ?? "",
@@ -128,66 +125,31 @@ export const parseSupabaseCredential = (rawCredential) => {
   }
 
   throw new Error(
-    "La credencial no es un JWT, un JSON de sesion ni una cookie de Supabase."
+    "La credencial no es un JWT, un JSON de sesion ni una cookie compatible."
   );
 };
 
-const createCookieChunks = (name, value, chunkSize = 3180) => {
-  if (encodeURIComponent(value).length <= chunkSize) {
-    return [{ name, value }];
-  }
-
-  const chunks = [];
-  for (let offset = 0; offset < value.length; offset += chunkSize) {
-    chunks.push({
-      name: `${name}.${chunks.length}`,
-      value: value.slice(offset, offset + chunkSize),
-    });
-  }
-  return chunks;
-};
-
-const validateAccessToken = async (supabaseUrl, supabaseAnonKey, accessToken) => {
-  const response = await fetch(`${supabaseUrl}/auth/v1/user`, {
-    headers: {
-      apikey: supabaseAnonKey,
-      Authorization: `Bearer ${accessToken}`,
-    },
-  });
-
+const backendRequest = async (backendUrl, pathName, init = {}) => {
+  const response = await fetch(`${backendUrl}${pathName}`, init);
   if (!response.ok) {
     throw new Error(
-      `Supabase rechazo el access token con estado ${response.status}.`
+      `El backend rechazo la sesion con estado ${response.status}.`
     );
   }
-
-  return response.json();
+  return response.status === 204 ? null : response.json();
 };
 
 const resolveSession = async ({
-  supabaseUrl,
-  supabaseAnonKey,
+  backendUrl,
   accessToken,
   refreshToken,
 }) => {
   if (refreshToken) {
-    const client = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        autoRefreshToken: false,
-        detectSessionInUrl: false,
-        persistSession: false,
-      },
+    return backendRequest(backendUrl, "/api/auth/refresh", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refresh_token: refreshToken }),
     });
-    const { data, error } = await client.auth.setSession({
-      access_token: accessToken,
-      refresh_token: refreshToken,
-    });
-
-    if (error || !data.session) {
-      throw new Error(error?.message ?? "Supabase no pudo crear la sesion.");
-    }
-
-    return data.session;
   }
 
   const payload = decodeJwtPayload(accessToken);
@@ -199,32 +161,27 @@ const resolveSession = async ({
     );
   }
 
-  const user = await validateAccessToken(
-    supabaseUrl,
-    supabaseAnonKey,
-    accessToken
-  );
-
+  const authState = await backendRequest(backendUrl, "/api/auth/me", {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
   return {
     access_token: accessToken,
     refresh_token: "",
     token_type: "bearer",
     expires_in: expiresAt - now,
     expires_at: expiresAt,
-    user,
+    user: authState.user,
   };
 };
 
 export const preparePlaywrightAuth = async () => {
   const localEnvironment = await loadLocalEnvironment();
-  const supabaseUrl = firstNonEmpty(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    localEnvironment.NEXT_PUBLIC_SUPABASE_URL
-  );
-  const supabaseAnonKey = firstNonEmpty(
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    localEnvironment.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  );
+  const backendUrl = (
+    firstNonEmpty(
+      process.env.NEXT_PUBLIC_API_URL,
+      localEnvironment.NEXT_PUBLIC_API_URL
+    ) ?? defaultBackendUrl
+  ).replace(/\/+$/, "");
   const accessToken = firstNonEmpty(
     process.env.PLAYWRIGHT_ACCESS_TOKEN,
     localEnvironment.PLAYWRIGHT_ACCESS_TOKEN
@@ -258,11 +215,6 @@ export const preparePlaywrightAuth = async () => {
   if (!accessToken && !encodedCredential) {
     return false;
   }
-  if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error(
-      "Faltan NEXT_PUBLIC_SUPABASE_URL o NEXT_PUBLIC_SUPABASE_ANON_KEY."
-    );
-  }
 
   const parsedCredential = encodedCredential
     ? parseSupabaseCredential(encodedCredential)
@@ -272,49 +224,23 @@ export const preparePlaywrightAuth = async () => {
   }
 
   const session = await resolveSession({
-    supabaseUrl,
-    supabaseAnonKey,
+    backendUrl,
     accessToken: parsedCredential.accessToken,
     refreshToken: refreshToken || parsedCredential.refreshToken,
   });
-  const projectReference = new URL(supabaseUrl).hostname.split(".")[0];
-  const storageKey = `sb-${projectReference}-auth-token`;
   const rawSession = JSON.stringify(session);
-  const encodedSession = `base64-${Buffer.from(rawSession).toString(
-    "base64url"
-  )}`;
-  const cookieChunks = createCookieChunks(storageKey, encodedSession);
-  const cookieExpires = Math.floor(Date.now() / 1000) + 400 * 24 * 60 * 60;
-
   const storageState = {
-    cookies: frontendOrigins.flatMap((origin) => {
-      const domain = new URL(origin).hostname;
-      return cookieChunks.map(({ name, value }) => ({
-        name,
-        value,
-        domain,
-        path: "/",
-        expires: cookieExpires,
-        httpOnly: false,
-        secure: true,
-        sameSite: "Lax",
-      }));
-    }),
+    cookies: [],
     origins: frontendOrigins.map((origin) => ({
       origin,
-      localStorage: [
-        {
-          name: storageKey,
-          value: rawSession,
-        },
-      ],
+      localStorage: [{ name: sessionStorageKey, value: rawSession }],
     })),
   };
 
   await mkdir(authDirectory, { recursive: true });
   await writeFile(storageStatePath, JSON.stringify(storageState, null, 2));
   console.log(
-    `Sesion de Playwright preparada para ${session.user.email ?? session.user.id}.`
+    `Sesion de Playwright preparada para ${session.user?.email ?? session.user?.id ?? "el usuario"}.`
   );
   return true;
 };

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/app/hooks/useAuth";
 import InlineSelect from "@/components/admin/InlineSelect";
-import { supabase } from "@/lib/supabase";
+import { apiClient } from "@/lib/apiClient";
 import StatusBanner from "@/components/admin/StatusBanner";
 import {
   EvaluacionNombre,
@@ -14,7 +14,6 @@ import {
   isNotaEnRango,
 } from "@/lib/notas/rules";
 import { getAccessibleMaterias, type Materia } from "@/lib/materias";
-import LoaderOverlay from "@/components/ui/LoaderOverlay";
 
 type NotaRow = {
   alumno_id: number;
@@ -171,7 +170,7 @@ export default function CargarNotasPage() {
       const materiaIdNum = Number(materiaId);
       const anioValue = Number(anio);
 
-      const { data: alumnosData, error: alumnosError } = await supabase
+      const { data: alumnosData, error: alumnosError } = await apiClient
         .from("alumno_materia_anio")
         .select("alumno_id, alumnos(id, legajo, nombre, apellido)")
         .eq("materia_id", materiaIdNum)
@@ -205,7 +204,7 @@ export default function CargarNotasPage() {
         return;
       }
 
-      const { data: evaluacionActualData, error: evalActualError } = await supabase
+      const { data: evaluacionActualData, error: evalActualError } = await apiClient
         .from("evaluaciones")
         .select("id")
         .eq("materia_id", materiaIdNum)
@@ -218,7 +217,7 @@ export default function CargarNotasPage() {
 
       const notasActualMap = new Map<number, NotaRow>();
       if (evaluacionActualData?.id) {
-        const { data: notasActuales, error: notasActualesError } = await supabase
+        const { data: notasActuales, error: notasActualesError } = await apiClient
           .from("notas")
           .select("alumno_id, nota, ausente")
           .eq("evaluacion_id", Number(evaluacionActualData.id));
@@ -235,7 +234,7 @@ export default function CargarNotasPage() {
 
       const notasParcialBaseMap = new Map<number, NotaRow>();
       if (tipo === "Recuperatorio") {
-        const { data: evalParcialData, error: evalParcialError } = await supabase
+        const { data: evalParcialData, error: evalParcialError } = await apiClient
           .from("evaluaciones")
           .select("id")
           .eq("materia_id", materiaIdNum)
@@ -247,7 +246,7 @@ export default function CargarNotasPage() {
         if (evalParcialError) throw evalParcialError;
 
         if (evalParcialData?.id) {
-          const { data: notasParcialData, error: notasParcialError } = await supabase
+          const { data: notasParcialData, error: notasParcialError } = await apiClient
             .from("notas")
             .select("alumno_id, nota, ausente")
             .eq("evaluacion_id", Number(evalParcialData.id));
@@ -367,7 +366,7 @@ export default function CargarNotasPage() {
 
     setIsLoading(true);
     try {
-      const { data: evaluacionExistente, error: evalSelectError } = await supabase
+      const { data: evaluacionExistente, error: evalSelectError } = await apiClient
         .from("evaluaciones")
         .select("id")
         .eq("materia_id", Number(materiaId))
@@ -382,7 +381,7 @@ export default function CargarNotasPage() {
       if (evaluacionExistente?.id) {
         evaluacionId = Number(evaluacionExistente.id);
       } else {
-        const { data: evaluacionNueva, error: evalInsertError } = await supabase
+        const { data: evaluacionNueva, error: evalInsertError } = await apiClient
           .from("evaluaciones")
           .insert({
             materia_id: Number(materiaId),
@@ -404,7 +403,7 @@ export default function CargarNotasPage() {
         ausente: alumno.ausente,
       }));
 
-      const { error: notasError } = await supabase
+      const { error: notasError } = await apiClient
         .from("notas")
         .upsert(payload, { onConflict: "evaluacion_id,alumno_id" });
 
@@ -441,8 +440,7 @@ export default function CargarNotasPage() {
 
       {step === "seleccion" && (
         <section className="mt-6 grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-          <div className="relative space-y-6 rounded-[2rem] border border-slate-200 bg-slate-50 p-6">
-            <LoaderOverlay isLoading={isLoading} message="Cargando alumnos..." />
+          <div className="space-y-6 rounded-[2rem] border border-slate-200 bg-slate-50 p-6">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.25em] text-slate-400">
                 Paso 1
@@ -582,8 +580,7 @@ export default function CargarNotasPage() {
       )}
 
       {step === "carga" && (
-        <section className="relative mt-8 space-y-6">
-          <LoaderOverlay isLoading={isLoading} message="Guardando notas..." className="rounded-3xl" />
+        <section className="mt-8 space-y-6">
           <div className="rounded-[2rem] border border-slate-200 bg-slate-50 p-6">
             <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
               <div>

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import StatusBanner from "@/components/admin/StatusBanner";
 import { readWorkbookMatrix } from "@/lib/import/excel/readWorkbookMatrix";
-import { supabase } from "@/lib/supabase";
+import { apiClient } from "@/lib/apiClient";
 
 type Materia = {
   id: number;
@@ -125,20 +125,20 @@ export default function MateriasAdminPage() {
   const loadData = async () => {
     setIsLoadingData(true);
     try {
-      const { data: materiasData, error: materiasError } = await supabase
+      const { data: materiasData, error: materiasError } = await apiClient
         .from("materias")
         .select("id, nombre, codigo")
         .order("nombre", { ascending: true });
       if (materiasError) throw materiasError;
 
-      const { data: docentesData, error: docentesError } = await supabase
+      const { data: docentesData, error: docentesError } = await apiClient
         .from("perfiles")
         .select("id, correo, rol")
         .eq("rol", "docente")
         .order("correo", { ascending: true });
       if (docentesError) throw docentesError;
 
-      const { data: asignacionesData, error: asignacionesError } = await supabase
+      const { data: asignacionesData, error: asignacionesError } = await apiClient
         .from("materias_docentes")
         .select("id, materia_id, user_id")
         .order("id", { ascending: false });
@@ -212,7 +212,7 @@ export default function MateriasAdminPage() {
       );
 
       if (materiaExistente) {
-        const { error: updateError } = await supabase
+        const { error: updateError } = await apiClient
           .from("materias")
           .update({ codigo })
           .eq("id", materiaExistente.id);
@@ -222,7 +222,7 @@ export default function MateriasAdminPage() {
           text: "La materia existente se actualizó con el nuevo código.",
         });
       } else {
-        const { error: insertError } = await supabase.from("materias").insert({
+        const { error: insertError } = await apiClient.from("materias").insert({
           nombre,
           codigo,
         });
@@ -270,7 +270,7 @@ export default function MateriasAdminPage() {
 
         const existing = existingByName.get(normalizeMateriaName(nombre));
         if (!existing) {
-          const { error: insertError } = await supabase.from("materias").insert({
+          const { error: insertError } = await apiClient.from("materias").insert({
             nombre,
             codigo: codigo || null,
           });
@@ -281,7 +281,7 @@ export default function MateriasAdminPage() {
 
         const codigoActual = existing.codigo?.trim() ?? "";
         if (codigoActual !== codigo) {
-          const { error: updateError } = await supabase
+          const { error: updateError } = await apiClient
             .from("materias")
             .update({ codigo: codigo || null })
             .eq("id", existing.id);
@@ -324,7 +324,7 @@ export default function MateriasAdminPage() {
 
     setIsAssigning(true);
     try {
-      const { data: existing, error: existingError } = await supabase
+      const { data: existing, error: existingError } = await apiClient
         .from("materias_docentes")
         .select("id")
         .eq("materia_id", Number(selectedMateriaId))
@@ -340,7 +340,7 @@ export default function MateriasAdminPage() {
         return;
       }
 
-      const { error } = await supabase.from("materias_docentes").insert({
+      const { error } = await apiClient.from("materias_docentes").insert({
         materia_id: Number(selectedMateriaId),
         user_id: selectedDocenteId,
       });
@@ -367,7 +367,7 @@ export default function MateriasAdminPage() {
   const eliminarAsignacion = async (id: number) => {
     setIsAssigning(true);
     try {
-      const { error } = await supabase.from("materias_docentes").delete().eq("id", id);
+      const { error } = await apiClient.from("materias_docentes").delete().eq("id", id);
       if (error) throw error;
       setStatusMessage({ type: "success", text: "Asignación eliminada." });
       await loadData();
