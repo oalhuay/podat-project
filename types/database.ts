@@ -4,5 +4,6 @@ export interface Perfil {
   id: string;
   rol: Rol;
   correo?: string | null;
+  nombre?: string | null;
   last_login_at?: string | null;
 }

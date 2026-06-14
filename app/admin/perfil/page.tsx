@@ -6,6 +6,7 @@ import { useAuth } from "@/app/hooks/useAuth";
 import StatusBanner from "@/components/admin/StatusBanner";
 import { getUserProfileViewModel } from "@/lib/auth/getUserProfileViewModel";
 import { getAccessibleMaterias, type Materia } from "@/lib/materias";
+import { apiClient } from "@/lib/apiClient";
 
 type StatusMessage = {
   type: "success" | "error" | "info";
@@ -156,6 +157,12 @@ export default function PerfilPage() {
       };
 
       await updateUserMetadata(nextMetadata);
+
+      // Also update the public perfiles table so the name is propagated to other administrators
+      await apiClient
+        .from("perfiles")
+        .update({ nombre: profileForm.displayName.trim() })
+        .eq("id", user.id);
 
       setStatusMessage({
         type: "success",

@@ -15,6 +15,7 @@ type Perfil = {
   id: string;
   correo: string | null;
   rol: "admin" | "docente" | null;
+  nombre?: string | null;
 };
 
 type MateriaDocente = {
@@ -133,7 +134,7 @@ export default function MateriasAdminPage() {
 
       const { data: docentesData, error: docentesError } = await apiClient
         .from("perfiles")
-        .select("id, correo, rol")
+        .select("id, correo, rol, nombre")
         .eq("rol", "docente")
         .order("correo", { ascending: true });
       if (docentesError) throw docentesError;
@@ -566,7 +567,7 @@ export default function MateriasAdminPage() {
               <option value="">Seleccionar docente</option>
               {docentes.map((d) => (
                 <option key={d.id} value={d.id}>
-                  {d.correo ?? d.id}
+                  {d.nombre ? `${d.nombre} (${d.correo ?? d.id})` : (d.correo ?? d.id)}
                 </option>
               ))}
             </select>
@@ -604,7 +605,9 @@ export default function MateriasAdminPage() {
                   <tr key={asig.id} className="border-t border-slate-100">
                     <td className="p-3">{materia?.nombre ?? "-"}</td>
                     <td className="p-3 text-slate-500">{materia?.codigo ?? "-"}</td>
-                    <td className="p-3">{docente?.correo ?? asig.user_id}</td>
+                    <td className="p-3">
+                      {docente?.nombre ? `${docente.nombre} (${docente.correo})` : (docente?.correo ?? asig.user_id)}
+                    </td>
                     <td className="p-3 text-right">
                       <button
                         onClick={() => eliminarAsignacion(asig.id)}
