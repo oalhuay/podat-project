@@ -1,4 +1,4 @@
-import type { User } from "@supabase/supabase-js";
+import type { AuthUser } from "@/types/auth";
 
 export type UserProfileViewModel = {
   name: string;
@@ -7,12 +7,14 @@ export type UserProfileViewModel = {
   initials: string;
 };
 
-export function getUserProfileViewModel(user: User | null): UserProfileViewModel {
+export function getUserProfileViewModel(user: AuthUser | null): UserProfileViewModel {
   const metadata = user?.user_metadata;
-  const name: string =
+  const rawName =
     metadata?.full_name ?? metadata?.name ?? user?.email?.split("@")[0] ?? "Usuario";
+  const name = String(rawName);
   const email = user?.email ?? "Sin correo";
-  const avatar = metadata?.avatar_url ?? metadata?.picture ?? null;
+  const rawAvatar = metadata?.avatar_url ?? metadata?.picture;
+  const avatar = typeof rawAvatar === "string" ? rawAvatar : null;
   const initials = name
     .split(" ")
     .filter((word: string) => Boolean(word))

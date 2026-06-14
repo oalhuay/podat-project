@@ -14,7 +14,7 @@ import {
 } from "chart.js";
 import { Bar, Line, Pie } from "react-chartjs-2";
 import { useTheme } from "@/app/hooks/useTheme";
-import { supabase } from "@/lib/supabase";
+import { apiClient } from "@/lib/apiClient";
 import { parseAlumnosFromFile } from "@/lib/import/alumnos/parseExcel";
 import {
   ImportStatus,
@@ -68,13 +68,13 @@ export default function ImportarAlumnos() {
   const [isImporting, setIsImporting] = useState(false);
   const [statusMessage, setStatusMessage] = useState<StatusMessage | null>(null);
   const [statusFilter, setStatusFilter] = useState<"todos" | ImportStatus>("todos");
-  const importDbClient = toImportAlumnosDbClient(supabase, { supportsGenero: true });
+  const importDbClient = toImportAlumnosDbClient(apiClient, { supportsGenero: true });
 
   const puedeSubir = materia && anio && archivo;
 
   useEffect(() => {
     const loadMaterias = async () => {
-      const { data, error } = await supabase
+      const { data, error } = await apiClient
         .from("materias")
         .select("id, nombre, codigo")
         .order("nombre", { ascending: true });
