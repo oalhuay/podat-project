@@ -9,6 +9,15 @@ import { useAuth } from "@/app/hooks/useAuth";
 import SplashScreen from "@/components/system/SplashScreen";
 
 const adminOnlyPrefixes = ["/admin/usuarios", "/admin/importar", "/admin/materias"];
+const docenteAllowedPrefixes = [
+  "/admin/perfil",
+  "/admin/notas",
+  "/admin/asistencias",
+  "/admin/estadisticas",
+  "/admin/importar-archivo",
+  "/admin/alumnos",
+  "/admin/mis-materias",
+];
 const matchesPrefix = (pathname: string, prefix: string) =>
   pathname === prefix || pathname.startsWith(`${prefix}/`);
 
@@ -21,8 +30,15 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const isAdminOnly = adminOnlyPrefixes.some((prefix) =>
     matchesPrefix(pathname, prefix)
   );
+  const isDocenteAllowed = docenteAllowedPrefixes.some((prefix) =>
+    matchesPrefix(pathname, prefix)
+  );
   const isAllowed = Boolean(
-    user && (role === "admin" || (role === "docente" && !isAdminOnly))
+    user &&
+      !isAdminOnly &&
+      (role === "admin" || (role === "docente" && isDocenteAllowed))
+  ) || Boolean(
+    user && role === "admin" && isAdminOnly
   );
 
   useEffect(() => {
