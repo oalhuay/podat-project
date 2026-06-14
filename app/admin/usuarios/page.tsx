@@ -5,6 +5,7 @@ import { useAuth } from "@/app/hooks/useAuth";
 import { apiClient } from "@/lib/apiClient";
 import StatusBanner from "@/components/admin/StatusBanner";
 import type { Rol } from "@/types/database";
+import LoaderOverlay from "@/components/ui/LoaderOverlay";
 
 type PerfilRow = {
   id: string;
@@ -160,7 +161,8 @@ export default function GestionUsuariosPage() {
         />
       </section>
 
-      <section className="overflow-hidden rounded-3xl border border-slate-200">
+      <section className="relative overflow-hidden rounded-3xl border border-slate-200">
+        <LoaderOverlay isLoading={isLoading} message="Actualizando..." className="rounded-3xl" />
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-slate-900">
             <caption className="sr-only">
