@@ -14,6 +14,7 @@ import {
   isNotaEnRango,
 } from "@/lib/notas/rules";
 import { getAccessibleMaterias, type Materia } from "@/lib/materias";
+import LoaderOverlay from "@/components/ui/LoaderOverlay";
 
 type NotaRow = {
   alumno_id: number;
@@ -440,7 +441,8 @@ export default function CargarNotasPage() {
 
       {step === "seleccion" && (
         <section className="mt-6 grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-          <div className="space-y-6 rounded-[2rem] border border-slate-200 bg-slate-50 p-6">
+          <div className="relative space-y-6 rounded-[2rem] border border-slate-200 bg-slate-50 p-6">
+            <LoaderOverlay isLoading={isLoading} message="Cargando alumnos..." />
             <div>
               <p className="text-xs font-black uppercase tracking-[0.25em] text-slate-400">
                 Paso 1
@@ -580,7 +582,8 @@ export default function CargarNotasPage() {
       )}
 
       {step === "carga" && (
-        <section className="mt-8 space-y-6">
+        <section className="relative mt-8 space-y-6">
+          <LoaderOverlay isLoading={isLoading} message="Guardando notas..." className="rounded-3xl" />
           <div className="rounded-[2rem] border border-slate-200 bg-slate-50 p-6">
             <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
               <div>
